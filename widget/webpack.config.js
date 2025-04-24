@@ -51,15 +51,5 @@ module.exports = {
     ,
     resolve: {
         extensions: ['.js', '.jsx']
-    },
-    plugins: [
-        new CopyPlugin({
-            patterns: [
-                {
-                    from: path.resolve(__dirname, 'dist/easybox-widget.bundle.js'),
-                    to: path.resolve(__dirname, 'public')
-                }
-            ]
-        })
-    ]
+    }
 };
