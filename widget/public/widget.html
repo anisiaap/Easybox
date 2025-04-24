@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Easybox Widget</title>
+</head>
+<body>
+<div id="easybox-plugin-container"></div>
+
+<script src="easybox-widget.bundle.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    window.initEasyboxWidget({
+        containerId: 'easybox-plugin-container',
+        apiUrl: 'http://localhost:8080/api/',
+        clientAddress: params.get('address'),
+        additionalCriteria: {
+            clientName: params.get('clientName'),
+            phone: params.get('phone'),
+            deliveryTime: params.get('deliveryTime'),
+            minTemperature: params.get('minTemp'),
+            totalDimension: params.get('totalDimension')
+        },
+        onReservationSelect: (reservation) => {
+            window.parent.postMessage({ type: 'easybox-reserved', data: reservation }, '*');
+        }
+    });
+
+    window.addEventListener("message", async (event) => {
+        if (event.data?.type === "bakery-order-confirmed") {
+            const { reservationId } = event.data;
+            try {
+                const res = await fetch(`http://localhost:8080/api/reservations/${reservationId}/confirm`, {
+                    method: "PATCH"
+                });
+
+                if (!res.ok) {
+                    alert("Could not confirm reservation – it may have expired or failed!");
+                } else {
+                    alert("Reservation confirmed!");
+                }
+
+                window.parent.postMessage({ type: "easybox-confirmed", id: reservationId }, "*");
+
+            } catch (err) {
+                console.error("Confirmation error:", err);
+                alert("Something went wrong while confirming the reservation.");
+            }
+        }
+    });
+
+
+
+</script>
+</body>
+</html>
