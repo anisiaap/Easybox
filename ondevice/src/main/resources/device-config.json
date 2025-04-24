@@ -1,0 +1,14 @@
+{
+  "compartments": [
+    { "id": 1, "size": 10, "temperature": 4, "status": "free", "condition": "good" },
+    { "id": 2, "size": 15, "temperature": 8, "status": "busy", "condition": "dirty" },
+    { "id": 3, "size": 20, "temperature": 12, "status": "free", "condition": "good" },
+    { "id": 4, "size": 10, "temperature": 8, "status": "busy", "condition": "broken" },
+    { "id": 5, "size": 15, "temperature": 4, "status": "free", "condition": "good" },
+    { "id": 6, "size": 20, "temperature": 12, "status": "free", "condition": "dirty" },
+    { "id": 7, "size": 10, "temperature": 4, "status": "busy", "condition": "good" },
+    { "id": 8, "size": 15, "temperature": 12, "status": "free", "condition": "broken" },
+    { "id": 9, "size": 20, "temperature": 8, "status": "busy", "condition": "good" },
+    { "id": 10, "size": 10, "temperature": 4, "status": "free", "condition": "good" }
+  ]
+}

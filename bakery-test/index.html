@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mock Bakery Checkout - Easybox Demo</title>
+  <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
+
+  <style>
+    /*#popup-overlay {*/
+    /*  position: fixed;*/
+    /*  top: 0; left: 0;*/
+    /*  width: 100%; height: 100%;*/
+    /*  background: rgba(0, 0, 0, 0.5);*/
+    /*  display: none; !* hidden by default *!*/
+    /*  z-index: 9999;*/
+    /*}*/
+    /*#popup-content {*/
+    /*  position: absolute;*/
+    /*  top: 50%; left: 50%;*/
+    /*  transform: translate(-50%, -50%);*/
+    /*  background: #fff;*/
+    /*  width: 800px; !* bigger to fit side panel + map *!*/
+    /*  height: 600px;*/
+    /*  border: 1px solid #ccc;*/
+    /*  border-radius: 8px;*/
+    /*  padding: 0;*/
+    /*  box-sizing: border-box;*/
+    /*}*/
+    #easybox-plugin-container {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+<h1>Mock Bakery Checkout</h1>
+
+<form id="checkoutForm">
+  <!-- Basic user data -->
+  <label>Client Name: <input type="text" id="clientName" value="Alice" /></label><br />
+  <label>Phone: <input type="text" id="phone" value="123456789" /></label><br />
+  <label>Delivery Address: <input type="text" id="orderAddress" value="Strada Coriolan Brediceanu, Timisoara" /></label><br />
+  <label for="deliveryDate">Delivery Date:</label>
+  <input type="date" id="deliveryDate" /><br />
+
+  <label for="deliveryHour">Delivery Hour:</label>
+  <select id="deliveryHour">
+    <option value="08">08:00</option>
+    <option value="09">09:00</option>
+    <option value="10">10:00</option>
+    <option value="11">11:00</option>
+    <option value="12">12:00</option>
+    <option value="13">13:00</option>
+    <option value="14">14:00</option>
+    <option value="15">15:00</option>
+    <option value="16">16:00</option>
+    <option value="17">17:00</option>
+    <option value="18">18:00</option>
+    <option value="19">19:00</option>
+    <option value="20">20:00</option>
+    <option value="21">21:00</option>
+    <option value="22">22:00</option>
+    <option value="23">23:00</option>
+    <option value="24">24:00</option>
+    <option value="01">01:00</option>
+    <option value="02">02:00</option>
+    <option value="03">03:00</option>
+    <option value="04">04:00</option>
+    <option value="05">05:00</option>
+    <option value="06">06:00</option>
+    <option value="07">07:00</option>
+
+  </select>
+  <!-- Temperature Selection -->
+  <label for="minTemp">Min Temperature:</label>
+  <select id="minTemp">
+    <option value="4">Refrigerated (4°C)</option>
+    <option value="8">Cool (8°C)</option>
+    <option value="12">Room Temperature (12°C)</option>
+  </select>
+  <br />
+
+  <!-- Size/Dimension Selection -->
+  <label for="totalDimension">Total Dimension:</label>
+  <select id="totalDimension">
+    <option value="10">Small (10)</option>
+    <option value="15">Medium (15)</option>
+    <option value="20">Large (20)</option>
+  </select>
+  <br />
+
+  <p>Select Delivery Method:</p>
+  <label>
+    <input type="radio" name="deliveryMethod" value="standard" checked />
+    Standard Delivery
+  </label>
+  <label>
+    <input type="radio" name="deliveryMethod" value="easybox" />
+    Easybox Delivery
+  </label>
+
+  <br /><br />
+  <button type="button" onclick="placeOrder()">Place Order</button>
+</form>
+
+<!-- Popup overlay that covers the screen -->
+<!--<div id="popup-overlay" style="display: none;">-->
+<!--  <div id="popup-content">-->
+<!--    &lt;!&ndash; Container for Easybox widget (React will mount here) &ndash;&gt;-->
+<!--    <div id="easybox-plugin-container" style="width: 100%; height: 100%;"></div>-->
+
+<!--    &lt;!&ndash; Close button &ndash;&gt;-->
+<!--    <button onclick="closePopup()" style="position: absolute; top: 10px; right: 10px; z-index: 10;">-->
+<!--      ✖ Close-->
+<!--    </button>-->
+<!--  </div>-->
+<!--</div>-->
+
+<iframe
+        id="easybox-frame"
+        style="width:800px;height:600px;border:none;"
+></iframe>
+
+
+<script
+        src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+></script>
+
+<!--<script src="easybox-widget.bundle.js"></script>-->
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('deliveryDate');
+
+    const today = new Date();
+    today.setDate(today.getDate() + 2); // 2 days in the future
+    const minDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    dateInput.min = minDate;
+    dateInput.value = minDate; // prefill the default
+  });
+
+  function getDeliveryTimeString() {
+    const date = document.getElementById('deliveryDate').value;
+    const hour = document.getElementById('deliveryHour').value;
+    return `${date}T${hour}:00`;
+  }
+
+  let pendingReservation = null; // ← declare it at top level
+
+  window.addEventListener("message", (event) => {
+    if (event.data?.type === "easybox-reserved") {
+      pendingReservation = event.data.data;
+      window.chosenEasybox = pendingReservation; // still keep this if needed
+      console.log("Received reservation:", pendingReservation);
+    }
+  });
+
+</script>
+
+<script>
+  // Listen for radio changes to open the popup - show it when we press delivery by easybox
+  document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.value === 'easybox') {
+        openPopup();
+      }
+    });
+  });
+
+  function openPopup() {
+    const clientName = document.getElementById('clientName').value;
+    const phone = document.getElementById('phone').value;
+    const clientAddress = document.getElementById('orderAddress').value;
+    const deliveryTime = getDeliveryTimeString();
+    const minTemperature = document.getElementById('minTemp').value;
+    const totalDimension = document.getElementById('totalDimension').value;
+    const bakeryId = 1;
+
+    const params = new URLSearchParams({
+      address: clientAddress,
+      clientName,
+      phone,
+      deliveryTime,
+      minTemp: minTemperature,
+      totalDimension,
+      bakeryId: bakeryId.toString()
+    });
+
+    const url = `http://localhost:3030/widget.html?${params.toString()}`;
+    document.getElementById('easybox-frame').src = url;
+    // document.getElementById('popup-overlay').style.display = 'block';
+  }
+  async function saveOrderToBakeryBackend(reservationId) {
+    // Simulate API call to your own bakery server
+    console.log("Mock saving order with reservationId:", reservationId);
+    return true; // or false if you want to simulate failure
+  }
+
+
+  // function closePopup() {
+  //   document.getElementById('popup-overlay').style.display = 'none';
+  // }
+
+  async function placeOrder() {
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+
+    if (deliveryMethod === "easybox") {
+      if (!pendingReservation) {
+        alert("Please choose an Easybox first");
+        return;
+      }
+
+      /* 1) send the regular order to YOUR bakery backend only */
+      const orderOk = await saveOrderToBakeryBackend(pendingReservation.id);
+      if (!orderOk) { alert("order failed"); return; }
+
+      /* 2) notify the widget to promote the hold */
+      const frame = document.getElementById("easybox-frame").contentWindow;
+      frame.postMessage({ type: "bakery-order-confirmed", reservationId: pendingReservation.id }, "*");
+
+      alert("Order placed – Easybox will now be confirmed!");
+
+      // document.getElementById('popup-overlay').style.display = 'none';
+
+    } else {
+      /* standard delivery branch */
+    }
+  }
+
+
+</script>
+
+
+</body>
+</html>

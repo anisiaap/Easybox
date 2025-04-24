@@ -1,0 +1,11 @@
+# Global ignores
+.DS_Store
+.idea/
+node_modules/
+dist/
+build/
+target/
+
+# Nginx/mkcert secrets (don't commit certs)
+ops/nginx/certs/
+
