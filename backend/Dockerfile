@@ -1,16 +1,26 @@
-# Use a base image with Java 17+ and Maven
-FROM eclipse-temurin:17-jdk
+# Use an official Maven image with JDK 17 (you can also use 21 if needed)
+FROM maven:3.9.5-eclipse-temurin-17 AS build
 
-# Set working directory
+# Set workdir
 WORKDIR /app
 
-# Copy the pom.xml and download dependencies first (for cache efficiency)
-COPY pom.xml .
+# Copy pom and download dependencies first (for cache efficiency)
+COPY backend/pom.xml .
+
+# Download dependencies (won’t copy source yet)
 RUN mvn dependency:go-offline -B
 
-# Copy the entire project and build it
-COPY . .
-RUN mvn clean install -DskipTests
+# Now copy the source code
+COPY backend .
 
-# Run the Spring Boot app (adjust .jar name if different)
-CMD ["java", "-jar", "target/network-0.0.1-SNAPSHOT.jar"]
+# Package the application (skip tests for speed)
+RUN mvn package -DskipTests
+
+# Use JDK runtime to run the app
+FROM eclipse-temurin:17-jre
+
+# Copy only the final jar from the builder stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Run the jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]
