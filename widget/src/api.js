@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 export const api = axios.create({
-    baseURL:'http://localhost:8080/api/', // <-- matches your back-end prefix
+    baseURL: process.env.REACT_APP_API_URL, // <-- matches your back-end prefix
     timeout: 10000
 });
 

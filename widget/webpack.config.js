@@ -1,5 +1,7 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
+const webpack = require('webpack');
 
 module.exports = {
     mode: 'development',  // or 'production'
@@ -35,20 +37,16 @@ module.exports = {
             }
         ]
     },
-    devServer: {
-        port: 3030,
-        host: '0.0.0.0',
-        allowedHosts: 'all',
-        https: false,
-        static: {
-            directory: path.join(__dirname, 'public'),
-        },
-        open: true
-    },
     resolve: {
         extensions: ['.js', '.jsx']
     },
     plugins: [
+        new Dotenv({
+            path: `./.env.${process.env.NODE_ENV}` // will load .env.production or .env.development
+        }),
+        new webpack.DefinePlugin({
+            __REACT_APP_API_URL__: JSON.stringify(process.env.REACT_APP_API_URL)
+        }),
         new CopyPlugin({
             patterns: [
                 { from: 'public/index.html', to: '.' }

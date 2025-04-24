@@ -10,10 +10,10 @@
 <script src="easybox-widget.bundle.js"></script>
 <script>
     const params = new URLSearchParams(window.location.search);
-
+    const API_URL = "__REACT_APP_API_URL__";
     window.initEasyboxWidget({
         containerId: 'easybox-plugin-container',
-        apiUrl: 'http://localhost:8080/api/',
+        apiUrl: API_URL,
         clientAddress: params.get('address'),
         additionalCriteria: {
             clientName: params.get('clientName'),
@@ -31,7 +31,7 @@
         if (event.data?.type === "bakery-order-confirmed") {
             const { reservationId } = event.data;
             try {
-                const res = await fetch(`http://localhost:8080/api/reservations/${reservationId}/confirm`, {
+                const res = await fetch(`${API_URL}${reservationId}/confirm`, {
                     method: "PATCH"
                 });
 
