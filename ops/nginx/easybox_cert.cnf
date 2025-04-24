@@ -1,0 +1,17 @@
+[req]
+default_bits       = 2048
+prompt             = no
+default_md         = sha256
+req_extensions     = req_ext
+distinguished_name = dn
+
+[dn]
+CN = api.local.easybox
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = api.local.easybox
+DNS.2 = widget.local.easybox
+DNS.3 = admin.local.easybox
