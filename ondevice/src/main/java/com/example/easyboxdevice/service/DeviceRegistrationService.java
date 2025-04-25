@@ -23,8 +23,8 @@ public class DeviceRegistrationService {
     @Value("${device.address}")
     private String deviceAddress;
 
-    @Value("${device.api.url}")
-    private String deviceApiUrl;
+    @Value("${mqtt.client-id}")
+    private String clientId; 
 
     private final WebClient webClient;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -50,7 +50,7 @@ public class DeviceRegistrationService {
         System.out.println("🔄 Attempting to register device...");
         RegistrationRequest request = new RegistrationRequest();
         request.setAddress(deviceAddress);
-        request.setDeviceUrl(deviceApiUrl);
+        request.setClientId(clientId);
         request.setStatus("active");
 
         try {
@@ -81,7 +81,7 @@ public class DeviceRegistrationService {
         System.err.println("Registration fallback triggered: " + t.getMessage());
         RegistrationRequest fallbackRequest = new RegistrationRequest();
         fallbackRequest.setAddress(deviceAddress);
-        fallbackRequest.setDeviceUrl(deviceApiUrl);
+        fallbackRequest.setClientId(clientId);
         fallbackRequest.setStatus("inactive");
 
         webClient.post()
@@ -117,7 +117,7 @@ public class DeviceRegistrationService {
         // Build the deregistration (inactive) request
         RegistrationRequest request = new RegistrationRequest();
         request.setAddress(deviceAddress);
-        request.setDeviceUrl(deviceApiUrl);
+        request.setClientId(clientId);
         request.setStatus("inactive");
 
         try {
