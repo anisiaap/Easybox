@@ -52,9 +52,3 @@ CREATE TABLE reservation (
 
 CREATE INDEX idx_reservation_expiry ON reservation (status, expires_at);
 
--- OPTIONAL: Uncomment these constraints if using PostgreSQL with PostGIS manually
-ALTER TABLE reservation ADD CONSTRAINT compartment_no_overlap
-    EXCLUDE USING GIST (compartment_id WITH =, tsrange(reservation_start, reservation_end, '[]') WITH &&);
-
-ALTER TABLE reservation ADD CONSTRAINT no_overlapping_reservations
-    EXCLUDE USING GIST (compartment_id WITH =, tsrange(reservation_start, reservation_end) WITH &&);
