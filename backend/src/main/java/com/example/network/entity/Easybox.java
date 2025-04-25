@@ -1,6 +1,7 @@
 package com.example.network.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("easybox")
@@ -15,6 +16,7 @@ public class Easybox {
     private String status; // e.g., "active"
 
     // New field for the device’s API URL
+    @Column("device_url")
     private String clientId;
     @Version
     private Long version;
