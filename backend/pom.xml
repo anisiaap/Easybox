@@ -15,7 +15,7 @@
 	<groupId>com.example</groupId>
 	<artifactId>network</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>network</name>
 	<description>Easybox network project for Spring Boot</description>
 
