@@ -7,88 +7,91 @@ import com.example.network.exception.ConflictException;
 import com.example.network.exception.GeocodingException;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.GeocodingService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-
-import java.util.Arrays;
 
 @RestController
 @RequestMapping("/api/device")
 public class DeviceRegistrationController {
 
     private final EasyboxRepository easyboxRepository;
-    private final GeocodingService geocodingService; // <--- Injected
+    private final GeocodingService  geocodingService;
 
-
-
-    public DeviceRegistrationController(
-            EasyboxRepository easyboxRepository,
-            GeocodingService geocodingService
-    ) {
+    public DeviceRegistrationController(EasyboxRepository easyboxRepository,
+                                        GeocodingService  geocodingService) {
         this.easyboxRepository = easyboxRepository;
-        this.geocodingService = geocodingService;
+        this.geocodingService  = geocodingService;
     }
 
+    // ──────────────────────────────────────────────────────────────────────────────
+    //  POST /api/device/register
+    //  – idempotent for the same locker
+    //  – rejects another locker within 100 m
+    // ──────────────────────────────────────────────────────────────────────────────
     @PostMapping("/register")
-    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest request) throws JsonProcessingException {
-        String jsonPayload = new ObjectMapper().writeValueAsString(request);
-        System.out.println("Sending payload: " + jsonPayload);
-        if (request.getAddress() == null || request.getAddress().trim().isEmpty()) {
-            return Mono.just(ResponseEntity.badRequest().build());
+    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest req) {
+
+        if (req.getAddress() == null || req.getAddress().isBlank()) {
+            return Mono.error(new GeocodingException("Address is blank"));
         }
-        System.out.println("error1");
-        return geocodingService.geocodeAddress(request.getAddress())
+
+        /* 1️⃣  Geocode the address */
+        return geocodingService.geocodeAddress(req.getAddress())
                 .flatMap(coords -> {
-                    // If geocode fails or returns [0,0], you may decide to treat it as an error:
-                    if (coords[0] == 0.0 && coords[1] == 0.0) {
-                        return Mono.error(new GeocodingException("No coordinates found for: " + request.getAddress()));
-                    }
-                    System.out.println("Geocoding result: " + Arrays.toString(coords));  // Log coordinates
-                    System.out.println("error1");
+                    double lat = coords[0], lon = coords[1];
 
-                    double newLat = coords[0];
-                    double newLon = coords[1];
-
-                    // First, try to find an existing Easybox by address
-                    return easyboxRepository.findByAddressIgnoreCase(request.getAddress())
-                            .flatMap(existing -> {
-                                // Found an existing one => update
-                                existing.setClientId(request.getClientId());
-                                existing.setStatus(request.getStatus());
-                                existing.setLatitude(newLat);
-                                existing.setLongitude(newLon);
-                                return easyboxRepository.save(existing);
-                            })
+                    /* 2️⃣  Try to find the box by client-id first */
+                    return easyboxRepository.findByClientId(req.getClientId())
+                            /* 3️⃣  …or by ~10 m coordinate match                                       */
                             .switchIfEmpty(
-                                    // No existing record => conflict check with other boxes
-                                    easyboxRepository.findAll().collectList().flatMap(allBoxes -> {
-                                        for (Easybox box : allBoxes) {
-                                            double dist = geocodingService.distance(
-                                                    newLat, newLon,
-                                                    box.getLatitude(), box.getLongitude()
-                                            );
-                                            // If any other box is too close, reject
-                                            if (dist < 100) {
+                                    easyboxRepository.findAll()
+                                            .filter(box -> geocodingService.distance(
+                                                    lat, lon, box.getLatitude(), box.getLongitude()
+                                            ) < 10)                               // same physical box
+                                            .next()
+                            )
+                            .defaultIfEmpty(new Easybox())               // brand-new object
+                            /* 4️⃣  Decide: update / conflict / insert                                   */
+                            .flatMap(box -> {
+
+                                /* 4a – UPDATE (same locker) */
+                                if (box.getId() != null) {
+                                    copyFields(box, req, lat, lon);
+                                    return easyboxRepository.save(box)
+                                            .map(ResponseEntity::ok);
+                                }
+
+                                /* 4b – CONFLICT check <100 m */
+                                return easyboxRepository.findAll()
+                                        .any(other -> geocodingService.distance(
+                                                lat, lon,
+                                                other.getLatitude(), other.getLongitude()
+                                        ) < 100)
+                                        .flatMap(tooClose -> {
+                                            if (tooClose) {
                                                 return Mono.error(new ConflictException(
-                                                        "An Easybox already exists within 100 meters of this location."
-                                                ));
+                                                        "Another Easybox is within 100 m")
+                                                );
                                             }
-                                        }
-                                        // If no conflict => create new
-                                        Easybox newEasybox = new Easybox();
-                                        newEasybox.setAddress(request.getAddress());
-                                        newEasybox.setClientId(request.getClientId());
-                                        newEasybox.setStatus(request.getStatus());
-                                        newEasybox.setLatitude(newLat);
-                                        newEasybox.setLongitude(newLon);
-                                        return easyboxRepository.save(newEasybox);
-                                    })
-                            );
-                })
-                .flatMap(savedBox -> {
-                    return Mono.just(ResponseEntity.ok(savedBox)); });
+
+                                            /* 4c – INSERT brand-new box */
+                                            Easybox newBox = new Easybox();
+                                            copyFields(newBox, req, lat, lon);
+                                            return easyboxRepository.save(newBox)
+                                                    .map(ResponseEntity::ok);
+                                        });
+                            });
+                });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────────
+    private void copyFields(Easybox box, RegistrationRequest req,
+                            double lat, double lon) {
+        box.setAddress(req.getAddress());
+        box.setClientId(req.getClientId());
+        box.setStatus(req.getStatus());
+        box.setLatitude(lat);
+        box.setLongitude(lon);
     }
 }
