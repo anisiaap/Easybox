@@ -98,7 +98,8 @@
 
 <script>
   window.env = {
-    WIDGET_URL: "https://widget.easybox-food.xyz/"
+    WIDGET_URL: "https://widget.easybox-food.xyz/",
+    JWT_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYWtlcnktMSIsInJvbGVzIjpbIkJBS0VSWSJdLCJleHAiOjE3NDgxOTgyMjh9._7v_pKw_Rx8cMNOO3NLL8zp5w8lsPAET8iYZuUd9Fwk"
   };
 
   const API_URL = window.env.WIDGET_URL;
@@ -156,10 +157,15 @@
       bakeryId: bakeryId.toString()
     });
 
-    const url = `${API_URL}?${params.toString()}`;
-    document.getElementById('easybox-frame').src = url;
-    // document.getElementById('popup-overlay').style.display = 'block';
+    const frame = document.getElementById('easybox-frame');
+    frame.src = url;
+
+    frame.addEventListener('load', () => {
+      frame.contentWindow.postMessage({ type: 'init-jwt', token: window.env.JWT_TOKEN }, '*');
+    });
   }
+
+
   async function saveOrderToBakeryBackend(reservationId) {
     // Simulate API call to your own bakery server
     console.log("Mock saving order with reservationId:", reservationId);

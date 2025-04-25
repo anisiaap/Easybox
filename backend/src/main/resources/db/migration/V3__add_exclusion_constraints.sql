@@ -11,3 +11,8 @@ ALTER TABLE reservation
     compartment_id WITH =,
     tsrange(reservation_start, reservation_end) WITH &&
   );
+
+ALTER TABLE bakery ADD COLUMN token TEXT;
+UPDATE bakery
+SET token = 'eyJhbGciOi'
+WHERE id = 1;

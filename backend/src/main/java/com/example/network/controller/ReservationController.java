@@ -5,15 +5,15 @@ import com.example.network.dto.CreateReservationRequest;
 import com.example.network.dto.RecommendedBoxesResponse;
 import com.example.network.dto.ReservationQueryRequest;
 import com.example.network.entity.Reservation;
-import com.example.network.exception.ConflictException;
 import com.example.network.service.ReservationService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api/reservations")
+@RequestMapping("/api/widget")
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -22,7 +22,7 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
-    @PostMapping("/available")
+    @PostMapping("/reservation/available")
     public Mono<RecommendedBoxesResponse> getAvailableEasyboxes(
             @RequestBody ReservationQueryRequest request
     ) {
@@ -37,12 +37,14 @@ public class ReservationController {
         );
     }
 
-    @PostMapping("/hold")
-    public Mono<Reservation> hold(@RequestBody CreateReservationRequest req) {
+    @PostMapping("/reservation/hold")
+    public Mono<Reservation> hold(@RequestBody CreateReservationRequest req, Authentication authentication) {
+        String bakeryName = authentication.getName(); // 'sub' from JWT
+        req.setClient(bakeryName);  // Inject authenticated bakery
         return reservationService.holdReservation(req);
     }
 
-    @PatchMapping("/{id}/confirm")
+    @PatchMapping("/reservation/{id}/confirm")
     public Mono<Reservation> confirm(@PathVariable Long id) {
         return reservationService.confirmReservation(id);
     }

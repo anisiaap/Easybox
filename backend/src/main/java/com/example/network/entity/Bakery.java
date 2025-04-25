@@ -13,6 +13,15 @@ public class Bakery {
     private String phone;
     private Boolean pluginInstalled;
     private Long bakeryId;
+
+    private String token;
+
+    public String getToken() {
+        return token;
+    }
+    public void setToken(String token) {
+        this.token = token;
+    }
     // Getters and setters
     public Long getId() {
         return id;

@@ -4,11 +4,8 @@ import com.example.network.dto.*;
 import com.example.network.entity.*;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,26 +19,19 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final EasyboxRepository      easyboxRepository;
     private final CompartmentRepository  compartmentRepository;
-    private final WebClient              webClient;
     private final GeocodingService       geocodingService;
-    private final DeviceService          deviceService;
     private final UserService userService;
-
     public ReservationService(
             ReservationRepository reservationRepository,
             EasyboxRepository easyboxRepository,
             CompartmentRepository compartmentRepository,
-            WebClient.Builder webClientBuilder,
             GeocodingService geocodingService,
-            DeviceService deviceService,
             UserService userService
     ) {
         this.reservationRepository = reservationRepository;
         this.easyboxRepository     = easyboxRepository;
         this.compartmentRepository = compartmentRepository;
-        this.webClient             = webClientBuilder.build();
         this.geocodingService      = geocodingService;
-        this.deviceService         = deviceService;
         this.userService = userService;
     }
 
@@ -60,30 +50,29 @@ public class ReservationService {
                     return easyboxRepository.findById(req.getEasyboxId())
                             .switchIfEmpty(Mono.error(new ConflictException("Easybox not found")))
                             .flatMap(box ->
-                                    findAndLockAvailableCompartment(box,
+                                    findAndLockAvailableCompartment(
+                                            box,
                                             req.getMinTemperature(),
                                             req.getTotalDimension(),
                                             start,
-                                            end)
-                            )
-                            .flatMap(compId -> {
-                                Reservation r = new Reservation();
-                                r.setClient(req.getClient());
-                                r.setDeliveryTime(delivery);
-                                r.setReservationStart(start);
-                                r.setReservationEnd(end);
-                                r.setStatus("pending");              // 15-min soft lock
-                                r.setExpiresAt(LocalDateTime.now().plusMinutes(15));
-                                r.setEasyboxId(req.getEasyboxId());
-                                r.setCompartmentId(compId);
-                                r.setUserId(user.getId());         // Link to user
-                                r.setBakeryId(req.getBakeryId()); // Link to bakery
-                                return reservationRepository.save(r)
-                                        .onErrorResume(DataIntegrityViolationException.class, ex -> {
-                                            return Mono.error(new ConflictException("That compartment was just reserved – please try again."));
-                                        });
+                                            end
+                                    )
+                                            .flatMap(compId -> {
+                                                Reservation r = new Reservation();
+                                                r.setClient(req.getClient());
+                                                r.setDeliveryTime(delivery);
+                                                r.setReservationStart(start);
+                                                r.setReservationEnd(end);
+                                                r.setStatus("pending");              // 15-min soft lock
+                                                r.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+                                                r.setEasyboxId(req.getEasyboxId());
+                                                r.setCompartmentId(compId);
+                                                r.setUserId(user.getId());
+                                                r.setBakeryId(req.getBakeryId());
 
-                            });
+                                                return reservationRepository.save(r);
+                                            })
+                            );
                 });
     }
 
@@ -107,10 +96,6 @@ public class ReservationService {
                             });
                 });
     }
-
-    /* -------------------------------------------------------------------- */
-    /* ----------  P U B L I C   “ A V A I L A B L E ? ”   A P I  ---------- */
-    /* -------------------------------------------------------------------- */
 
     public Mono<RecommendedBoxesResponse> findAvailableBoxes(
             String address,

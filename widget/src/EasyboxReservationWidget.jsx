@@ -15,7 +15,7 @@ import 'leaflet/dist/leaflet.css';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
-
+import { setWidgetJwt } from './api';
 L.Marker.prototype.options.icon = L.icon({
     iconRetinaUrl,
     iconUrl,
@@ -44,6 +44,7 @@ const EasyboxReservationWidget = forwardRef(
         // The user can type a new address to re-center the map
         const [searchAddress, setSearchAddress] = useState(clientAddress);
         const [searchInput, setSearchInput] = useState(clientAddress);
+        const [jwtToken, setJwtToken] = useState(null);
 
 
         // We store the resulting lat/lng of the client’s address (or typed address)
@@ -89,6 +90,17 @@ const EasyboxReservationWidget = forwardRef(
             setLeafletMap(mapInstance);
             setMarkersLayer(layerGroup);
         }, [leafletMap, mapCenter, mapZoom]);
+        useEffect(() => {
+            function handleJwtMessage(event) {
+                if (event.data?.type === "init-jwt") {
+                    setJwtToken(event.data.token);
+                    setWidgetJwt(event.data.token);
+                    console.log("🔐 Received JWT:", event.data.token);
+                }
+            }
+            window.addEventListener("message", handleJwtMessage);
+            return () => window.removeEventListener("message", handleJwtMessage);
+        }, []);
 
         // Whenever the user changes the address, or the widget loads,
         // we attempt to geocode the new address and center the map on it
@@ -187,7 +199,9 @@ const EasyboxReservationWidget = forwardRef(
                 // Fetch from /reservations/available
                 // which returns { recommendedBox, otherBoxes }
                 console.log(body)
-                const res = await api.post(`reservations/available`, body );
+                const res = await api.post(`widget/reservations/available`, body, {
+                    headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
+                });
                 const data = res.data;
 
                 // data = { recommendedBox: {...}, otherBoxes: [...] }
@@ -226,7 +240,10 @@ const EasyboxReservationWidget = forwardRef(
                 bakeryId: params.get("bakeryId")
             };
 
-            const res = await api.post(`reservations/hold`, payload);
+            const res = await api.post(`widget/reservations/hold`, payload, {
+                headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
+            });
+
             window.parent.postMessage({ type: "easybox-reserved", data: res.data }, "*");
         };
 
@@ -234,7 +251,8 @@ const EasyboxReservationWidget = forwardRef(
             function handleMsg(evt) {
                 if (evt.data?.type === "bakery-order-confirmed") {
                     const id = evt.data.reservationId;
-                    api.patch(`reservations/${id}/confirm`)
+                    api.post('widget/reservations/${id}/confirm', {
+                    headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}})
                         .then(() => console.log("Easybox confirmed!"))
                         .catch(err => console.error("Confirm error", err));
                 }
