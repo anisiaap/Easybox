@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+
 @RestController
 @RequestMapping("/api/device")
 public class DeviceRegistrationController {
@@ -44,6 +46,8 @@ public class DeviceRegistrationController {
                     if (coords[0] == 0.0 && coords[1] == 0.0) {
                         return Mono.error(new GeocodingException("No coordinates found for: " + request.getAddress()));
                     }
+                    System.out.println("Geocoding result: " + Arrays.toString(coords));  // Log coordinates
+
 
                     double newLat = coords[0];
                     double newLon = coords[1];
