@@ -7,6 +7,8 @@ import com.example.network.exception.ConflictException;
 import com.example.network.exception.GeocodingException;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.GeocodingService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -29,8 +31,9 @@ public class DeviceRegistrationController {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest request) {
-        System.out.println(request);
+    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest request) throws JsonProcessingException {
+        String jsonPayload = new ObjectMapper().writeValueAsString(request);
+        System.out.println("Sending payload: " + jsonPayload);
         if (request.getAddress() == null || request.getAddress().trim().isEmpty()) {
             return Mono.just(ResponseEntity.badRequest().build());
         }
