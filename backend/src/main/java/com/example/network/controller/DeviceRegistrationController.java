@@ -30,6 +30,7 @@ public class DeviceRegistrationController {
 
     @PostMapping("/register")
     public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest request) {
+        System.out.println(request);
         if (request.getAddress() == null || request.getAddress().trim().isEmpty()) {
             return Mono.just(ResponseEntity.badRequest().build());
         }
