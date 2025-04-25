@@ -32,6 +32,7 @@ public class GeocodingService {
             // If you also want to fail immediately when address is blank:
             return Mono.error(new GeocodingException("Address is blank or null."));
         }
+        System.out.println("error2");
         String encoded = URLEncoder.encode(address, StandardCharsets.UTF_8);
         String url = NOMINATIM_URL + encoded;
 
@@ -49,8 +50,10 @@ public class GeocodingService {
                     try {
                         double lat = Double.parseDouble(responses[0].lat);
                         double lon = Double.parseDouble(responses[0].lon);
+                        System.out.println("error3");
                         return Mono.just(new double[]{lat, lon});
                     } catch (NumberFormatException e) {
+                        System.out.println("error4");
                         return Mono.error(new GeocodingException(
                                 "Invalid lat/lon from Nominatim for: " + address
                         ));

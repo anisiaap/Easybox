@@ -39,7 +39,7 @@ public class DeviceRegistrationController {
         if (request.getAddress() == null || request.getAddress().trim().isEmpty()) {
             return Mono.just(ResponseEntity.badRequest().build());
         }
-
+        System.out.println("error1");
         return geocodingService.geocodeAddress(request.getAddress())
                 .flatMap(coords -> {
                     // If geocode fails or returns [0,0], you may decide to treat it as an error:
@@ -47,7 +47,7 @@ public class DeviceRegistrationController {
                         return Mono.error(new GeocodingException("No coordinates found for: " + request.getAddress()));
                     }
                     System.out.println("Geocoding result: " + Arrays.toString(coords));  // Log coordinates
-
+                    System.out.println("error1");
 
                     double newLat = coords[0];
                     double newLon = coords[1];

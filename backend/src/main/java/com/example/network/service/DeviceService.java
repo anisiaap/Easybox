@@ -23,7 +23,6 @@ public class DeviceService {
         if (clientId == null || clientId.isEmpty()) {
             return Mono.error(new ConflictException("Device clientId is missing or empty."));
         }
-
         return compartmentRepository.findByEasyboxId(easyboxId)
                 .filter(this::isSuitableAndFree)
                 .filter(comp -> minTemp == null || comp.getTemperature() >= minTemp)
