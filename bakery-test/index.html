@@ -9,26 +9,6 @@
   />
 
   <style>
-    /*#popup-overlay {*/
-    /*  position: fixed;*/
-    /*  top: 0; left: 0;*/
-    /*  width: 100%; height: 100%;*/
-    /*  background: rgba(0, 0, 0, 0.5);*/
-    /*  display: none; !* hidden by default *!*/
-    /*  z-index: 9999;*/
-    /*}*/
-    /*#popup-content {*/
-    /*  position: absolute;*/
-    /*  top: 50%; left: 50%;*/
-    /*  transform: translate(-50%, -50%);*/
-    /*  background: #fff;*/
-    /*  width: 800px; !* bigger to fit side panel + map *!*/
-    /*  height: 600px;*/
-    /*  border: 1px solid #ccc;*/
-    /*  border-radius: 8px;*/
-    /*  padding: 0;*/
-    /*  box-sizing: border-box;*/
-    /*}*/
     #easybox-plugin-container {
       width: 100%;
       height: 100%;
@@ -106,20 +86,6 @@
   <br /><br />
   <button type="button" onclick="placeOrder()">Place Order</button>
 </form>
-
-<!-- Popup overlay that covers the screen -->
-<!--<div id="popup-overlay" style="display: none;">-->
-<!--  <div id="popup-content">-->
-<!--    &lt;!&ndash; Container for Easybox widget (React will mount here) &ndash;&gt;-->
-<!--    <div id="easybox-plugin-container" style="width: 100%; height: 100%;"></div>-->
-
-<!--    &lt;!&ndash; Close button &ndash;&gt;-->
-<!--    <button onclick="closePopup()" style="position: absolute; top: 10px; right: 10px; z-index: 10;">-->
-<!--      ✖ Close-->
-<!--    </button>-->
-<!--  </div>-->
-<!--</div>-->
-
 <iframe
         id="easybox-frame"
         style="width:800px;height:600px;border:none;"
@@ -130,8 +96,12 @@
         src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
 ></script>
 
-<!--<script src="easybox-widget.bundle.js"></script>-->
 <script>
+  window.env = {
+    WIDGET_URL: "https://widget.easybox-food.xyz/"
+  };
+
+  const API_URL = window.env.WIDGET_URL;
   window.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('deliveryDate');
 
@@ -158,10 +128,6 @@
       console.log("Received reservation:", pendingReservation);
     }
   });
-
-</script>
-
-<script>
   // Listen for radio changes to open the popup - show it when we press delivery by easybox
   document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
     radio.addEventListener('change', function() {
@@ -190,7 +156,7 @@
       bakeryId: bakeryId.toString()
     });
 
-    const url = `http://localhost:3030/widget.html?${params.toString()}`;
+    const url = `${API_URL}?${params.toString()}`;
     document.getElementById('easybox-frame').src = url;
     // document.getElementById('popup-overlay').style.display = 'block';
   }
