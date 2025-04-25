@@ -2,7 +2,7 @@ package com.example.network.dto;
 
 public class RegistrationRequest {
     private String address;
-    private String deviceUrl;
+    private String clientId;
     private String status;  // "active" or "inactive"
 
     public RegistrationRequest() {}
@@ -13,11 +13,11 @@ public class RegistrationRequest {
     public void setAddress(String address) {
         this.address = address;
     }
-    public String getDeviceUrl() {
-        return deviceUrl;
+    public String getClientId() {
+        return clientId;
     }
-    public void setDeviceUrl(String deviceUrl) {
-        this.deviceUrl = deviceUrl;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
     public String getStatus() {
         return status;

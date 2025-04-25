@@ -6,11 +6,9 @@ import com.example.network.entity.Easybox;
 import com.example.network.exception.ConflictException;
 import com.example.network.exception.GeocodingException;
 import com.example.network.repository.EasyboxRepository;
-import com.example.network.service.CompartmentSyncService;
 import com.example.network.service.GeocodingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -18,21 +16,16 @@ import reactor.core.publisher.Mono;
 public class DeviceRegistrationController {
 
     private final EasyboxRepository easyboxRepository;
-    private final WebClient webClient;
     private final GeocodingService geocodingService; // <--- Injected
-    private final CompartmentSyncService compartmentSyncService;
+
 
 
     public DeviceRegistrationController(
             EasyboxRepository easyboxRepository,
-            WebClient.Builder webClientBuilder,
-            GeocodingService geocodingService,
-            CompartmentSyncService compartmentSyncService
+            GeocodingService geocodingService
     ) {
         this.easyboxRepository = easyboxRepository;
-        this.webClient = webClientBuilder.build();
         this.geocodingService = geocodingService;
-        this.compartmentSyncService = compartmentSyncService;
     }
 
     @PostMapping("/register")
@@ -55,7 +48,7 @@ public class DeviceRegistrationController {
                     return easyboxRepository.findByAddressIgnoreCase(request.getAddress())
                             .flatMap(existing -> {
                                 // Found an existing one => update
-                                existing.setDeviceUrl(request.getDeviceUrl());
+                                existing.setClientId(request.getClientId());
                                 existing.setStatus(request.getStatus());
                                 existing.setLatitude(newLat);
                                 existing.setLongitude(newLon);
@@ -79,7 +72,7 @@ public class DeviceRegistrationController {
                                         // If no conflict => create new
                                         Easybox newEasybox = new Easybox();
                                         newEasybox.setAddress(request.getAddress());
-                                        newEasybox.setDeviceUrl(request.getDeviceUrl());
+                                        newEasybox.setClientId(request.getClientId());
                                         newEasybox.setStatus(request.getStatus());
                                         newEasybox.setLatitude(newLat);
                                         newEasybox.setLongitude(newLon);
@@ -88,8 +81,6 @@ public class DeviceRegistrationController {
                             );
                 })
                 .flatMap(savedBox -> {
-                    return compartmentSyncService.syncCompartmentsForEasybox(savedBox.getId())
-                            .thenReturn(ResponseEntity.ok(savedBox));
-                });
+                    return Mono.just(ResponseEntity.ok(savedBox)); });
     }
 }

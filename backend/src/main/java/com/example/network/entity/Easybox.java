@@ -15,17 +15,17 @@ public class Easybox {
     private String status; // e.g., "active"
 
     // New field for the device’s API URL
-    private String deviceUrl;
+    private String clientId;
     @Version
     private Long version;
     public Easybox() {}
 
-    public Easybox(String address, double latitude, double longitude, String status, String deviceUrl) {
+    public Easybox(String address, double latitude, double longitude, String status, String clientId) {
         this.address = address;
         this.latitude = latitude;
         this.longitude = longitude;
         this.status = status;
-        this.deviceUrl = deviceUrl;
+        this.clientId = clientId;
     }
 
     // Getters and setters
@@ -59,10 +59,10 @@ public class Easybox {
     public void setStatus(String status) {
         this.status = status;
     }
-    public String getDeviceUrl() {
-        return deviceUrl;
+    public String getClientId() {
+        return clientId;
     }
-    public void setDeviceUrl(String deviceUrl) {
-        this.deviceUrl = deviceUrl;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 }

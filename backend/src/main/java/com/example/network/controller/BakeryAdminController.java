@@ -7,7 +7,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/bakeries")
+@RequestMapping("/api/admin/bakeries")
 public class BakeryAdminController {
 
     private final BakeryRepository bakeryRepository;

@@ -61,7 +61,7 @@ public class DeviceRegistrationService {
         }
 
         webClient.post()
-                .uri(centralBackendUrl + "/api/device/register")
+                .uri(centralBackendUrl + "device/register")
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(status -> status.isError(), response -> {
@@ -85,7 +85,7 @@ public class DeviceRegistrationService {
         fallbackRequest.setStatus("inactive");
 
         webClient.post()
-                .uri(centralBackendUrl + "/api/device/register")
+                .uri(centralBackendUrl + "device/register")
                 .bodyValue(fallbackRequest)
                 .retrieve()
                 .bodyToMono(String.class)
@@ -122,7 +122,7 @@ public class DeviceRegistrationService {
 
         try {
             String response = webClient.post()
-                    .uri(centralBackendUrl + "/api/device/register")
+                    .uri(centralBackendUrl + "device/register")
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(String.class)
