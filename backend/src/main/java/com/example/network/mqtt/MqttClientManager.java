@@ -47,6 +47,7 @@ public class MqttClientManager {
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
         options.setSocketFactory(SSLSocketFactory.getDefault()); // 🔥 Important for SSL
+        options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
 
         client.setCallback(new MqttCallbackExtended() {
             @Override
