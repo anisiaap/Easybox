@@ -42,7 +42,7 @@ public class MqttClientManager {
      * -------------------------------------------------------------- */
     @PostConstruct
     public void connect() throws MqttException {
-        String brokerUri = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
+        String brokerUri = properties.getBrokerUrl();
         System.out.println("🔗 Connecting to MQTT broker " + brokerUri);
 
         client = new MqttClient(
