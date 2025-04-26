@@ -82,27 +82,43 @@ public class MqttClientManager {
     /* ----------------------------------------------------------------
      *  Public API
      * -------------------------------------------------------------- */
+    // MqttClientManager.java  – only the requestCompartments method changes
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
+
+        String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
+
         return Mono.<List<CompartmentDto>>create(sink -> {
                     if (client == null || !client.isConnected()) {
                         sink.error(new IllegalStateException("MQTT not connected"));
                         return;
                     }
-                    currentRequestSink = sink;
+                    currentRequestSink      = sink;
                     currentExpectedClientId = clientId;
+
                     try {
-                        String topic = properties.getTopicPrefix() + "/" + clientId + "/commands";
-                        MqttMessage msg = new MqttMessage("{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
+                        // ─── 1️⃣  subscribe to the exact response topic
+                        client.subscribe(responseTopic, 1);
+
+                        // ─── 2️⃣  publish the command
+                        String cmdTopic = properties.getTopicPrefix() + "/" + clientId + "/commands";
+                        MqttMessage msg = new MqttMessage(
+                                "{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
                         msg.setQos(1);
-                        client.publish(topic, msg);
+                        client.publish(cmdTopic, msg);
                     } catch (MqttException e) {
                         sink.error(e);
                     }
                 })
                 .timeout(Duration.ofSeconds(10))
-                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))) // 3 tries total
-                ;
+                .doFinally(sig -> {
+                    // 3️⃣  always unsubscribe and clear state
+                    try { client.unsubscribe(responseTopic); } catch (Exception ignored) {}
+                    currentRequestSink      = null;
+                    currentExpectedClientId = null;
+                })
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2)));
     }
+
 
     /* ----------------------------------------------------------------
      *  Internal helpers
@@ -112,13 +128,6 @@ public class MqttClientManager {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
-                try {
-                    String sub = properties.getTopicPrefix() + "/response/+";
-                    client.subscribe(sub, 1);
-                    System.out.println("📡 Subscribed to " + sub);
-                } catch (MqttException e) {
-                    System.err.println("❌ Subscription error: " + e.getMessage());
-                }
             }
 
             @Override
