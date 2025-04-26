@@ -64,8 +64,9 @@ public class MqttClientManager {
         reactor.netty.http.server.HttpServer
                 .create()
                 .host("0.0.0.0")
-                .port(Integer.parseInt(System.getenv().getOrDefault("PORT", "8080")))
-                .route(r -> r.get("/", (req, res) -> res.sendString(Mono.just("OK"))))
+                .port(8088)                                   // ✅ NOT $PORT
+                .route(r -> r.get("/", (req,res) ->
+                        res.sendString(Mono.just("OK"))))
                 .bindNow();
 // blocks until CONNACK
         System.out.println("✅ MQTT connected");
