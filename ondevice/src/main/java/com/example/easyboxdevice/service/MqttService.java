@@ -34,7 +34,8 @@ public class MqttService {
             options.setUserName(properties.getUsername());
             options.setPassword(properties.getPassword().toCharArray());
             options.setAutomaticReconnect(true);
-            options.setCleanSession(true);
+            options.setCleanSession(false);
+            options.setKeepAliveInterval(30);
             client = new MqttClient(properties.getBrokerUrl(), properties.getClientId());
             client.connect(options);
 
