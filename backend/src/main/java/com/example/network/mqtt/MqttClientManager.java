@@ -1,155 +1,127 @@
+// src/main/java/com/example/network/mqtt/MqttClientManager.java
 package com.example.network.mqtt;
 
-import com.example.network.dto.MqttProperties;
 import com.example.network.dto.CompartmentDto;
+import com.example.network.dto.MqttProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import reactor.util.retry.Retry;
 
-import javax.net.ssl.SSLSocketFactory;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.example.network.mqtt.SniSslSocketFactory.createInsecureSslSocketFactory;
-
 @Component
 public class MqttClientManager {
+
     private final MqttProperties properties;
     private MqttClient client;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private MonoSink<List<CompartmentDto>> currentRequestSink; // Only one active request
+    private MonoSink<List<CompartmentDto>> currentRequestSink;
     private String currentExpectedClientId;
 
     public MqttClientManager(MqttProperties properties) {
         this.properties = properties;
     }
 
-    public MqttClient getClient() {
-        return client;
-    }
-
     @PostConstruct
     public void connect() throws Exception {
         String brokerUrl = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
-        System.out.println("🔗 Connecting to broker: " + brokerUrl + " with clientId: " + properties.getClientId());
+        System.out.println("🔗 Connecting to MQTT broker: " + brokerUrl);
 
-        client = new MqttClient(brokerUrl, properties.getClientId());
+        // File persistence for QoS1 survive reconnect
+        String tmp = System.getProperty("java.io.tmpdir") + "/mqtt-persistence";
+        MqttClientPersistence persistence = new MqttDefaultFilePersistence(tmp);
+        client = new MqttClient(brokerUrl, properties.getClientId(), persistence);
 
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setUserName(properties.getUsername());
-        options.setPassword(properties.getPassword().toCharArray());
-        options.setCleanSession(false);   // Persistent session
-        options.setAutomaticReconnect(true);
-        options.setKeepAliveInterval(30);
-        //options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
-        options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-        options.setSocketFactory(createInsecureSslSocketFactory()); // ✅
+        MqttConnectOptions opts = new MqttConnectOptions();
+        opts.setUserName(properties.getUsername());
+        opts.setPassword(properties.getPassword().toCharArray());
+        opts.setCleanSession(false);
+        opts.setAutomaticReconnect(true);
+        opts.setKeepAliveInterval(30);
+        opts.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
+        opts.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
 
         client.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectionLost(Throwable cause) {
-                System.err.println("❌ MQTT connection lost: " + cause.getMessage());
-                cause.printStackTrace();
+                System.err.println("❌ MQTT lost: " + cause.getMessage());
             }
-
             @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
-                System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
+            public void connectComplete(boolean reconnect, String uri) {
+                System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + uri);
                 try {
-                    String subscribeTopic = properties.getTopicPrefix() + "/response/#";
-                    client.subscribe(subscribeTopic);
-                    System.out.println("📡 Subscribed to topic: " + subscribeTopic);
+                    String sub = properties.getTopicPrefix() + "/response/#";
+                    client.subscribe(sub);
+                    System.out.println("📡 Subscribed to " + sub);
                 } catch (MqttException e) {
-                    System.err.println("❌ Failed to subscribe: " + e.getMessage());
-                    e.printStackTrace();
+                    System.err.println("❌ Subscription error: " + e.getMessage());
                 }
             }
-
             @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
-                System.out.println("📥 Incoming message on topic: " + topic);
-                String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
-                System.out.println("📥 Payload: " + payload);
-
-                if (topic.startsWith("easybox/response/")) {
-                    String clientId = topic.substring("easybox/response/".length());
-                    System.out.println("📥 Response from clientId: " + clientId);
-                    if (currentRequestSink != null && clientId.equals(currentExpectedClientId)) {
-                        List<CompartmentDto> compartments = Arrays.asList(objectMapper.readValue(payload, CompartmentDto[].class));
-                        currentRequestSink.success(compartments);
-
-                        // Clear sink after success
+            public void messageArrived(String topic, MqttMessage msg) throws Exception {
+                String payload = new String(msg.getPayload(), StandardCharsets.UTF_8);
+                String prefix = properties.getTopicPrefix() + "/response/";
+                if (topic.startsWith(prefix) && currentRequestSink != null) {
+                    String clientId = topic.substring(prefix.length());
+                    if (clientId.equals(currentExpectedClientId)) {
+                        List<CompartmentDto> list = Arrays.asList(
+                                objectMapper.readValue(payload, CompartmentDto[].class)
+                        );
+                        currentRequestSink.success(list);
                         currentRequestSink = null;
                         currentExpectedClientId = null;
-                        System.out.println("✅ Successfully processed response for clientId: " + clientId);
                     }
                 }
             }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-                // Nothing needed
-            }
+            @Override public void deliveryComplete(IMqttDeliveryToken token) {}
         });
 
-        client.connect(options);
-        System.out.println("✅ MQTT connected successfully to broker: " + brokerUrl);
+        client.connect(opts);
+        System.out.println("✅ MQTT connected");
     }
 
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
-        return Mono.create(sink -> {
-            try {
-                if (client == null || !client.isConnected()) {
-                    sink.error(new IllegalStateException("MQTT client not connected"));
-                    return;
-                }
-
-                String commandTopic = "easybox/" + clientId + "/commands";
-                String payload = "{\"type\":\"request-compartments\"}";
-
-                System.out.println("📤 Publishing request-compartments to topic: " + commandTopic);
-                System.out.println("📤 Payload: " + payload);
-
-                this.currentRequestSink = sink;
-                this.currentExpectedClientId = clientId;
-
-                MqttMessage mqttMessage = new MqttMessage(payload.getBytes(StandardCharsets.UTF_8));
-                mqttMessage.setQos(1); // At-least-once delivery
-                client.publish(commandTopic, mqttMessage);
-
-                // Timeout after 10 seconds if no response
-                Mono.delay(Duration.ofSeconds(10)).subscribe(timeout -> {
-                    if (currentRequestSink != null && clientId.equals(currentExpectedClientId)) {
-                        System.err.println("⏰ Timeout waiting for compartments response from clientId: " + clientId);
-                        currentRequestSink.error(new RuntimeException("Timeout waiting for compartments response"));
-                        currentRequestSink = null;
-                        currentExpectedClientId = null;
+        return Mono.<List<CompartmentDto>>create(sink -> {
+                    if (client == null || !client.isConnected()) {
+                        sink.error(new IllegalStateException("MQTT not connected"));
+                        return;
                     }
-                });
+                    this.currentRequestSink = sink;
+                    this.currentExpectedClientId = clientId;
 
-            } catch (Exception e) {
-                System.err.println("❌ Failed to send request-compartments: " + e.getMessage());
-                sink.error(e);
-            }
-        });
+                    try {
+                        String topic = properties.getTopicPrefix() + "/" + clientId + "/commands";
+                        byte[] payload = "{\"type\":\"request-compartments\"}"
+                                .getBytes(StandardCharsets.UTF_8);
+                        MqttMessage message = new MqttMessage(payload);
+                        message.setQos(1);
+                        client.publish(topic, message);
+                    } catch (MqttException e) {
+                        sink.error(e);
+                    }
+                })
+                .timeout(Duration.ofSeconds(10))
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .maxBackoff(Duration.ofSeconds(10))
+                        .filter(err -> err instanceof RuntimeException || err instanceof MqttException)
+                );
     }
 
     @PreDestroy
     public void disconnect() throws MqttException {
         if (client != null && client.isConnected()) {
             client.disconnect();
-            System.out.println("🔌 MQTT disconnected from broker.");
+            System.out.println("🔌 MQTT disconnected");
         }
-    }
-
-    public MqttProperties getProperties() {
-        return properties;
     }
 }
