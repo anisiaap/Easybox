@@ -1,4 +1,3 @@
-// src/main/java/com/example/network/mqtt/MqttClientManager.java
 package com.example.network.mqtt;
 
 import com.example.network.dto.CompartmentDto;
@@ -18,102 +17,50 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Minimal, battle‑tested MQTT manager that works with HiveMQ Cloud (TLS + SNI).
+ * <p>
+ * No custom {@code SocketFactory}, no exotic options – just the defaults that
+ * work out‑of‑the‑box with JDK 11+ (SNI is automatic when you use a host‑name URI).
+ */
 @Component
 public class MqttClientManager {
 
     private final MqttProperties properties;
     private MqttClient client;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    private MonoSink<List<CompartmentDto>> currentRequestSink;
-    private String currentExpectedClientId;
+    private volatile MonoSink<List<CompartmentDto>> currentRequestSink;
+    private volatile String currentExpectedClientId;
 
     public MqttClientManager(MqttProperties properties) {
         this.properties = properties;
     }
 
+    /* ----------------------------------------------------------------
+     *  Lifecycle
+     * -------------------------------------------------------------- */
     @PostConstruct
-    public void connect() throws Exception {
-        String brokerUrl = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
-        System.out.println("🔗 Connecting to MQTT broker: " + brokerUrl);
+    public void connect() throws MqttException {
+        String brokerUri = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
+        System.out.println("🔗 Connecting to MQTT broker " + brokerUri);
 
-        String tmp = System.getProperty("java.io.tmpdir") + "/mqtt-persistence";
-        MqttClientPersistence persistence = new MqttDefaultFilePersistence(tmp);
-        client = new MqttClient(brokerUrl, properties.getClientId(), persistence);
+        client = new MqttClient(
+                brokerUri,
+                properties.getClientId(),
+                new MqttDefaultFilePersistence(System.getProperty("java.io.tmpdir"))
+        );
 
         MqttConnectOptions opts = new MqttConnectOptions();
         opts.setUserName(properties.getUsername());
         opts.setPassword(properties.getPassword().toCharArray());
-        opts.setCleanSession(false);
-        opts.setAutomaticReconnect(true);
-        opts.setKeepAliveInterval(30);
-        opts.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
-        opts.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+        opts.setAutomaticReconnect(true);          // let Paho handle reconnect
+        opts.setCleanSession(true);                // simpler – no sticky session state
+        opts.setKeepAliveInterval(45);             // < 60 s default timeout on HiveMQ Cloud
 
-        client.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectionLost(Throwable cause) {
-                System.err.println("❌ MQTT lost: " + cause.getMessage());
-            }
-            @Override
-            public void connectComplete(boolean reconnect, String uri) {
-                System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + uri);
-                try {
-                    String sub = properties.getTopicPrefix() + "/response/#";
-                    client.subscribe(sub);
-                    System.out.println("📡 Subscribed to " + sub);
-                } catch (MqttException e) {
-                    System.err.println("❌ Subscription error: " + e.getMessage());
-                }
-            }
-            @Override
-            public void messageArrived(String topic, MqttMessage msg) throws Exception {
-                String payload = new String(msg.getPayload(), StandardCharsets.UTF_8);
-                String prefix = properties.getTopicPrefix() + "/response/";
-                if (topic.startsWith(prefix) && currentRequestSink != null) {
-                    String clientId = topic.substring(prefix.length());
-                    if (clientId.equals(currentExpectedClientId)) {
-                        List<CompartmentDto> list = Arrays.asList(
-                                objectMapper.readValue(payload, CompartmentDto[].class)
-                        );
-                        currentRequestSink.success(list);
-                        currentRequestSink = null;
-                        currentExpectedClientId = null;
-                    }
-                }
-            }
-            @Override public void deliveryComplete(IMqttDeliveryToken token) {}
-        });
-
-        client.connect(opts);
+        client.setCallback(callback());
+        client.connect(opts);                      // blocks until CONNACK
         System.out.println("✅ MQTT connected");
-    }
-
-    public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
-        return Mono.<List<CompartmentDto>>create(sink -> {
-                    if (client == null || !client.isConnected()) {
-                        sink.error(new IllegalStateException("MQTT not connected"));
-                        return;
-                    }
-                    this.currentRequestSink = sink;
-                    this.currentExpectedClientId = clientId;
-
-                    try {
-                        String topic = properties.getTopicPrefix() + "/" + clientId + "/commands";
-                        byte[] payload = "{\"type\":\"request-compartments\"}"
-                                .getBytes(StandardCharsets.UTF_8);
-                        MqttMessage message = new MqttMessage(payload);
-                        message.setQos(1);
-                        client.publish(topic, message);
-                    } catch (MqttException e) {
-                        sink.error(e);
-                    }
-                })
-                .timeout(Duration.ofSeconds(10))
-                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
-                        .maxBackoff(Duration.ofSeconds(10))
-                        .filter(err -> err instanceof RuntimeException || err instanceof MqttException)
-                );
     }
 
     @PreDestroy
@@ -122,5 +69,75 @@ public class MqttClientManager {
             client.disconnect();
             System.out.println("🔌 MQTT disconnected");
         }
+    }
+
+    /* ----------------------------------------------------------------
+     *  Public API
+     * -------------------------------------------------------------- */
+    public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
+        return Mono.<List<CompartmentDto>>create(sink -> {
+                    if (client == null || !client.isConnected()) {
+                        sink.error(new IllegalStateException("MQTT not connected"));
+                        return;
+                    }
+                    currentRequestSink = sink;
+                    currentExpectedClientId = clientId;
+                    try {
+                        String topic = properties.getTopicPrefix() + "/" + clientId + "/commands";
+                        MqttMessage msg = new MqttMessage("{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
+                        msg.setQos(1);
+                        client.publish(topic, msg);
+                    } catch (MqttException e) {
+                        sink.error(e);
+                    }
+                })
+                .timeout(Duration.ofSeconds(10))
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))) // 3 tries total
+                ;
+    }
+
+    /* ----------------------------------------------------------------
+     *  Internal helpers
+     * -------------------------------------------------------------- */
+    private MqttCallbackExtended callback() {
+        return new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
+                try {
+                    String sub = properties.getTopicPrefix() + "/response/#";
+                    client.subscribe(sub, 1);
+                    System.out.println("📡 Subscribed to " + sub);
+                } catch (MqttException e) {
+                    System.err.println("❌ Subscription error: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+                System.err.println("❌ connectionLost – " + (cause != null ? cause.getMessage() : "unknown"));
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                String prefix = properties.getTopicPrefix() + "/response/";
+                if (topic.startsWith(prefix) && currentRequestSink != null) {
+                    String clientId = topic.substring(prefix.length());
+                    if (clientId.equals(currentExpectedClientId)) {
+                        List<CompartmentDto> list = Arrays.asList(
+                                mapper.readValue(message.getPayload(), CompartmentDto[].class)
+                        );
+                        currentRequestSink.success(list);
+                        currentRequestSink = null;
+                        currentExpectedClientId = null;
+                    }
+                }
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+                // no‑op
+            }
+        };
     }
 }
