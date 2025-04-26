@@ -61,17 +61,20 @@ public class DeviceRegistrationService {
         }
 
         webClient.post()
-                .uri(centralBackendUrl + "device/register")
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(status -> status.isError(), response -> {
-                    System.err.println("❌ Registration failed: " + response.statusCode());
-                    return response.createException();
-                })
-                .bodyToMono(String.class)
-                .doOnSuccess(response -> System.out.println("✅ Registration successful: " + response))
-                .doOnError(error -> System.err.println("⚠️ Registration attempt failed: " + error.getMessage()))
-                .subscribe();
+            .uri(centralBackendUrl + "device/register")
+            .bodyValue(request)
+            .retrieve()
+            .onStatus(status -> status.isError(), response -> {
+                System.err.println("❌ Registration failed: " + response.statusCode());
+                return response.bodyToMono(String.class)
+                        .doOnNext(body -> System.err.println("Error response body: " + body))  // Log error response body
+                        .flatMap(errorBody -> response.createException());
+            })
+            .bodyToMono(String.class)
+            .doOnSuccess(response -> System.out.println("✅ Registration successful: " + response))
+            .doOnError(error -> System.err.println("⚠️ Registration attempt failed: " + error.getMessage()))
+            .subscribe();
+
     }
 
     /**

@@ -7,17 +7,19 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
-
+import com.example.easyboxdevice.config.JwtUtil;
 @Service
 public class MqttService {
 
     private final MqttProperties properties;
     private final CompartmentService compartmentService;
     private MqttClient client;
+    private final JwtUtil jwtUtil;
 
-    public MqttService(MqttProperties properties, CompartmentService compartmentService) {
+    public MqttService(MqttProperties properties, CompartmentService compartmentService, JwtUtil jwtUtil) {
         this.properties = properties;
         this.compartmentService = compartmentService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostConstruct
@@ -65,7 +67,7 @@ public class MqttService {
         try {
             String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/" + subTopic;
 
-            String token = JwtUtil.generateToken(properties.getClientId());
+            String token = jwtUtil.generateToken(properties.getClientId());
             String signedPayload = token + "::" + payload;
             MqttMessage msg = new MqttMessage(signedPayload.getBytes());
             msg.setQos(1); // at-least-once
