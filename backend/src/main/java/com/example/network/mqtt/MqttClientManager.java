@@ -41,6 +41,7 @@ public class MqttClientManager {
         options.setPassword(properties.getPassword().toCharArray());
         options.setCleanSession(true);
         options.setAutomaticReconnect(true);
+        options.setKeepAliveInterval(30);
         client.connect(options);
         System.out.println("✅ MQTT connected to broker: " + brokerUrl);
 
@@ -55,8 +56,8 @@ public class MqttClientManager {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                if (topic.startsWith("device/response/")) {
-                    String clientId = topic.substring("device/response/".length());
+                if (topic.startsWith("easybox/response/")) {   // <---- HERE
+                    String clientId = topic.substring("easybox/response/".length());  // <---- HERE
 
                     if (currentRequestSink != null && clientId.equals(currentExpectedClientId)) {
                         String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
