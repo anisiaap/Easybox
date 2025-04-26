@@ -113,7 +113,7 @@ public class MqttClientManager {
             public void connectComplete(boolean reconnect, String serverURI) {
                 System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
                 try {
-                    String sub = properties.getTopicPrefix() + "/response/#";
+                    String sub = properties.getTopicPrefix() + "/response/+";
                     client.subscribe(sub, 1);
                     System.out.println("📡 Subscribed to " + sub);
                 } catch (MqttException e) {
