@@ -1,4 +1,4 @@
-package com.example.network.config;
+package com.example.network.dto;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

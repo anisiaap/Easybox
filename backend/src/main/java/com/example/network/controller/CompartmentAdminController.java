@@ -16,6 +16,10 @@ public class CompartmentAdminController {
     public CompartmentAdminController(CompartmentSyncService syncService) {
         this.syncService = syncService;
     }
+    @PostMapping("/sync/{easyboxId}")
+    public Mono<Void> syncCompartments(@PathVariable Long easyboxId) {
+        return syncService.syncCompartmentsForEasybox(easyboxId);
+    }
 
     @PostMapping("/{id}/mark-busy")
     public Mono<Void> markBusy(@PathVariable Long id) {

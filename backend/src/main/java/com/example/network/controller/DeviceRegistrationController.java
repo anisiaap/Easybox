@@ -6,6 +6,7 @@ import com.example.network.entity.Easybox;
 import com.example.network.exception.ConflictException;
 import com.example.network.exception.GeocodingException;
 import com.example.network.repository.EasyboxRepository;
+import com.example.network.service.CompartmentSyncService;
 import com.example.network.service.GeocodingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +18,12 @@ public class DeviceRegistrationController {
 
     private final EasyboxRepository easyboxRepository;
     private final GeocodingService  geocodingService;
-
+    private final CompartmentSyncService syncService;
     public DeviceRegistrationController(EasyboxRepository easyboxRepository,
-                                        GeocodingService  geocodingService) {
+                                        GeocodingService  geocodingService, CompartmentSyncService syncService) {
         this.easyboxRepository = easyboxRepository;
         this.geocodingService  = geocodingService;
+        this.syncService = syncService;
     }
 
     // ──────────────────────────────────────────────────────────────────────────────
@@ -79,7 +81,11 @@ public class DeviceRegistrationController {
                                             Easybox newBox = new Easybox();
                                             copyFields(newBox, req, lat, lon);
                                             return easyboxRepository.save(newBox)
-                                                    .map(ResponseEntity::ok);
+                                                    .flatMap(savedBox ->
+                                                            // Then immediately trigger sync!
+                                                            syncService.syncCompartmentsForEasybox(savedBox.getId())
+                                                                    .thenReturn(ResponseEntity.ok(savedBox))
+                                                    );
                                         });
                             });
                 });

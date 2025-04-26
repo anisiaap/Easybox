@@ -1,13 +1,18 @@
 // MqttService.java
 package com.example.easyboxdevice.service;
 
-import com.example.easyboxdevice.config.MqttProperties;
-import com.example.easyboxdevice.service.CompartmentService;
+import com.example.easyboxdevice.dto.MqttProperties;
+import com.example.easyboxdevice.entity.Compartment;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.stereotype.Service;
 import com.example.easyboxdevice.config.JwtUtil;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 @Service
 public class MqttService {
 
@@ -44,25 +49,59 @@ public class MqttService {
 
     private void handleCommand(String topic, MqttMessage message) {
         try {
-            String payload = new String(message.getPayload());
+            String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
             System.out.println("📩 Received MQTT command: " + payload);
 
-            if (payload.startsWith("reserve:")) {
+            if (payload.startsWith("{")) {
+                // Handle JSON commands
+                ObjectMapper mapper = new ObjectMapper();
+                Command cmd = mapper.readValue(payload, Command.class);
+
+                if ("request-compartments".equals(cmd.getType())) {
+                    sendCompartments();
+                }
+            } else if (payload.startsWith("reserve:")) {
                 Long compId = Long.parseLong(payload.split(":")[1]);
                 boolean ok = compartmentService.reserveCompartment(compId);
-                sendResponse("reserve-result:" + compId + ":" + (ok ? "ok" : "fail"));
+                sendSimpleResponse("reserve-result:" + compId + ":" + (ok ? "ok" : "fail"));
             } else if (payload.startsWith("clean:")) {
                 Long compId = Long.parseLong(payload.split(":")[1]);
                 boolean ok = compartmentService.cleanCompartment(compId);
-                sendResponse("clean-result:" + compId + ":" + (ok ? "ok" : "fail"));
+                sendSimpleResponse("clean-result:" + compId + ":" + (ok ? "ok" : "fail"));
             } else if (payload.equals("ping")) {
-                sendResponse("pong");
+                sendSimpleResponse("pong");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    private void sendCompartments() {
+        try {
+            List<Compartment> compartments = compartmentService.getAllCompartments();
+            ObjectMapper mapper = new ObjectMapper();
+            String json = mapper.writeValueAsString(compartments);
+
+            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/response";
+            client.publish(topic, new MqttMessage(json.getBytes(StandardCharsets.UTF_8)));
+
+            System.out.println("📤 Sent compartments response: " + json);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendSimpleResponse(String payload) {
+        try {
+            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/response";
+            client.publish(topic, new MqttMessage(payload.getBytes(StandardCharsets.UTF_8)));
+            System.out.println("📤 Sent simple response: " + payload);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public void publishEvent(String subTopic, String payload) {
         try {
             String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/" + subTopic;
@@ -99,4 +138,11 @@ public class MqttService {
             e.printStackTrace();
         }
     }
+    private static class Command {
+        private String type;
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+    }
+
 }
+

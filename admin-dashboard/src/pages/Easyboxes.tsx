@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
+import { api } from '../api';  // adjust the path if needed
 
 // Styled Components
 const DashboardContainer = styled.div`
@@ -185,7 +186,7 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const fetchEasyboxes = async () => {
             try {
-                const response = await axios.get('http://localhost:8080/api/admin/easyboxes');
+                const response = await api.get('/admin/easyboxes');
                 setEasyboxes(response.data);
                 setFilteredEasyboxes(response.data);
             } catch (error) {
@@ -210,7 +211,7 @@ const Dashboard: React.FC = () => {
         }
         try {
             // Call the central server aggregated endpoint.
-            const response = await axios.get(`http://localhost:8080/api/admin/easyboxes/${box.id}/details`);
+            const response = await api.get(`/admin/easyboxes/${box.id}/details`);
     // Merge the box with the returned aggregated details.
     const details: DeviceDetails = { ...box, ...response.data };
 setSelectedEasybox(details);

@@ -1,5 +1,5 @@
 // MqttProperties.java
-package com.example.easyboxdevice.config;
+package com.example.easyboxdevice.dto;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

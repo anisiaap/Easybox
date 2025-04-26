@@ -158,6 +158,7 @@
     });
 
     const frame = document.getElementById('easybox-frame');
+    const url = `${API_URL}?${params.toString()}`;
     frame.src = url;
 
     frame.addEventListener('load', () => {
