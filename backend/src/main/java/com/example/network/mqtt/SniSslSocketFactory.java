@@ -35,11 +35,19 @@ public class SniSslSocketFactory extends SSLSocketFactory {
     }
 
     /**
-     * Paho may call createSocket() with no args, so override it here.
+     * **RETURN A PLAIN TCP SOCKET** so that Paho does:
+     *   socket = createSocket();
+     *   socket.connect(...);
+     *   socket = createSocket(socket, host, port, true); // layering TLS+SNI
      */
     @Override
     public Socket createSocket() throws IOException {
-        SSLSocket ssl = (SSLSocket) delegate.createSocket();
+        return new Socket();
+    }
+
+    @Override
+    public Socket createSocket(Socket raw, String host, int port, boolean autoClose) throws IOException {
+        SSLSocket ssl = (SSLSocket) delegate.createSocket(raw, hostname, port, autoClose);
         SSLParameters params = ssl.getSSLParameters();
         params.setServerNames(Collections.singletonList(new SNIHostName(hostname)));
         ssl.setSSLParameters(params);
@@ -47,15 +55,10 @@ public class SniSslSocketFactory extends SSLSocketFactory {
     }
 
     @Override
-    public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
-        return enableSni(s);
-    }
-
-    @Override
     public Socket createSocket(String host, int port) throws IOException {
-        Socket sock = new Socket();
-        sock.connect(new InetSocketAddress(host, port));
-        return enableSni(sock);
+        Socket raw = new Socket();
+        raw.connect(new InetSocketAddress(host, port));
+        return createSocket(raw, host, port, true);
     }
 
     @Override
@@ -65,25 +68,15 @@ public class SniSslSocketFactory extends SSLSocketFactory {
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
-        Socket sock = new Socket();
-        sock.bind(new InetSocketAddress(localHost, localPort));
-        sock.connect(new InetSocketAddress(host, port));
-        return enableSni(sock);
+        Socket raw = new Socket();
+        raw.bind(new InetSocketAddress(localHost, localPort));
+        raw.connect(new InetSocketAddress(host, port));
+        return createSocket(raw, host, port, true);
     }
 
     @Override
     public Socket createSocket(InetAddress addr, int port, InetAddress local, int localPort) throws IOException {
         return createSocket(addr.getHostAddress(), port, local, localPort);
-    }
-
-    private SSLSocket enableSni(Socket raw) throws IOException {
-        SSLSocket ssl = (SSLSocket) delegate.createSocket(
-                raw, hostname, port, true
-        );
-        SSLParameters params = ssl.getSSLParameters();
-        params.setServerNames(Collections.singletonList(new SNIHostName(hostname)));
-        ssl.setSSLParameters(params);
-        return ssl;
     }
 
     @Override
