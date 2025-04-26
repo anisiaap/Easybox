@@ -46,6 +46,19 @@ public class SniSslSocketFactory extends SSLSocketFactory {
         plainSocket.connect(new InetSocketAddress(host, port));
         return enableSni(plainSocket);
     }
+    static SSLSocketFactory createInsecureSslSocketFactory() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                }
+        };
+        SSLContext sc = SSLContext.getInstance("TLS");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        return sc.getSocketFactory();
+    }
+
 
     @Override
     public Socket createSocket(InetAddress host, int port) throws IOException {

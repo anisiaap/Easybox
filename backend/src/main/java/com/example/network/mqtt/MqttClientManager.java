@@ -16,6 +16,8 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.example.network.mqtt.SniSslSocketFactory.createInsecureSslSocketFactory;
+
 @Component
 public class MqttClientManager {
     private final MqttProperties properties;
@@ -35,7 +37,7 @@ public class MqttClientManager {
 
     @PostConstruct
     public void connect() throws Exception {
-        String brokerUrl = properties.getBrokerUrl() + ":" + properties.getPort();
+        String brokerUrl = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
         System.out.println("🔗 Connecting to broker: " + brokerUrl + " with clientId: " + properties.getClientId());
 
         client = new MqttClient(brokerUrl, properties.getClientId());
@@ -46,8 +48,9 @@ public class MqttClientManager {
         options.setCleanSession(false);   // Persistent session
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
-        options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
+        //options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
         options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+        options.setSocketFactory(createInsecureSslSocketFactory()); // ✅
 
         client.setCallback(new MqttCallbackExtended() {
             @Override
