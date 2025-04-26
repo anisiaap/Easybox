@@ -55,32 +55,16 @@ public class MqttClientManager {
         MqttConnectOptions opts = new MqttConnectOptions();
         opts.setUserName(properties.getUsername());
         opts.setPassword(properties.getPassword().toCharArray());
-        opts.setAutomaticReconnect(true);          // let Paho handle reconnect
-        opts.setCleanSession(true);                // simpler – no sticky session state
-        opts.setKeepAliveInterval(45);             // < 60 s default timeout on HiveMQ Cloud
+        opts.setAutomaticReconnect(true);
+        opts.setCleanSession(true);
+        opts.setKeepAliveInterval(45);
 
         client.setCallback(callback());
         client.connect(opts);
-        // Start a do-nothing HTTP server so Render considers the service healthy
-        // grab the PORT env var that Render injects (or null if not set)
-        String portEnv = System.getenv("PORT");
-        // fall back to 8080 if PORT isn’t defined
-        int port = (portEnv != null)
-                ? Integer.parseInt(portEnv)
-                : 8080;
 
-        HttpServer.create()
-                .host("0.0.0.0")
-                .port(port)
-                .route(r -> r.get("/", (req, res) ->
-                        res.sendString(Mono.just("OK"))))
-                .bindNow();
-
-        System.out.println("HTTP server listening on port " + port);
-
-// blocks until CONNACK
         System.out.println("✅ MQTT connected");
     }
+
 
     @PreDestroy
     public void disconnect() throws MqttException {
