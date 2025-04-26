@@ -34,7 +34,7 @@ public class MqttService {
             options.setUserName(properties.getUsername());
             options.setPassword(properties.getPassword().toCharArray());
             options.setAutomaticReconnect(true);
-            options.setCleanSession(false);  // Keep session alive
+            options.setCleanSession(true);  // Keep session alive
             options.setKeepAliveInterval(30);
 
             client = new MqttClient(properties.getBrokerUrl(), properties.getClientId());
@@ -46,7 +46,7 @@ public class MqttService {
                     try {
                         System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
                         String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
-                       // client.subscribe(commandTopic, MqttService.this::handleCommand);
+                       client.subscribe(commandTopic, MqttService.this::handleCommand);
                         System.out.println("📡 Subscribed to topic: " + commandTopic);
                     } catch (Exception e) {
                         System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());
@@ -70,8 +70,13 @@ public class MqttService {
             });
 
             client.connect(options);
-            Thread.sleep(2000);  // 💬 Give some time
-            System.out.println("✅ Client connected? " + client.isConnected());
+//            Thread.sleep(2000);  // 💬 Give some time
+//            System.out.println("✅ Client connected? " + client.isConnected());
+            String cmdTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
+            client.subscribe(cmdTopic, this::handleCommand);
+            System.out.println("📡 Subscribed to topic: " + cmdTopic);
+
+            System.out.println("✅ Client connected");
 
         } catch (Exception e) {
             System.err.println("❌ Connect failed: " + e.getMessage());

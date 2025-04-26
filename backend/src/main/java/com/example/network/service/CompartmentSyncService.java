@@ -25,26 +25,26 @@ public class CompartmentSyncService {
     }
     public Mono<Void> updateStatus(Long id, String status) {
         return compartmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Compartment " + id + " not found")))
                 .flatMap(comp -> {
                     comp.setStatus(status);
                     return compartmentRepository.save(comp);
                 })
-                .then(); // Mono<Void>
+                .then();
     }
     public Mono<Void> syncCompartmentsForEasybox(Long easyboxId) {
         return easyboxRepository.findById(easyboxId)
-                .flatMapMany(easybox -> {
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Easybox " + easyboxId + " not found")))
+                .flatMap(easybox -> {
                     String clientId = easybox.getClientId();
                     if (clientId == null || clientId.isBlank()) {
-                        return Flux.error(new RuntimeException("No clientId for easybox " + easyboxId));
+                        return Mono.error(new RuntimeException("No clientId for easybox " + easyboxId));
                     }
-
-                    return mqttClientManager.requestCompartments(clientId) // <--- NEW
-                            .flatMapMany(Flux::fromIterable) // because the result is a List<CompartmentDto>
+                   return mqttClientManager.requestCompartments(clientId)
+                            .flatMapMany(Flux::fromIterable)
                             .flatMap(dto -> upsertCompartment(easybox, dto))
                             .then();
-                })
-                .then();
+        });
     }
     private Mono<Compartment> upsertCompartment(Easybox easybox, CompartmentDto dto) {
         return compartmentRepository.findById(dto.getId()) // look up by ID

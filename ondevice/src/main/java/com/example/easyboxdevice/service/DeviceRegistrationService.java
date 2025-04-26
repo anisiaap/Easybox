@@ -39,14 +39,14 @@ public class DeviceRegistrationService {
     @PostConstruct
     public void init() {
         System.out.println("Starting device heartbeat scheduler...");
-        scheduler.scheduleAtFixedRate(this::attemptRegistration, 0, 10, TimeUnit.MINUTES);
-    }
+        scheduler.scheduleAtFixedRate(() -> attemptRegistration().subscribe(),
+                                                     0, 10, TimeUnit.MINUTES); }
 
     /**
      * Attempts to register the device as active.
      */
     @Retry(name = "deviceRegistration", fallbackMethod = "registrationFallback")
-    private void attemptRegistration() {
+    private Mono<Void> attemptRegistration() {
         System.out.println("🔄 Attempting to register device...");
         RegistrationRequest request = new RegistrationRequest();
         request.setAddress(deviceAddress);
@@ -60,7 +60,7 @@ public class DeviceRegistrationService {
             e.printStackTrace();
         }
 
-        webClient.post()
+        return webClient.post()
             .uri(centralBackendUrl + "device/register")
             .bodyValue(request)
             .retrieve()
@@ -72,8 +72,8 @@ public class DeviceRegistrationService {
             })
             .bodyToMono(String.class)
             .doOnSuccess(response -> System.out.println("✅ Registration successful: " + response))
-            .doOnError(error -> System.err.println("⚠️ Registration attempt failed: " + error.getMessage()))
-            .subscribe();
+                .doOnError(error -> System.err.println("⚠️ Registration attempt failed: " + error.getMessage()))
+                .then();
 
     }
 
