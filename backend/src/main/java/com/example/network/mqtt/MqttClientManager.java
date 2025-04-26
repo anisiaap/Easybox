@@ -34,7 +34,7 @@ public class MqttClientManager {
     }
 
     @PostConstruct
-    public void connect() throws MqttException {
+    public void connect() throws Exception {
         String brokerUrl = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
         System.out.println("🔗 Connecting to broker: " + brokerUrl + " with clientId: " + properties.getClientId());
 
@@ -46,7 +46,7 @@ public class MqttClientManager {
         options.setCleanSession(false);   // Persistent session
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
-        options.setSocketFactory(SSLSocketFactory.getDefault()); // 🔥 Important for SSL
+        options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl()));
         options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
 
         client.setCallback(new MqttCallbackExtended() {
