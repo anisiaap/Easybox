@@ -45,7 +45,7 @@ public class MqttClientManager {
         System.out.println("✅ MQTT connected to broker: " + brokerUrl);
 
         // Subscribe to ALL device responses
-        client.subscribe("device/response/#");
+        client.subscribe("easybox/response/#");
 
         client.setCallback(new MqttCallback() {
             @Override
@@ -80,7 +80,7 @@ public class MqttClientManager {
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
         return Mono.create(sink -> {
             try {
-                String commandTopic = "device/commands/" + clientId;
+                String commandTopic = "easybox/" + clientId + "/commands";
                 String payload = "{\"type\":\"request-compartments\"}";
 
                 this.currentRequestSink = sink;

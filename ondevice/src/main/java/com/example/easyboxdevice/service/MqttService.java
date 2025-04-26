@@ -82,7 +82,7 @@ public class MqttService {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(compartments);
 
-            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/response";
+            String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
             client.publish(topic, new MqttMessage(json.getBytes(StandardCharsets.UTF_8)));
 
             System.out.println("📤 Sent compartments response: " + json);
@@ -93,7 +93,7 @@ public class MqttService {
 
     private void sendSimpleResponse(String payload) {
         try {
-            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/response";
+            String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
             client.publish(topic, new MqttMessage(payload.getBytes(StandardCharsets.UTF_8)));
             System.out.println("📤 Sent simple response: " + payload);
         } catch (Exception e) {
