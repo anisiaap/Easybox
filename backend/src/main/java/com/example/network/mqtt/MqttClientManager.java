@@ -39,7 +39,7 @@ public class MqttClientManager {
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(properties.getUsername());
         options.setPassword(properties.getPassword().toCharArray());
-        options.setCleanSession(true);
+        options.setCleanSession(false);
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
         client.connect(options);
