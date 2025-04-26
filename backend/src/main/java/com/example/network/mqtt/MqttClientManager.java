@@ -123,7 +123,8 @@ public class MqttClientManager {
 
             @Override
             public void connectionLost(Throwable cause) {
-                System.err.println("❌ connectionLost – " + (cause != null ? cause.getMessage() : "unknown"));
+                System.err.println("❌ connectionLost – " + cause);   // prints full class + msg
+                if (cause != null) cause.printStackTrace();           // <-- add this line
             }
 
             @Override
