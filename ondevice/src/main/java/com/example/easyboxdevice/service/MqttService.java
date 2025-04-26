@@ -46,7 +46,7 @@ public class MqttService {
                     try {
                         System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
                         String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
-                        client.subscribe(commandTopic, MqttService.this::handleCommand);
+                        //client.subscribe(commandTopic, MqttService.this::handleCommand);
                         System.out.println("📡 Subscribed to topic: " + commandTopic);
                     } catch (Exception e) {
                         System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());
