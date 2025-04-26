@@ -37,7 +37,6 @@ public class MqttClientManager {
         String brokerUrl = "ssl://" + properties.getBrokerUrl() + ":" + properties.getPort();
         System.out.println("🔗 Connecting to MQTT broker: " + brokerUrl);
 
-        // File persistence for QoS1 survive reconnect
         String tmp = System.getProperty("java.io.tmpdir") + "/mqtt-persistence";
         MqttClientPersistence persistence = new MqttDefaultFilePersistence(tmp);
         client = new MqttClient(brokerUrl, properties.getClientId(), persistence);
