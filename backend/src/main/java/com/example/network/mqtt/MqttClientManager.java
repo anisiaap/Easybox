@@ -46,7 +46,7 @@ public class MqttClientManager {
         options.setCleanSession(false);   // Persistent session
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
-        options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl()));
+        options.setSocketFactory(new SniSslSocketFactory(properties.getBrokerUrl(), properties.getPort()));
         options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
 
         client.setCallback(new MqttCallbackExtended() {
