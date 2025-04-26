@@ -39,7 +39,7 @@ public class MqttClientManager {
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(properties.getUsername());
         options.setPassword(properties.getPassword().toCharArray());
-        options.setCleanSession(false);
+        options.setCleanSession(true);
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(30);
         client.connect(options);
@@ -48,11 +48,21 @@ public class MqttClientManager {
         // Subscribe to ALL device responses
         client.subscribe("easybox/response/#");
 
-        client.setCallback(new MqttCallback() {
+        client.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectionLost(Throwable cause) {
                 System.err.println("❌ MQTT connection lost: " + cause.getMessage());
                 cause.printStackTrace(System.err);
+            }
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                try {
+                    client.subscribe(properties.getTopicPrefix() + "/response/#");
+                    System.out.println((reconnect ? "🔁 Re-" : "✅ ") +
+                            "subscribed to " + properties.getTopicPrefix() + "/response/#");
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
