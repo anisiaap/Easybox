@@ -59,7 +59,15 @@ public class MqttClientManager {
         opts.setKeepAliveInterval(45);             // < 60 s default timeout on HiveMQ Cloud
 
         client.setCallback(callback());
-        client.connect(opts);                      // blocks until CONNACK
+        client.connect(opts);
+        // Start a do-nothing HTTP server so Render considers the service healthy
+        reactor.netty.http.server.HttpServer
+                .create()
+                .host("0.0.0.0")
+                .port(Integer.parseInt(System.getenv().getOrDefault("PORT", "8080")))
+                .route(r -> r.get("/", (req, res) -> res.sendString(Mono.just("OK"))))
+                .bindNow();
+// blocks until CONNACK
         System.out.println("✅ MQTT connected");
     }
 
