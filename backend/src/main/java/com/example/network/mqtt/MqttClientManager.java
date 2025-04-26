@@ -10,6 +10,7 @@ import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import reactor.netty.http.server.HttpServer;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.StandardCharsets;
@@ -61,11 +62,11 @@ public class MqttClientManager {
         client.setCallback(callback());
         client.connect(opts);
         // Start a do-nothing HTTP server so Render considers the service healthy
-        reactor.netty.http.server.HttpServer
-                .create()
+        int healthPort = 8080;                     // anything NOT equal to $PORT
+        HttpServer.create()
                 .host("0.0.0.0")
-                .port(Integer.parseInt(System.getenv().getOrDefault("PORT", "8089")))
-                .route(r -> r.get("/", (req, res) -> res.sendString(Mono.just("OK"))))
+                .port(healthPort)
+                .route(r -> r.get("/", (req,res) -> res.sendString(Mono.just("OK"))))
                 .bindNow();
 // blocks until CONNACK
         System.out.println("✅ MQTT connected");
