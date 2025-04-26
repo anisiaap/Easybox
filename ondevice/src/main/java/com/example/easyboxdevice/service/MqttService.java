@@ -34,19 +34,52 @@ public class MqttService {
             options.setUserName(properties.getUsername());
             options.setPassword(properties.getPassword().toCharArray());
             options.setAutomaticReconnect(true);
-            options.setCleanSession(false);
+            options.setCleanSession(false);  // Keep session alive
             options.setKeepAliveInterval(30);
+
             client = new MqttClient(properties.getBrokerUrl(), properties.getClientId());
+            System.out.println("🔗 Connecting to broker URL: " + properties.getBrokerUrl() + " with clientId: " + properties.getClientId());
+
+            client.setCallback(new MqttCallbackExtended() {
+                @Override
+                public void connectComplete(boolean reconnect, String serverURI) {
+                    try {
+                        System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
+                        String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
+                        client.subscribe(commandTopic, MqttService.this::handleCommand);
+                        System.out.println("📡 Subscribed to topic: " + commandTopic);
+                    } catch (Exception e) {
+                        System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void connectionLost(Throwable cause) {
+                    System.err.println("❌ MQTT connection lost: " + cause.getMessage());
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage message) throws Exception {
+                    System.out.println("📥 Incoming message on topic: " + topic);
+                    handleCommand(topic, message);
+                }
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) { }
+            });
+
             client.connect(options);
+            Thread.sleep(2000);  // 💬 Give some time
+            System.out.println("✅ Client connected? " + client.isConnected());
 
-            String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
-            client.subscribe(commandTopic, this::handleCommand);
-
-            System.out.println("✅ MQTT connected and subscribed to " + commandTopic);
         } catch (Exception e) {
+            System.err.println("❌ Connect failed: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
+
 
     private void handleCommand(String topic, MqttMessage message) {
         try {
