@@ -133,16 +133,13 @@ public class MqttClientManager {
                 if (topic.startsWith(prefix) && currentRequestSink != null) {
                     String clientId = topic.substring(prefix.length());
                     if (clientId.equals(currentExpectedClientId)) {
-
                         String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
-
                         // 🔥 Split token and payload
                         String[] parts = receivedMessage.split("::", 2);
                         if (parts.length != 2) {
                             System.err.println("Invalid signed message format.");
                             return;
                         }
-
                         String token = parts[0];
                         String payload = parts[1];
                         try {
