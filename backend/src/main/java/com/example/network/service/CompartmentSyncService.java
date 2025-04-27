@@ -40,11 +40,11 @@ public class CompartmentSyncService {
                     if (clientId == null || clientId.isBlank()) {
                         return Mono.error(new RuntimeException("No clientId for easybox " + easyboxId));
                     }
-                   return mqttClientManager.requestCompartments(clientId)
+                    return mqttClientManager.requestCompartments(clientId)
                             .flatMapMany(Flux::fromIterable)
                             .flatMap(dto -> upsertCompartment(easybox, dto))
                             .then();
-        });
+                });
     }
     private Mono<Compartment> upsertCompartment(Easybox easybox, CompartmentDto dto) {
         return compartmentRepository.findById(dto.getId()) // look up by ID

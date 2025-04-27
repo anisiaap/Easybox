@@ -1,5 +1,6 @@
 package com.example.easyboxdevice.service;
 
+import com.example.easyboxdevice.config.JwtUtil;
 import com.example.easyboxdevice.dto.RegistrationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -24,12 +25,15 @@ public class DeviceRegistrationService {
     private String deviceAddress;
 
     @Value("${mqtt.client-id}")
-    private String clientId; 
+    private String clientId;
+
+    private final JwtUtil jwtUtil;
 
     private final WebClient webClient;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public DeviceRegistrationService(WebClient.Builder webClientBuilder) {
+    public DeviceRegistrationService(JwtUtil jwtUtil, WebClient.Builder webClientBuilder) {
+        this.jwtUtil = jwtUtil;
         this.webClient = webClientBuilder.build();
     }
 
@@ -60,8 +64,12 @@ public class DeviceRegistrationService {
             e.printStackTrace();
         }
 
+        String token = jwtUtil.generateToken(clientId);
+
+
         return webClient.post()
             .uri(centralBackendUrl + "device/register")
+                .header("Authorization", "Bearer " + token)
             .bodyValue(request)
             .retrieve()
             .onStatus(status -> status.isError(), response -> {

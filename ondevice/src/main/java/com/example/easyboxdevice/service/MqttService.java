@@ -72,7 +72,7 @@ public class MqttService {
             client.connect(options);
 //            Thread.sleep(2000);  // 💬 Give some time
 //            System.out.println("✅ Client connected? " + client.isConnected());
-            String cmdTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
+            String cmdTopic = properties.getTopicPrefix()  + "/commands" + "/" + properties.getClientId();
             client.subscribe(cmdTopic, this::handleCommand);
             System.out.println("📡 Subscribed to topic: " + cmdTopic);
 
@@ -122,7 +122,8 @@ public class MqttService {
             String json = mapper.writeValueAsString(compartments);
 
             String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
-            client.publish(topic, new MqttMessage(json.getBytes(StandardCharsets.UTF_8)));
+            String signedPayload = createSignedPayload(json);
+            client.publish(topic, new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8)));
 
             System.out.println("📤 Sent compartments response: " + json);
         } catch (Exception e) {
@@ -133,7 +134,8 @@ public class MqttService {
     private void sendSimpleResponse(String payload) {
         try {
             String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
-            client.publish(topic, new MqttMessage(payload.getBytes(StandardCharsets.UTF_8)));
+            String signedPayload = createSignedPayload(payload);
+            client.publish(topic, new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8)));
             System.out.println("📤 Sent simple response: " + payload);
         } catch (Exception e) {
             e.printStackTrace();
@@ -153,8 +155,12 @@ public class MqttService {
             System.out.println("📤 Published to " + topic + ": " + payload);
         } catch (Exception e) {
             e.printStackTrace();
+        }
     }
-}
+    private String createSignedPayload(String payload) {
+        String token = jwtUtil.generateToken(properties.getClientId());
+        return token + "::" + payload;
+    }
 
 
     private void sendResponse(String payload) {

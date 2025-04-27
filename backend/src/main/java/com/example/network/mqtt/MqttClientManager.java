@@ -1,5 +1,6 @@
 package com.example.network.mqtt;
 
+import com.example.network.config.JwtVerifier;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.dto.MqttProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,17 +31,16 @@ public class MqttClientManager {
     private final MqttProperties properties;
     private MqttClient client;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final JwtVerifier jwtVerifier;
 
     private volatile MonoSink<List<CompartmentDto>> currentRequestSink;
     private volatile String currentExpectedClientId;
 
-    public MqttClientManager(MqttProperties properties) {
+    public MqttClientManager(MqttProperties properties, JwtVerifier jwtVerifier) {
         this.properties = properties;
+        this.jwtVerifier = jwtVerifier;
     }
 
-    /* ----------------------------------------------------------------
-     *  Lifecycle
-     * -------------------------------------------------------------- */
     @PostConstruct
     public void connect() throws MqttException {
         String brokerUri = properties.getBrokerUrl();
@@ -74,10 +74,6 @@ public class MqttClientManager {
         }
     }
 
-    /* ----------------------------------------------------------------
-     *  Public API
-     * -------------------------------------------------------------- */
-    // MqttClientManager.java  – only the requestCompartments method changes
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
 
         String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
@@ -94,12 +90,15 @@ public class MqttClientManager {
                         // ─── 1️⃣  subscribe to the exact response topic
                         client.subscribe(responseTopic, 1);
 
-                        // ─── 2️⃣  publish the command
-                        String cmdTopic = properties.getTopicPrefix() + "/" + clientId + "/commands";
+
+                        String cmdTopic = properties.getTopicPrefix() + "/commands"+ "/" + clientId;
                         MqttMessage msg = new MqttMessage(
                                 "{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
                         msg.setQos(1);
+
+                        // ─── 2️⃣  publish the command
                         client.publish(cmdTopic, msg);
+
                     } catch (MqttException e) {
                         sink.error(e);
                     }
@@ -115,9 +114,6 @@ public class MqttClientManager {
     }
 
 
-    /* ----------------------------------------------------------------
-     *  Internal helpers
-     * -------------------------------------------------------------- */
     private MqttCallbackExtended callback() {
         return new MqttCallbackExtended() {
             @Override
@@ -137,6 +133,29 @@ public class MqttClientManager {
                 if (topic.startsWith(prefix) && currentRequestSink != null) {
                     String clientId = topic.substring(prefix.length());
                     if (clientId.equals(currentExpectedClientId)) {
+
+                        String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
+
+                        // 🔥 Split token and payload
+                        String[] parts = receivedMessage.split("::", 2);
+                        if (parts.length != 2) {
+                            System.err.println("Invalid signed message format.");
+                            return;
+                        }
+
+                        String token = parts[0];
+                        String payload = parts[1];
+                        try {
+                            // 🔥 Verify token
+                            String tokenClientId = jwtVerifier.verifyAndExtractClientId(token);
+                            if (!tokenClientId.equals(clientId)) {
+                                System.err.println("Token clientId does not match expected clientId.");
+                                return;
+                            }
+                        } catch (Exception e) {
+                            System.err.println("JWT verification failed: " + e.getMessage());
+                            return;
+                        }
                         List<CompartmentDto> list = Arrays.asList(
                                 mapper.readValue(message.getPayload(), CompartmentDto[].class)
                         );

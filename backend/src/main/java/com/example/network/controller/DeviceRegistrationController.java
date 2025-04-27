@@ -1,6 +1,7 @@
 // src/main/java/com/example/network/controller/DeviceRegistrationController.java
 package com.example.network.controller;
 
+import com.example.network.config.JwtVerifier;
 import com.example.network.dto.RegistrationRequest;
 import com.example.network.entity.Easybox;
 import com.example.network.exception.ConflictException;
@@ -19,11 +20,13 @@ public class DeviceRegistrationController {
     private final EasyboxRepository easyboxRepository;
     private final GeocodingService  geocodingService;
     private final CompartmentSyncService syncService;
+    private final JwtVerifier jwtVerifier;
     public DeviceRegistrationController(EasyboxRepository easyboxRepository,
-                                        GeocodingService  geocodingService, CompartmentSyncService syncService) {
+                                        GeocodingService  geocodingService, CompartmentSyncService syncService, JwtVerifier jwtVerifier) {
         this.easyboxRepository = easyboxRepository;
         this.geocodingService  = geocodingService;
         this.syncService = syncService;
+        this.jwtVerifier = jwtVerifier;
     }
 
     // ──────────────────────────────────────────────────────────────────────────────
@@ -32,10 +35,21 @@ public class DeviceRegistrationController {
     //  – rejects another locker within 100 m
     // ──────────────────────────────────────────────────────────────────────────────
     @PostMapping("/register")
-    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestBody RegistrationRequest req) {
+    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestHeader("Authorization") String authHeader, @RequestBody RegistrationRequest req) {
 
         if (req.getAddress() == null || req.getAddress().isBlank()) {
             return Mono.error(new GeocodingException("Address is blank"));
+        }
+        // 🔒 Verify the JWT token
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return Mono.error(new SecurityException("Missing or invalid Authorization header"));
+        }
+        String token = authHeader.substring(7); // skip "Bearer "
+        String extractedClientId = jwtVerifier.verifyAndExtractClientId(token);
+
+        // 🔒 Check clientId matches
+        if (!extractedClientId.equals(req.getClientId())) {
+            return Mono.error(new SecurityException("ClientId in JWT does not match RegistrationRequest"));
         }
 
         /* 1️⃣  Geocode the address */
