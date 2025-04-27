@@ -157,7 +157,7 @@ public class MqttClientManager {
                             return;
                         }
                         List<CompartmentDto> list = Arrays.asList(
-                                mapper.readValue(message.getPayload(), CompartmentDto[].class)
+                                mapper.readValue(payload, CompartmentDto[].class)
                         );
                         currentRequestSink.success(list);
                         currentRequestSink = null;
