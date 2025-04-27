@@ -1,8 +1,10 @@
 package com.example.network.mqtt;
 
+import com.example.network.config.JwtUtil;
 import com.example.network.config.JwtVerifier;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.dto.MqttProperties;
+import com.example.network.service.QrCodeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -38,10 +40,13 @@ public class MqttClientManager {
 
     private volatile MonoSink<List<CompartmentDto>> currentRequestSink;
     private volatile String currentExpectedClientId;
-
-    public MqttClientManager(MqttProperties properties, JwtVerifier jwtVerifier) {
+    private final QrCodeService qrCodeService;
+    private final JwtUtil jwtUtil;
+    public MqttClientManager(MqttProperties properties, JwtVerifier jwtVerifier, QrCodeService qrCodeService, JwtUtil jwtUtil) {
         this.properties = properties;
         this.jwtVerifier = jwtVerifier;
+        this.qrCodeService = qrCodeService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostConstruct
@@ -138,6 +143,33 @@ public class MqttClientManager {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 System.out.println("📥 MQTT message arrived on topic: " + topic);
+                String qrPrefix = properties.getTopicPrefix() + "/qrcode/";
+                if (topic.startsWith(qrPrefix)) {
+                    String clientId = topic.substring(qrPrefix.length());
+
+                    String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
+                    String[] parts = receivedMessage.split("::", 2);
+                    if (parts.length != 2) {
+                        System.err.println("Invalid signed message format.");
+                        return;
+                    }
+                    String token = parts[0];
+                    String qrContent = parts[1];
+
+                    // Verify JWT
+                    String tokenClientId = jwtVerifier.verifyAndExtractClientId(token);
+                    System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
+
+                    if (!tokenClientId.equals(clientId)) {
+                        System.err.println("Token clientId does not match expected clientId.");
+                        return;
+                    }
+                    qrCodeService.handleQrScan(qrContent)
+                            .flatMap(result -> sendQrCodeResponse(clientId, true, result.getCompartmentId(), result.getNewReservationStatus(), null))
+                            .onErrorResume(ex -> sendQrCodeResponse(clientId, false, null, null, ex.getMessage()))
+                            .subscribe();
+                    return; // Important: stop processing further
+                }
 
                 String prefix = properties.getTopicPrefix() + "/response/";
                 if (topic.startsWith(prefix) && currentRequestSink != null) {
@@ -196,6 +228,31 @@ public class MqttClientManager {
                 System.out.println(client.isConnected() ? "✅ MQTT connection healthy" : "❌ MQTT disconnected");
             }
         }, 0, 30, TimeUnit.SECONDS);  // every 30 seconds
+    }
+    private Mono<Void> sendQrCodeResponse(String clientId, boolean success,
+                                          Long compartmentId, String newStatus, String errorReason) {
+        try {
+            String responseTopic = properties.getTopicPrefix() + "/qrcode-response/" + clientId;
+
+            String payload;
+            if (success) {
+                payload = "{\"result\":\"ok\",\"compartmentId\":" + compartmentId + ",\"newReservationStatus\":\"" + newStatus + "\"}";
+            } else {
+                payload = "{\"result\":\"error\",\"reason\":\"" + errorReason + "\"}";
+            }
+
+            String signedPayload = jwtUtil.generateToken(clientId) + "::" + payload;
+            MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
+            message.setQos(1);
+            client.publish(responseTopic, message);
+
+            System.out.println("📤 Sent QR response to " + responseTopic + ": " + payload);
+
+            return Mono.empty();
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send QR response: " + e.getMessage());
+            return Mono.empty();
+        }
     }
 
 }

@@ -15,6 +15,7 @@ public class Reservation {
 
     @Id
     private Long id;
+    private String qrCodeData;
 
     private String client;
     private LocalDateTime deliveryTime;
@@ -115,6 +116,20 @@ public class Reservation {
         this.userId = id;
     }
 
+    public String getQrCodeData() {
+        return qrCodeData;
+    }
 
+    public void setQrCodeData(String qrCodeData) {
+        this.qrCodeData = qrCodeData;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
 
 }

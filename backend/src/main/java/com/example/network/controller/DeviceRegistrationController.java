@@ -10,6 +10,8 @@ import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
 import com.example.network.service.GeocodingService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -35,21 +37,18 @@ public class DeviceRegistrationController {
     //  – rejects another locker within 100 m
     // ──────────────────────────────────────────────────────────────────────────────
     @PostMapping("/register")
-    public Mono<ResponseEntity<Easybox>> registerDevice(@RequestHeader("Authorization") String authHeader, @RequestBody RegistrationRequest req) {
+    public Mono<ResponseEntity<Easybox>> registerDevice(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody RegistrationRequest req
+    ) {
+        // jwt.getSubject() is the clientId
+        String extractedClientId = jwt.getSubject();
 
+        if (!extractedClientId.equals(req.getClientId())) {
+            return Mono.error(new SecurityException("ClientId in JWT does not match"));
+        }
         if (req.getAddress() == null || req.getAddress().isBlank()) {
             return Mono.error(new GeocodingException("Address is blank"));
-        }
-        // 🔒 Verify the JWT token
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return Mono.error(new SecurityException("Missing or invalid Authorization header"));
-        }
-        String token = authHeader.substring(7); // skip "Bearer "
-        String extractedClientId = jwtVerifier.verifyAndExtractClientId(token);
-
-        // 🔒 Check clientId matches
-        if (!extractedClientId.equals(req.getClientId())) {
-            return Mono.error(new SecurityException("ClientId in JWT does not match RegistrationRequest"));
         }
 
         /* 1️⃣  Geocode the address */

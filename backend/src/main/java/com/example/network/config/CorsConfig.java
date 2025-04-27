@@ -15,7 +15,7 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() { // ⚡ NOT CorsConfigurationSource
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://widget.easybox.ro",
+                "https://widget.easybox-food.xyz",
                 "http://192.168.1.133:3000",
                 "http://192.168.1.133:3001",
                 "http://localhost:3000",

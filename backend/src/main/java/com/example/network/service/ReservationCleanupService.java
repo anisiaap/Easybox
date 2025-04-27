@@ -31,8 +31,7 @@ public class ReservationCleanupService {
         LocalDateTime now = LocalDateTime.now();
 
         reservationRepository.findAll()
-                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus())
-                        && r.getReservationEnd().isBefore(now))
+                .filter(r ->  r.getReservationEnd().isBefore(now))
                 .flatMap(r ->
                         easyboxRepository.findById(r.getEasyboxId())
                                 .flatMap(box ->

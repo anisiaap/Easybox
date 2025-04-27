@@ -92,7 +92,20 @@ public class ReservationService {
                             .flatMap(box -> {
                                 r.setStatus("confirmed");
                                 r.setExpiresAt(null);
-                                return reservationRepository.save(r);
+                                return reservationRepository.save(r)
+                                        .flatMap(saved -> {
+                                            try {
+                                                String qrContent = "reservation:" + saved.getId();  // you can customize QR content
+                                                String qrBase64 = QrCodeService.generateQrCodeBase64(qrContent);
+
+                                                saved.setQrCodeData(qrBase64);
+
+                                                return reservationRepository.save(saved);  // update reservation with QR
+                                            } catch (Exception e) {
+                                                return Mono.error(new RuntimeException("Failed to generate QR code", e));
+                                            }
+                                        });
+
                             });
                 });
     }

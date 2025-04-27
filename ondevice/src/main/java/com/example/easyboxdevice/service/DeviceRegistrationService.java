@@ -88,23 +88,24 @@ public class DeviceRegistrationService {
     /**
      * Fallback method triggered by Resilience4j when registration fails.
      */
-    private void registrationFallback(Throwable t) {
-        System.err.println("Registration fallback triggered: " + t.getMessage());
-        RegistrationRequest fallbackRequest = new RegistrationRequest();
-        fallbackRequest.setAddress(deviceAddress);
-        fallbackRequest.setClientId(clientId);
-        fallbackRequest.setStatus("inactive");
-
-        webClient.post()
-                .uri(centralBackendUrl + "device/register")
-                .bodyValue(fallbackRequest)
-                .retrieve()
-                .bodyToMono(String.class)
-                .subscribe(
-                        response -> System.out.println("Fallback registration (inactive) successful: " + response),
-                        error -> System.err.println("Fallback registration (inactive) failed: " + error.getMessage())
-                );
-    }
+//    private void registrationFallback(Throwable t) {
+//        System.err.println("Registration fallback triggered: " + t.getMessage());
+//        RegistrationRequest fallbackRequest = new RegistrationRequest();
+//        fallbackRequest.setAddress(deviceAddress);
+//        fallbackRequest.setClientId(clientId);
+//        fallbackRequest.setStatus("inactive");
+//        String token = jwtUtil.generateToken(clientId);
+//        webClient.post()
+//                .uri(centralBackendUrl + "device/register")
+//                .header("Authorization", "Bearer " + token)
+//                .bodyValue(fallbackRequest)
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .subscribe(
+//                        response -> System.out.println("Fallback registration (inactive) successful: " + response),
+//                        error -> System.err.println("Fallback registration (inactive) failed: " + error.getMessage())
+//                );
+//    }
 
     /**
      * Shutdown method to stop the scheduler and send a final deregistration update.
@@ -112,7 +113,7 @@ public class DeviceRegistrationService {
     @PreDestroy
     public void shutdown() {
         System.out.println("Device is shutting down. Initiating deregistration...");
-
+        String token = jwtUtil.generateToken(clientId);
         // Stop the heartbeat scheduler gracefully
         scheduler.shutdown();
         try {
@@ -134,6 +135,7 @@ public class DeviceRegistrationService {
         try {
             String response = webClient.post()
                     .uri(centralBackendUrl + "device/register")
+                    .header("Authorization", "Bearer " + token)
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(String.class)
