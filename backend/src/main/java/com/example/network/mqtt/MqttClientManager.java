@@ -132,12 +132,18 @@ public class MqttClientManager {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
+                System.out.println("📥 MQTT message arrived on topic: " + topic);
+
                 String prefix = properties.getTopicPrefix() + "/response/";
                 if (topic.startsWith(prefix) && currentRequestSink != null) {
                     String clientId = topic.substring(prefix.length());
+                    System.out.println("📥 Matched expected clientId: " + clientId);
+
                     if (clientId.equals(currentExpectedClientId)) {
                         String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
                         // 🔥 Split token and payload
+                        System.out.println("📝 Raw message received, length = " + receivedMessage.length());
+
                         String[] parts = receivedMessage.split("::", 2);
                         if (parts.length != 2) {
                             System.err.println("Invalid signed message format.");
@@ -148,7 +154,10 @@ public class MqttClientManager {
                         try {
                             // 🔥 Verify token
                             String tokenClientId = jwtVerifier.verifyAndExtractClientId(token);
+                            System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
+
                             if (!tokenClientId.equals(clientId)) {
+
                                 System.err.println("Token clientId does not match expected clientId.");
                                 return;
                             }

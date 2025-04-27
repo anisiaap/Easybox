@@ -45,9 +45,13 @@ public class MqttService {
                 public void connectComplete(boolean reconnect, String serverURI) {
                     try {
                         System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
-                        String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
-                       client.subscribe(commandTopic, MqttService.this::handleCommand);
-                        System.out.println("📡 Subscribed to topic: " + commandTopic);
+                        String cmdTopic = properties.getTopicPrefix()  + "/commands" + "/" + properties.getClientId();
+                        client.subscribe(cmdTopic, MqttService.this::handleCommand);
+                        System.out.println("📡 Subscribed to topic: " + cmdTopic);
+
+//                        String commandTopic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/commands";
+//                       client.subscribe(commandTopic, MqttService.this::handleCommand);
+//                        System.out.println("📡 Subscribed to topic: " + commandTopic);
                     } catch (Exception e) {
                         System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());
                         e.printStackTrace();
@@ -72,9 +76,6 @@ public class MqttService {
             client.connect(options);
 //            Thread.sleep(2000);  // 💬 Give some time
 //            System.out.println("✅ Client connected? " + client.isConnected());
-            String cmdTopic = properties.getTopicPrefix()  + "/commands" + "/" + properties.getClientId();
-            client.subscribe(cmdTopic, this::handleCommand);
-            System.out.println("📡 Subscribed to topic: " + cmdTopic);
 
             System.out.println("✅ Client connected");
 
@@ -118,11 +119,17 @@ public class MqttService {
     private void sendCompartments() {
         try {
             List<Compartment> compartments = compartmentService.getAllCompartments();
+            System.out.println("📦 Loaded compartments from database: " + compartments.size());
+
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(compartments);
+            System.out.println("📝 Serialized compartments JSON: " + json);
 
             String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
             String signedPayload = createSignedPayload(json);
+            System.out.println("🔏 Created signed payload, length = " + signedPayload.length());
+
+            Thread.sleep(1000);
             client.publish(topic, new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8)));
 
             System.out.println("📤 Sent compartments response: " + json);
@@ -143,35 +150,27 @@ public class MqttService {
     }
 
 
-    public void publishEvent(String subTopic, String payload) {
-        try {
-            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/" + subTopic;
-
-            String token = jwtUtil.generateToken(properties.getClientId());
-            String signedPayload = token + "::" + payload;
-            MqttMessage msg = new MqttMessage(signedPayload.getBytes());
-            msg.setQos(1); // at-least-once
-            client.publish(topic, msg);
-            System.out.println("📤 Published to " + topic + ": " + payload);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    public void publishEvent(String subTopic, String payload) {
+//        try {
+//            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/" + subTopic;
+//
+//            String token = jwtUtil.generateToken(properties.getClientId());
+//            String signedPayload = token + "::" + payload;
+//            MqttMessage msg = new MqttMessage(signedPayload.getBytes());
+//            msg.setQos(1); // at-least-once
+//            client.publish(topic, msg);
+//            System.out.println("📤 Published to " + topic + ": " + payload);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
     private String createSignedPayload(String payload) {
         String token = jwtUtil.generateToken(properties.getClientId());
         return token + "::" + payload;
     }
 
 
-    private void sendResponse(String payload) {
-        try {
-            String topic = properties.getTopicPrefix() + "/" + properties.getClientId() + "/response";
-            client.publish(topic, new MqttMessage(payload.getBytes()));
-            System.out.println("📤 Sent response: " + payload);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+
 
     @PreDestroy
     public void disconnect() {
