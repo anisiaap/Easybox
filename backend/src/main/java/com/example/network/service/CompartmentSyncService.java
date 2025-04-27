@@ -33,6 +33,8 @@ public class CompartmentSyncService {
                 .then();
     }
     public Mono<Void> syncCompartmentsForEasybox(Long easyboxId) {
+        System.out.println("🔄 Syncing compartments for easyboxId=" + easyboxId);
+
         return easyboxRepository.findById(easyboxId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Easybox " + easyboxId + " not found")))
                 .flatMap(easybox -> {

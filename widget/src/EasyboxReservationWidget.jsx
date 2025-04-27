@@ -199,7 +199,7 @@ const EasyboxReservationWidget = forwardRef(
                 // Fetch from /reservations/available
                 // which returns { recommendedBox, otherBoxes }
                 console.log(body)
-                const res = await api.post(`widget/reservations/available`, body, {
+                const res = await api.post(`widget/reservation/available`, body, {
                     headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
                 });
                 const data = res.data;
@@ -240,7 +240,7 @@ const EasyboxReservationWidget = forwardRef(
                 bakeryId: params.get("bakeryId")
             };
 
-            const res = await api.post(`widget/reservations/hold`, payload, {
+            const res = await api.post(`widget/reservation/hold`, payload, {
                 headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
             });
 
@@ -251,7 +251,7 @@ const EasyboxReservationWidget = forwardRef(
             function handleMsg(evt) {
                 if (evt.data?.type === "bakery-order-confirmed") {
                     const id = evt.data.reservationId;
-                    api.post('widget/reservations/${id}/confirm', {
+                    api.post('widget/reservation/${id}/confirm', {
                     headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}})
                         .then(() => console.log("Easybox confirmed!"))
                         .catch(err => console.error("Confirm error", err));
