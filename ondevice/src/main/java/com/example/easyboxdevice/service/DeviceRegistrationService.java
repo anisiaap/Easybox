@@ -144,5 +144,6 @@ public class DeviceRegistrationService {
         } catch (Exception e) {
             System.err.println("Deregistration failed: " + e.getMessage());
         }
+
     }
 }
