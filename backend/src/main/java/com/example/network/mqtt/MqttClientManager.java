@@ -80,6 +80,8 @@ public class MqttClientManager {
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
 
         String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
+        System.out.println("📡 Preparing to subscribe to " + responseTopic);
+
 
         return Mono.<List<CompartmentDto>>create(sink -> {
                     if (client == null || !client.isConnected()) {
@@ -93,6 +95,7 @@ public class MqttClientManager {
                         // ─── 1️⃣  subscribe to the exact response topic
                         client.subscribe(responseTopic, 1);
 
+                        System.out.println("📡 Subscribed to response topic for clientId: " + clientId);
 
                         String cmdTopic = properties.getTopicPrefix() + "/commands"+ "/" + clientId;
                         MqttMessage msg = new MqttMessage(
@@ -101,6 +104,8 @@ public class MqttClientManager {
 
                         // ─── 2️⃣  publish the command
                         client.publish(cmdTopic, msg);
+                        System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
+
 
                     } catch (MqttException e) {
                         sink.error(e);
