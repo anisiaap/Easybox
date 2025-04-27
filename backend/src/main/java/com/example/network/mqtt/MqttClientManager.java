@@ -18,6 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Minimal, battle‑tested MQTT manager that works with HiveMQ Cloud (TLS + SNI).
@@ -168,5 +171,17 @@ public class MqttClientManager {
                 // no‑op
             }
         };
+
     }
+    ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor();
+
+    @PostConstruct
+    public void startConnectionMonitor() {
+        monitor.scheduleAtFixedRate(() -> {
+            if (client != null) {
+                System.out.println(client.isConnected() ? "✅ MQTT connection healthy" : "❌ MQTT disconnected");
+            }
+        }, 0, 30, TimeUnit.SECONDS);  // every 30 seconds
+    }
+
 }
