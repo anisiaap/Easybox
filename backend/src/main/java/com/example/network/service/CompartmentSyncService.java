@@ -46,6 +46,7 @@ public class CompartmentSyncService {
                             .then();
                 });
     }
+
     private Mono<Compartment> upsertCompartment(Easybox easybox, CompartmentDto dto) {
         return compartmentRepository.findById(dto.getId()) // look up by ID
                 .defaultIfEmpty(new Compartment()) // if not found, create new
