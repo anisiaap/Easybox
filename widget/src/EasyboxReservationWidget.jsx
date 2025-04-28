@@ -255,7 +255,7 @@ const EasyboxReservationWidget = forwardRef(
             function handleMsg(evt) {
                 if (evt.data?.type === "bakery-order-confirmed") {
                     const id = evt.data.reservationId;
-                    api.patch(`widget/reservation/${id}/confirm`, {
+                    api.patch(`widget/reservation/${id}/confirm`,null, {
                     headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}})
                         .then(() => console.log("Easybox confirmed!"))
                         .catch(err => console.error("Confirm error", err));
