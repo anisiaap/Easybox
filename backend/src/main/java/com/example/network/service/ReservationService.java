@@ -4,6 +4,7 @@ import com.example.network.dto.*;
 import com.example.network.entity.*;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -70,7 +71,16 @@ public class ReservationService {
                                                 r.setUserId(user.getId());
                                                 r.setBakeryId(req.getBakeryId());
 
-                                                return reservationRepository.save(r);
+                                                return reservationRepository.save(r)
+                                                        .onErrorResume(DuplicateKeyException.class, e -> {
+                                                            return Mono.error(new ConflictException("Compartment reservation conflict, please try again."));
+                                                        })
+                                                        .onErrorResume(e -> {
+                                                            if (e.getMessage() != null && e.getMessage().contains("compartment_no_overlap")) {
+                                                                return Mono.error(new ConflictException("Compartment already reserved, please try again."));
+                                                            }
+                                                            return Mono.error(e);
+                                                        });
                                             })
                             );
                 });
@@ -157,7 +167,7 @@ public class ReservationService {
                 /* ---- per-compartment overlap check ------------------------ */
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()))
+                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()) ||  "pending".equalsIgnoreCase(r.getStatus()))
                                 .filter(r -> r.getReservationStart().isBefore(end) &&
                                         r.getReservationEnd()  .isAfter(start))
                                 .hasElements()

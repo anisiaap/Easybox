@@ -245,7 +245,10 @@ const EasyboxReservationWidget = forwardRef(
                 headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
             });
 
-            window.parent.postMessage({ type: "easybox-reserved", data: res.data }, "*");
+            window.parent.postMessage({
+                type: "easybox-reserved",
+                data: { ...res.data, address: selectedBox.address }
+            }, "*");
         };
 
         useEffect(() => {

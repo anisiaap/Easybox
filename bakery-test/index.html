@@ -3,99 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <title>Mock Bakery Checkout - Easybox Demo</title>
-  <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
-
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    #easybox-plugin-container {
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    #checkoutForm {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: 0 auto 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+      color: #555;
+    }
+    input[type="text"],
+    input[type="date"],
+    select {
       width: 100%;
-      height: 100%;
-      box-sizing: border-box;
+      padding: 8px;
+      margin-top: 4px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #deliveryOptions {
+      margin-bottom: 20px;
+    }
+    #deliveryOptions label {
+      display: inline-block;
+      margin-right: 15px;
+      font-weight: bold;
+    }
+    #easybox-frame {
+      display: none;
+      width: 100%;
+      max-width: 800px;
+      height: 600px;
+      margin: 20px auto;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+    }
+    #deliveryLocation {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 20px;
+      font-size: 1.1em;
+      color: #333;
+    }
+    .place-order-btn {
+      display: block;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+      padding: 12px 20px;
+      margin: 30px auto 0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .place-order-btn:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
+
 <h1>Mock Bakery Checkout</h1>
 
 <form id="checkoutForm">
-  <!-- Basic user data -->
-  <label>Client Name: <input type="text" id="clientName" value="Alice" /></label><br />
-  <label>Phone: <input type="text" id="phone" value="123456789" /></label><br />
-  <label>Delivery Address: <input type="text" id="orderAddress" value="Strada Coriolan Brediceanu, Timisoara" /></label><br />
-  <label for="deliveryDate">Delivery Date:</label>
-  <input type="date" id="deliveryDate" /><br />
-
-  <label for="deliveryHour">Delivery Hour:</label>
-  <select id="deliveryHour">
-    <option value="08">08:00</option>
-    <option value="09">09:00</option>
-    <option value="10">10:00</option>
-    <option value="11">11:00</option>
-    <option value="12">12:00</option>
-    <option value="13">13:00</option>
-    <option value="14">14:00</option>
-    <option value="15">15:00</option>
-    <option value="16">16:00</option>
-    <option value="17">17:00</option>
-    <option value="18">18:00</option>
-    <option value="19">19:00</option>
-    <option value="20">20:00</option>
-    <option value="21">21:00</option>
-    <option value="22">22:00</option>
-    <option value="23">23:00</option>
-    <option value="24">24:00</option>
-    <option value="01">01:00</option>
-    <option value="02">02:00</option>
-    <option value="03">03:00</option>
-    <option value="04">04:00</option>
-    <option value="05">05:00</option>
-    <option value="06">06:00</option>
-    <option value="07">07:00</option>
-
-  </select>
-  <!-- Temperature Selection -->
-  <label for="minTemp">Min Temperature:</label>
-  <select id="minTemp">
-    <option value="4">Refrigerated (4°C)</option>
-    <option value="8">Cool (8°C)</option>
-    <option value="12">Room Temperature (12°C)</option>
-  </select>
-  <br />
-
-  <!-- Size/Dimension Selection -->
-  <label for="totalDimension">Total Dimension:</label>
-  <select id="totalDimension">
-    <option value="10">Small (10)</option>
-    <option value="15">Medium (15)</option>
-    <option value="20">Large (20)</option>
-  </select>
-  <br />
-
-  <p>Select Delivery Method:</p>
-  <label>
-    <input type="radio" name="deliveryMethod" value="standard" checked />
-    Standard Delivery
-  </label>
-  <label>
-    <input type="radio" name="deliveryMethod" value="easybox" />
-    Easybox Delivery
+  <label>Client Name:
+    <input type="text" id="clientName" value="Alice" />
   </label>
 
-  <br /><br />
-  <button type="button" onclick="placeOrder()">Place Order</button>
+  <label>Phone:
+    <input type="text" id="phone" value="123456789" />
+  </label>
+
+  <label>Delivery Address:
+    <input type="text" id="orderAddress" value="Strada Coriolan Brediceanu, Timisoara" />
+  </label>
+
+  <label>Delivery Date:
+    <input type="date" id="deliveryDate" />
+  </label>
+
+  <label>Delivery Hour:
+      <select id="deliveryHour">
+        <option value="08">08:00</option>
+        <option value="09">09:00</option>
+        <option value="10">10:00</option>
+        <option value="11">11:00</option>
+        <option value="12">12:00</option>
+        <option value="13">13:00</option>
+        <option value="14">14:00</option>
+        <option value="15">15:00</option>
+        <option value="16">16:00</option>
+        <option value="17">17:00</option>
+        <option value="18">18:00</option>
+        <option value="19">19:00</option>
+        <option value="20">20:00</option>
+        <option value="21">21:00</option>
+        <option value="22">22:00</option>
+        <option value="23">23:00</option>
+        <option value="00">00:00</option>
+        <option value="01">01:00</option>
+        <option value="02">02:00</option>
+        <option value="03">03:00</option>
+        <option value="04">04:00</option>
+        <option value="05">05:00</option>
+        <option value="06">06:00</option>
+        <option value="07">07:00</option>
+      </select>
+    </label>
+
+  </label>
+
+  <label>Min Temperature:
+    <select id="minTemp">
+      <option value="4">Refrigerated (4°C)</option>
+      <option value="8">Cool (8°C)</option>
+      <option value="12">Room Temperature (12°C)</option>
+    </select>
+  </label>
+
+  <label>Total Dimension:
+    <select id="totalDimension">
+      <option value="10">Small (10)</option>
+      <option value="15">Medium (15)</option>
+      <option value="20">Large (20)</option>
+    </select>
+  </label>
+
+  <div id="deliveryOptions">
+    <p><strong>Select Delivery Method:</strong></p>
+    <label><input type="radio" name="deliveryMethod" value="standard" checked /> Standard Delivery</label>
+    <label><input type="radio" name="deliveryMethod" value="easybox" /> Easybox Delivery</label>
+  </div>
 </form>
-<iframe
-        id="easybox-frame"
-        style="width:800px;height:600px;border:none;"
-></iframe>
 
+<iframe id="easybox-frame"></iframe>
 
-<script
-        src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-></script>
+<div id="deliveryLocation"></div>
 
+<button type="button" class="place-order-btn" onclick="placeOrder()">Place Order</button>
+
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
   window.env = {
     WIDGET_URL: "https://widget.easybox-food.xyz/",
@@ -127,13 +193,30 @@
       pendingReservation = event.data.data;
       window.chosenEasybox = pendingReservation; // still keep this if needed
       console.log("Received reservation:", pendingReservation);
+
+      document.getElementById('easybox-frame').style.display = 'none';
+
+      const deliveryLocationDiv = document.getElementById('deliveryLocation');
+      deliveryLocationDiv.innerText = `Selected Easybox for delivery: ${pendingReservation.address || 'Unknown address'}`;
+
     }
   });
   // Listen for radio changes to open the popup - show it when we press delivery by easybox
   document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
     radio.addEventListener('change', function() {
+      const frame = document.getElementById('easybox-frame');
+      const deliveryLocationDiv = document.getElementById('deliveryLocation');
+
       if (this.value === 'easybox') {
         openPopup();
+      } else if (this.value === 'standard') {
+        // ✨ Hide the iframe
+        frame.style.display = 'none';
+        pendingReservation = null;
+
+        // ✨ Set delivery location from form address
+        const clientAddress = document.getElementById('orderAddress').value;
+        deliveryLocationDiv.innerText = `Delivery address: ${clientAddress}`;
       }
     });
   });
@@ -159,7 +242,9 @@
     const frame = document.getElementById('easybox-frame');
     const url = `${API_URL}?${params.toString()}`;
     frame.src = url;
-
+    frame.style.display = 'block';
+    frame.style.width = '800px';
+    frame.style.height = '600px';
     frame.addEventListener('load', () => {
       frame.contentWindow.postMessage({ type: 'init-jwt', token: window.env.JWT_TOKEN }, '*');
     });
@@ -205,7 +290,6 @@
 
 
 </script>
-
 
 </body>
 </html>
