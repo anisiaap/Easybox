@@ -52,14 +52,14 @@ const App: React.FC = () => {
                         </MainLayout>
                     }
                 />
-                <Route
-                    path="/admin-settings"
-                    element={
-                        <MainLayout>
-                            <AdminSettings />
-                        </MainLayout>
-                    }
-                />
+                {/*<Route*/}
+                {/*    path="/admin-settings"*/}
+                {/*    element={*/}
+                {/*        <MainLayout>*/}
+                {/*            <AdminSettings />*/}
+                {/*        </MainLayout>*/}
+                {/*    }*/}
+                {/*/>*/}
             </Routes>
         </Router>
 

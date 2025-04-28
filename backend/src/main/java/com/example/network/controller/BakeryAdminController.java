@@ -33,4 +33,25 @@ public class BakeryAdminController {
     public Mono<Bakery> createBakery(@RequestBody Bakery bakery) {
         return bakeryRepository.save(bakery);
     }
+
+    // PUT update existing bakery
+    @PutMapping("/{id}")
+    public Mono<Bakery> updateBakery(@PathVariable Long id, @RequestBody Bakery bakery) {
+        return bakeryRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("Bakery not found")))
+                .flatMap(existing -> {
+                    existing.setName(bakery.getName());
+                    existing.setPhone(bakery.getPhone());
+                    existing.setPluginInstalled(bakery.getPluginInstalled());
+                    existing.setToken(bakery.getToken());
+                    return bakeryRepository.save(existing);
+                });
+    }
+
+    // DELETE a bakery
+    @DeleteMapping("/{id}")
+    public Mono<Void> deleteBakery(@PathVariable Long id) {
+        return bakeryRepository.deleteById(id);
+    }
+
 }
