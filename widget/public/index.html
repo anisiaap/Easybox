@@ -10,7 +10,7 @@
 <script src="easybox-widget.bundle.js"></script>
 <script>
     const params = new URLSearchParams(window.location.search);
-    const API_URL = "__REACT_APP_API_URL__";
+    const API_URL = process.env.REACT_APP_API_URL
     window.initEasyboxWidget({
         containerId: 'easybox-plugin-container',
         apiUrl: API_URL,
