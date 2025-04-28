@@ -39,8 +39,8 @@ public class ReservationController {
 
     @PostMapping("/reservation/hold")
     public Mono<Reservation> hold(@RequestBody CreateReservationRequest req, Authentication authentication) {
-        String bakeryName = authentication.getName(); // 'sub' from JWT
-        req.setClient(bakeryName);  // Inject authenticated bakery
+        Long bakeryId = Long.parseLong(authentication.getName()); // Now 'sub' is the bakery ID
+        req.setBakeryId(bakeryId);  // Inject authenticated bakery ID
         return reservationService.holdReservation(req);
     }
 

@@ -12,7 +12,6 @@ public class Bakery {
     private String name;
     private String phone;
     private Boolean pluginInstalled;
-    private Long bakeryId;
 
     private String token;
 
@@ -42,8 +41,6 @@ public class Bakery {
         this.phone = phone;
     }
 
-    public Long getBakeryId()  { return bakeryId; }
-    public void setBakeryId(Long v){ this.bakeryId = v; }
 
     public Boolean getPluginInstalled() {
         return pluginInstalled;

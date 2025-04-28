@@ -99,7 +99,7 @@
 <script>
   window.env = {
     WIDGET_URL: "https://widget.easybox-food.xyz/",
-    JWT_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYWtlcnktMSIsInJvbGVzIjpbIkJBS0VSWSJdLCJleHAiOjE3NDgxOTgyMjh9._7v_pKw_Rx8cMNOO3NLL8zp5w8lsPAET8iYZuUd9Fwk"
+    JWT_TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc0NTgyODc0NiwiZXhwIjoxNzc3MzY0NzQ2fQ.HPfgWS7o5AA8Y7EUQi_qiVnHPLOuUt_WhaXG-oRFGCs"
   };
 
   const API_URL = window.env.WIDGET_URL;
@@ -153,8 +153,7 @@
       phone,
       deliveryTime,
       minTemp: minTemperature,
-      totalDimension,
-      bakeryId: bakeryId.toString()
+      totalDimension
     });
 
     const frame = document.getElementById('easybox-frame');

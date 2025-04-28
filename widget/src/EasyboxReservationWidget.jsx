@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 
 import { api } from './api';
+import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import L from 'leaflet';
@@ -112,7 +113,7 @@ const EasyboxReservationWidget = forwardRef(
                     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
                         addr
                     )}`;
-                    const response = await api.get(url);
+                    const response = await axios.get(url);
                     if (response.data && response.data.length > 0) {
                         // Take the first result
                         const { lat, lon } = response.data[0];
