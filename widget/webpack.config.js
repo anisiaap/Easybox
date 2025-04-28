@@ -45,7 +45,7 @@ module.exports = {
             path: `./.env.${process.env.NODE_ENV}` // will load .env.production or .env.development
         }),
         new webpack.DefinePlugin({
-            __REACT_APP_API_URL__: JSON.stringify(process.env.REACT_APP_API_URL)
+            REACT_APP_API_URL: JSON.stringify(process.env.REACT_APP_API_URL)
         }),
         new CopyPlugin({
             patterns: [
