@@ -9,8 +9,11 @@
 
 <script src="easybox-widget.bundle.js"></script>
 <script>
+    window.env = {
+        API_URL: "https://api.easybox-food.xyz/api/"
+    };
     const params = new URLSearchParams(window.location.search);
-    const API_URL = process.env.REACT_APP_API_URL
+    //const API_URL = process.env.REACT_APP_API_URL;
     window.initEasyboxWidget({
         containerId: 'easybox-plugin-container',
         apiUrl: API_URL,
