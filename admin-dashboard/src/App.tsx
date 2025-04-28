@@ -6,7 +6,6 @@ import Easyboxes from './pages/Easyboxes'
 import Orders from './pages/Orders'
 import Customers from './pages/Customers'
 import Bakeries from './pages/Bakeries'
-import AdminSettings from './pages/AdminSettings'
 
 const App: React.FC = () => {
     return (
