@@ -16,7 +16,7 @@
     //const API_URL = process.env.REACT_APP_API_URL;
     window.initEasyboxWidget({
         containerId: 'easybox-plugin-container',
-        apiUrl: API_URL,
+        apiUrl: window.env.API_URL,
         clientAddress: params.get('address'),
         additionalCriteria: {
             clientName: params.get('clientName'),
