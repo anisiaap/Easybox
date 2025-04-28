@@ -1,14 +1,25 @@
-// src/main/java/com/example/network/controller/AdminDashboardController.java
 package com.example.network.controller;
 
 import com.example.network.dto.DashboardStatsDto;
+import com.example.network.dto.OrdersStatusDto;
+import com.example.network.dto.OrdersTrendDto;
+import com.example.network.dto.CompartmentsStatusDto;
+import com.example.network.entity.Reservation;
+import com.example.network.entity.Compartment;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
 import com.example.network.repository.CompartmentRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/dashboard")
@@ -40,5 +51,40 @@ public class AdminDashboardController {
                         tuple.getT3(), // total orders
                         tuple.getT4()  // expired orders
                 ));
+    }
+
+    @GetMapping("/orders-trend")
+    public Flux<OrdersTrendDto> getOrdersTrend() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekAgo = today.minusDays(6); // last 7 days
+
+        return reservationRepository.findAll()
+                .filter(r -> r.getDeliveryTime() != null)
+                .filter(r -> {
+                    LocalDate date = r.getDeliveryTime().toLocalDate();
+                    return (date.isEqual(weekAgo) || date.isAfter(weekAgo)) && (date.isBefore(today.plusDays(1)));
+                })
+                .groupBy(r -> r.getDeliveryTime().toLocalDate())
+                .flatMap(group -> group.count().map(count -> new OrdersTrendDto(group.key().toString(), count)));
+    }
+
+    @GetMapping("/orders-status")
+    public Flux<OrdersStatusDto> getOrdersStatus() {
+        return reservationRepository.findAll()
+                .groupBy(Reservation::getStatus)
+                .flatMap(group -> group.count()
+                        .map(count -> new OrdersStatusDto(group.key(), count))
+                );
+    }
+
+    @GetMapping("/compartments-status")
+    public Mono<CompartmentsStatusDto> getCompartmentsStatus() {
+        return compartmentRepository.findAll()
+                .collect(Collectors.groupingBy(Compartment::getStatus, Collectors.counting()))
+                .map(map -> {
+                    long free = map.getOrDefault("free", 0L);
+                    long busy = map.getOrDefault("busy", 0L);
+                    return new CompartmentsStatusDto(free, busy);
+                });
     }
 }
