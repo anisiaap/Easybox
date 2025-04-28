@@ -123,7 +123,7 @@ interface Easybox {
     latitude: number;
     longitude: number;
     status: string;
-    deviceUrl?: string;
+    clientId?: string; // ✅ Correct
 }
 
 interface Compartment {
@@ -204,8 +204,8 @@ const Dashboard: React.FC = () => {
     }, [search, easyboxes]);
 
     const handleSelectEasybox = async (box: Easybox) => {
-        if (!box.deviceUrl) {
-            alert("Device URL not available.");
+        if (!box.clientId) {
+            alert("Client ID not available.");
             return;
         }
         try {
