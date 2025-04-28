@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,6 +14,7 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import reactor.core.publisher.Flux;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -28,12 +30,14 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain webFilterChain(ServerHttpSecurity http,
                                                  ReactiveJwtDecoder jwtDecoder,
-                                                 ReactiveJwtAuthenticationConverter jwtAuthConverter) {
+                                                 ReactiveJwtAuthenticationConverter jwtAuthConverter,
+                                                 CorsConfigurationSource corsSource) {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-
+                .cors(cors -> cors.configurationSource(corsSource))
                 .authorizeExchange(ex -> ex
+                        .pathMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/widget/**").hasRole("BAKERY")
                         .pathMatchers("/api/mobile/**").hasAnyRole("USER", "BAKERY")
