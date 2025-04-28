@@ -255,10 +255,23 @@ const EasyboxReservationWidget = forwardRef(
             function handleMsg(evt) {
                 if (evt.data?.type === "bakery-order-confirmed") {
                     const id = evt.data.reservationId;
-                    api.patch(`widget/reservation/${id}/confirm`,null, {
-                    headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}})
-                        .then(() => console.log("Easybox confirmed!"))
-                        .catch(err => console.error("Confirm error", err));
+                    api.patch(`widget/reservation/${id}/confirm`, null, {
+                        headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
+                    })
+                        .then(res => {
+                            console.log("✅ Easybox confirmed!", res.data);
+                            toast.success("Reservation confirmed successfully!", { autoClose: 3000 });
+
+                            // Optionally, you can notify the parent
+                            window.parent.postMessage({
+                                type: "easybox-reservation-confirmed",
+                                reservationId: id
+                            }, "*");
+                        })
+                        .catch(err => {
+                            console.error("❌ Confirm error:", err);
+                            toast.error("Failed to confirm reservation.", { autoClose: 3000 });
+                        });
                 }
             }
             window.addEventListener("message", handleMsg);

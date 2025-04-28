@@ -21,6 +21,7 @@ public class CorsConfig {
         // 1) exactly the origins you need:
         config.setAllowedOrigins(Arrays.asList(
                 "https://widget.easybox-food.xyz",
+                "https://admin.easybox-food.xyz",
                 "http://192.168.1.133:3000",
                 "http://192.168.1.133:3001",
                 "http://localhost:3000",
@@ -30,7 +31,7 @@ public class CorsConfig {
                 "http://192.168.1.133:8081"
         ));
         config.setAllowedMethods(Arrays.asList("GET","POST","PATCH","PUT","DELETE","OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization","Content-Type","*"));
+        config.setAllowedHeaders(Arrays.asList("Authorization","Content-Type"));//"*"
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

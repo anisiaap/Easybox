@@ -13,7 +13,6 @@ import java.util.List;
 @RequestMapping("/api/admin/easyboxes")
 public class EasyboxAdminController {
 
-    @Autowired
     private EasyboxRepository easyboxRepository;
 
 

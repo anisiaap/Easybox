@@ -11,17 +11,58 @@ import AdminSettings from './pages/AdminSettings'
 const App: React.FC = () => {
     return (
         <Router>
-            <MainLayout>
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/easyboxes" element={<Easyboxes />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/customers" element={<Customers />} />
-                    <Route path="/bakeries" element={<Bakeries />} />
-                    <Route path="/admin-settings" element={<AdminSettings />} />
-                </Routes>
-            </MainLayout>
+            <Routes>
+                <Route
+                    path="/"
+                    element={
+                        <MainLayout>
+                            <Dashboard />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/easyboxes"
+                    element={
+                        <MainLayout>
+                            <Easyboxes />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/orders"
+                    element={
+                        <MainLayout>
+                            <Orders />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/customers"
+                    element={
+                        <MainLayout>
+                            <Customers />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/bakeries"
+                    element={
+                        <MainLayout>
+                            <Bakeries />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/admin-settings"
+                    element={
+                        <MainLayout>
+                            <AdminSettings />
+                        </MainLayout>
+                    }
+                />
+            </Routes>
         </Router>
+
     )
 }
 
