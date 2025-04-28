@@ -42,10 +42,10 @@ module.exports = {
     },
     plugins: [
         new Dotenv({
-            path: `./.env.${process.env.NODE_ENV}` // will load .env.production or .env.development
+            path: `./.env` // will load .env or .env.development
         }),
         new webpack.DefinePlugin({
-            REACT_APP_API_URL: JSON.stringify(process.env.REACT_APP_API_URL)
+            __REACT_APP_API_URL__: JSON.stringify(process.env.REACT_APP_API_URL)
         }),
         new CopyPlugin({
             patterns: [
