@@ -33,8 +33,12 @@ export default function Signup() {
             } else {
                 Alert.alert('Signup failed', 'Account may already exist.');
             }
-        } catch (err) {
-            Alert.alert('Error', 'Signup failed. Try again.');
+        } catch (err: any) {
+            const msg =
+                err?.response?.data?.message ??
+                err?.response?.data ??
+                'Signup failed. Try again.';
+            Alert.alert('Error', msg);
         }
     };
 

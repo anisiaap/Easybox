@@ -40,6 +40,10 @@
 			<artifactId>r2dbc-postgresql</artifactId>
 			<version>1.0.2.RELEASE</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 
 		<!-- PostgreSQL JDBC driver (for Flyway migrations) -->
 		<dependency>

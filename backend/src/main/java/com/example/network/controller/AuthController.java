@@ -1,11 +1,13 @@
 package com.example.network.controller;
 
+import com.example.network.config.PasswordConfig;
 import com.example.network.entity.Bakery;
 import com.example.network.entity.User;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.UserRepository;
 import com.example.network.config.JwtUtil;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -13,17 +15,19 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/app/auth")
 public class AuthController {
 
     private final UserRepository userRepo;
     private final BakeryRepository bakeryRepo;
     private final JwtUtil jwtUtil;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserRepository userRepo, BakeryRepository bakeryRepo, JwtUtil jwtUtil) {
+    public AuthController(UserRepository userRepo, BakeryRepository bakeryRepo, JwtUtil jwtUtil, BCryptPasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.bakeryRepo = bakeryRepo;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Client sign up
@@ -39,12 +43,12 @@ public class AuthController {
                         return Mono.just(ResponseEntity.badRequest().body("Client already registered"));
                     }
                     existing.setName(name); // update name if needed
-                    existing.setPassword(password); // set password now
+                    existing.setPassword(passwordEncoder.encode(password)); // set password now
                     return userRepo.save(existing)
                             .thenReturn(ResponseEntity.ok("Client upgraded to full account"));
                 })
                 .switchIfEmpty(
-                        userRepo.save(new User(null, name, phone, password))
+                        userRepo.save(new User(null, name, phone, passwordEncoder.encode(password)))
                                 .thenReturn(ResponseEntity.ok("New client registered"))
                 );
     }
@@ -86,7 +90,7 @@ public class AuthController {
                         if (!Boolean.TRUE.equals(bakery.getPluginInstalled())) {
                             return Mono.just(ResponseEntity.status(403).body("Not approved yet"));
                         }
-                        if (!password.equals(bakery.getPassword())) {
+                        if (!passwordEncoder.matches(password, bakery.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
                         return Mono.just(ResponseEntity.ok(bakery.getToken()));
@@ -97,7 +101,7 @@ public class AuthController {
         if ("USER".equalsIgnoreCase(role)) {
             return userRepo.findByPhoneNumber(phone)
                     .flatMap(user -> {
-                        if (!password.equals(user.getPassword())) {
+                        if (!passwordEncoder.matches(password, user.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
                         String token = jwtUtil.generateToken(user.getPhoneNumber(), List.of("USER"));

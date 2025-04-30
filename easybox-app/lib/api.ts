@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getToken } from './auth';
 
 const api = axios.create({
-    baseURL: 'https://api.easybox-food.xyz/',
+    baseURL: 'https://api.easybox-food.xyz/api',
 });
 
 api.interceptors.request.use(async (config) => {
