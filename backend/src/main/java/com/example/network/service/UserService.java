@@ -15,7 +15,7 @@ public class UserService {
     public Mono<User> getOrCreate(String phone, String name) {
         return userRepo.findByPhoneNumber(phone)
                 .switchIfEmpty(
-                        userRepo.save(new User(null, name, phone))
+                        userRepo.save(new User(null, name, phone, null))
                 )
                 /* handles race when two requests try to insert
                    the same phone concurrently */

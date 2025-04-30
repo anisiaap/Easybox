@@ -29,14 +29,26 @@ public class AuthController {
     // Client sign up
     @PostMapping("/register-client")
     public Mono<ResponseEntity<String>> registerClient(@RequestBody User user) {
-        return userRepo.findByPhoneNumber(user.getPhoneNumber())
-                .flatMap(existing -> Mono.just(ResponseEntity.badRequest().body("Client already exists")))
+        String phone = user.getPhoneNumber();
+        String name = user.getName();
+        String password = user.getPassword();
+
+        return userRepo.findByPhoneNumber(phone)
+                .flatMap(existing -> {
+                    if (existing.getPassword() != null) {
+                        return Mono.just(ResponseEntity.badRequest().body("Client already registered"));
+                    }
+                    existing.setName(name); // update name if needed
+                    existing.setPassword(password); // set password now
+                    return userRepo.save(existing)
+                            .thenReturn(ResponseEntity.ok("Client upgraded to full account"));
+                })
                 .switchIfEmpty(
-                        Mono.fromSupplier(() -> user) // No need to generate & store token
-                                .flatMap(userRepo::save)
-                                .thenReturn(ResponseEntity.ok("Client created"))
+                        userRepo.save(new User(null, name, phone, password))
+                                .thenReturn(ResponseEntity.ok("New client registered"))
                 );
     }
+
 
 
     // Bakery sign up
