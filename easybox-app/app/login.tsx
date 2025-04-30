@@ -38,7 +38,7 @@ export default function Login() {
             style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f4f4f4' }}
         >
             <Card style={{ padding: 20, borderRadius: 16, elevation: 4 }}>
-                <Title style={{ textAlign: 'center', marginBottom: 20 }}>🔐 Login</Title>
+                <Title style={{ textAlign: 'center', marginBottom: 20 }}>Login</Title>
 
                 <TextInput
                     label="Phone Number"

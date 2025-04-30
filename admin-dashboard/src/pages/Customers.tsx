@@ -1,6 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
+const Table = styled.table`
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 32px;
+`;
+
+const Th = styled.th`
+    text-align: left;
+    padding: 16px;
+    background-color: #5e5e5e;
+    color: white;
+    border-bottom: 1px solid #ddd;
+    font-weight: 600;
+`;
+
+const Td = styled.td`
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+`;
+
+const TableRow = styled.tr`
+    &:hover {
+        background-color: #f0f8f0;
+    }
+`;
 
 const Container = styled.div`
     padding: 32px;
@@ -8,21 +38,11 @@ const Container = styled.div`
     margin: 0 auto;
 `;
 
-const Card = styled.div`
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    padding: 20px;
-    margin-bottom: 16px;
-`;
+
 
 const Title = styled.h1`
     font-size: 28px;
     margin-bottom: 24px;
-`;
-
-const Label = styled.p`
-    margin: 4px 0;
 `;
 
 const ButtonGroup = styled.div`
@@ -125,37 +145,63 @@ const Customers: React.FC = () => {
         <Container>
             <Title>Customers</Title>
 
-            {customers.map((c) => (
-                <Card key={c.id}>
-                    {editingId === c.id ? (
-                        <div>
-                            <Input
-                                value={editData.name}
-                                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                                placeholder="Name"
-                            />
-                            <Input
-                                value={editData.phoneNumber}
-                                onChange={(e) => setEditData({ ...editData, phoneNumber: e.target.value })}
-                                placeholder="Phone Number"
-                            />
+            <Table>
+                <thead>
+                <tr>
+                    <Th>Name</Th>
+                    <Th>Phone</Th>
+                    <Th>Actions</Th>
+                </tr>
+                </thead>
+                <tbody>
+                {customers.map((c) => (
+                    <TableRow key={c.id}>
+                        <Td>
+                            {editingId === c.id ? (
+                                <Input
+                                    value={editData.name}
+                                    onChange={(e) =>
+                                        setEditData({ ...editData, name: e.target.value })
+                                    }
+                                    placeholder="Name"
+                                />
+                            ) : (
+                                c.name
+                            )}
+                        </Td>
+                        <Td>
+                            {editingId === c.id ? (
+                                <Input
+                                    value={editData.phoneNumber}
+                                    onChange={(e) =>
+                                        setEditData({ ...editData, phoneNumber: e.target.value })
+                                    }
+                                    placeholder="Phone Number"
+                                />
+                            ) : (
+                                c.phoneNumber
+                            )}
+                        </Td>
+                        <Td>
                             <ButtonGroup>
-                                <Button onClick={() => handleSaveEdit(c.id)}>Save</Button>
-                                <Button onClick={() => setEditingId(null)}>Cancel</Button>
+                                {editingId === c.id ? (
+                                    <>
+                                        <Button onClick={() => handleSaveEdit(c.id)}>Save</Button>
+                                        <Button onClick={() => setEditingId(null)}>Cancel</Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button onClick={() => handleStartEdit(c)}>Edit</Button>
+                                        <Button onClick={() => handleDelete(c.id)}>Delete</Button>
+                                    </>
+                                )}
                             </ButtonGroup>
-                        </div>
-                    ) : (
-                        <div>
-                            <h2>{c.name}</h2>
-                            <Label><strong>Phone:</strong> {c.phoneNumber}</Label>
-                            <ButtonGroup>
-                                <Button onClick={() => handleStartEdit(c)}>Edit</Button>
-                                <Button onClick={() => handleDelete(c.id)}>Delete</Button>
-                            </ButtonGroup>
-                        </div>
-                    )}
-                </Card>
-            ))}
+                        </Td>
+                    </TableRow>
+                ))}
+                </tbody>
+            </Table>
+
 
             <Form onSubmit={handleCreate}>
                 <h3>Add New Customer</h3>

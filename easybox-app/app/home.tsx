@@ -15,7 +15,7 @@ import api from '../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ScreenHeader from "@/app/ScreenHeader";
-
+import { useAuth } from '../lib/AuthContext';
 type OrderItem = {
     name: string;
     quantity: number;
@@ -23,10 +23,11 @@ type OrderItem = {
 
 type Order = {
     id: string;
-    status: 'place order' | 'pickup order' | string;
-    createdAt: string;
-    items: OrderItem[];
+    status: string;
+    deliveryTime: string;
+    easyboxAddress: string;
 };
+
 
 function getStatusChipStyle(status: string) {
     return {
@@ -42,15 +43,17 @@ function getStatusChipStyle(status: string) {
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { role } = useLocalSearchParams<{ role: 'bakery' | 'client' }>();
+    const { role, userId } = useAuth();
     const [orders, setOrders] = useState<Order[] | null>(null);
 
     useEffect(() => {
-        api
-            .get('/orders')
-            .then((res) => setOrders(res.data))
+        api.get('/orders', {
+            params: { userId, role }
+        })
+            .then(res => setOrders(res.data))
             .catch(() => setOrders([]));
-    }, []);
+    }, [userId, role]);
+
 
     if (!orders) {
         return (
@@ -92,19 +95,17 @@ export default function HomeScreen() {
                             </Chip>
                         </View>
 
-                        <Text style={styles.timestamp}>
-                            {new Date(item.createdAt).toLocaleString()}
-                        </Text>
-
                         <Divider style={{ marginVertical: 10 }} />
 
                         <View>
-                            {item.items.map((i, idx) => (
-                                <Text key={idx} style={styles.itemText}>
-                                    • {i.name} × {i.quantity}
-                                </Text>
-                            ))}
+                            <Text style={styles.itemText}>
+                                Location: {item.easyboxAddress}
+                            </Text>
+                            <Text style={styles.itemText}>
+                                📅 Delivery: {new Date(item.deliveryTime).toLocaleString()}
+                            </Text>
                         </View>
+
 
                         <View style={styles.actions}>
                             <Button
@@ -115,6 +116,7 @@ export default function HomeScreen() {
                                         params: { id: item.id },
                                     })
                                 }
+
                             >
                                 View Details
                             </Button>

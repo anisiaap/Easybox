@@ -1,6 +1,7 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AuthProvider } from '../lib/AuthContext';
 
 export default function Layout() {
     const pathname = usePathname();
@@ -9,6 +10,7 @@ export default function Layout() {
     const isActive = (path: string) => pathname === path;
     const hideNavbar = pathname === '/login' || pathname === '/signup';
     return (
+        <AuthProvider>
         <View style={{ flex: 1 }}>
             <Stack screenOptions={{ headerShown: false }} />
             {!hideNavbar && (
@@ -30,6 +32,7 @@ export default function Layout() {
             </View>
             )}
         </View>
+            </AuthProvider>
     );
 }
 

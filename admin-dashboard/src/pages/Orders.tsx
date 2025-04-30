@@ -2,41 +2,70 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
 import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog'; // adjust path!
-
 const OrdersContainer = styled.div`
     padding: 20px;
+    background: #f4f6f5;
+    min-height: 100vh;
 `;
 
 const Table = styled.table`
     width: 100%;
-    border-collapse: collapse;
-    background-color: #fff;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 `;
 
 const Th = styled.th`
     text-align: left;
-    padding: 12px;
-    background-color: #f0f0f0;
+    padding: 16px;
+    background-color: #5e5e5e;
+    color: white;
     border-bottom: 1px solid #ddd;
+    font-weight: 600;
 `;
 
 const Td = styled.td`
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+`;
+
+const TableRow = styled.tr`
+    &:hover {
+        background-color: #f0f8f0;
+    }
 `;
 
 const Button = styled.button`
-  margin-right: 8px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  &:hover {
-    background-color: #0056b3;
-  }
+    margin: 4px;
+    background-color: #104208;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    &:hover {
+        background-color: #0d3318;
+    }
+    &:disabled {
+        background-color: #aaa;
+        cursor: not-allowed;
+    }
 `;
+
+const Input = styled.input`
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-width: 200px;
+`;
+
 
 // Interfaces
 interface Order {
@@ -126,7 +155,7 @@ const Orders: React.FC = () => {
                 </thead>
                 <tbody>
                 {orders.map(order => (
-                    <tr key={order.id}>
+                    <TableRow key={order.id}>
                         <Td>{order.id}</Td>
                         <Td>{order.userPhone}</Td>
                         <Td>{order.bakeryName}</Td>
@@ -134,12 +163,10 @@ const Orders: React.FC = () => {
                         <Td>
                             {editingId === order.id ? (
                                 <>
-                                    <div>
-                                        <input
-                                            value={editStatus}
-                                            onChange={(e) => setEditStatus(e.target.value)}
-                                        />
-                                    </div>
+                                    <Input
+                                        value={editStatus}
+                                        onChange={(e) => setEditStatus(e.target.value)}
+                                    />
                                     <div style={{ marginTop: 8 }}>
                                         <b>Easybox:</b> {editEasybox?.address || 'None selected'}
                                         <br />
@@ -155,7 +182,6 @@ const Orders: React.FC = () => {
                                 <>
                                     <Button onClick={() => handleSaveEdit(order.id)}>Save</Button>
                                     <Button onClick={() => { setEditingId(null); setEditEasybox(null); }}>Cancel</Button>
-
                                 </>
                             ) : (
                                 <>
@@ -164,7 +190,7 @@ const Orders: React.FC = () => {
                                 </>
                             )}
                         </Td>
-                    </tr>
+                    </TableRow>
                 ))}
                 </tbody>
             </Table>

@@ -53,7 +53,7 @@ export default function Signup() {
     return (
         <View style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f9f9f9' }}>
             <Card style={{ padding: 20, borderRadius: 16 }}>
-                <Title style={{ textAlign: 'center', marginBottom: 20 }}>📱 Sign Up</Title>
+                <Title style={{ textAlign: 'center', marginBottom: 20 }}>Sign Up</Title>
 
                 <TextInput
                     label="Name"

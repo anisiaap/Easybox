@@ -26,31 +26,52 @@ public class ReservationCleanupService {
         this.compartmentRepository = compartmentRepository;
     }
 
-    @Scheduled(fixedRate = 3600000) // every hour
-    public void cleanupOverdueReservations() {
+    @Scheduled(fixedRate = 600_000) // every 10 minutes
+    public void cleanupAndUpdateReservations() {
         LocalDateTime now = LocalDateTime.now();
 
         reservationRepository.findAll()
-                .filter(r ->  r.getReservationEnd().isBefore(now))
-                .flatMap(r ->
-                        easyboxRepository.findById(r.getEasyboxId())
-                                .flatMap(box ->
-                                        compartmentRepository.findById(r.getCompartmentId())
-                                                .flatMap(comp -> {
-                                                    comp.setStatus("free");
-                                                    return compartmentRepository.save(comp);
-                                                })
-                                                .then(Mono.fromCallable(() -> {
-                                                    r.setStatus("expired");
-                                                    return r;
-                                                }))
-                                )
-                )
+                .flatMap(reservation -> {
+                    // Case 1: Expired reservation
+                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now)) {
+                        return easyboxRepository.findById(reservation.getEasyboxId())
+                                .flatMap(box -> compartmentRepository.findById(reservation.getCompartmentId())
+                                        .flatMap(comp -> {
+                                            comp.setStatus("free");
+                                            return compartmentRepository.save(comp);
+                                        })
+                                        .then(Mono.fromCallable(() -> {
+                                            reservation.setStatus("expired");
+                                            return reservation;
+                                        }))
+                                );
+                    }
+
+                    // Case 2: After reservationStart → waiting_bakery_drop_off
+                    if ("pending".equalsIgnoreCase(reservation.getStatus()) &&
+                            reservation.getReservationStart() != null &&
+                            reservation.getReservationStart().isBefore(now)) {
+                        reservation.setStatus("waiting_bakery_drop_off");
+                        return Mono.just(reservation);
+                    }
+
+                    // Case 3: Within 3 hours before reservationEnd → waiting_cleaning
+                    if ("pickup order".equalsIgnoreCase(reservation.getStatus()) &&
+                            reservation.getReservationEnd() != null &&
+                            reservation.getReservationEnd().minusHours(3).isBefore(now)) {
+                        reservation.setStatus("waiting_cleaning");
+                        return Mono.just(reservation);
+                    }
+
+                    // No changes
+                    return Mono.empty();
+                })
                 .flatMap(reservationRepository::save)
                 .subscribe(
-                        res   -> System.out.println("🧹 Cleaned up reservation " + res.getId()),
-                        error -> System.err.println("❌ Cleanup error: " + error.getMessage())
+                        res -> System.out.println("🔄 Updated reservation " + res.getId() + " → " + res.getStatus()),
+                        error -> System.err.println("❌ Error during reservation update: " + error.getMessage())
                 );
     }
+
 
 }

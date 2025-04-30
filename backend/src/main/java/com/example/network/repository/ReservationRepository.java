@@ -5,6 +5,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ReservationRepository extends ReactiveCrudRepository<Reservation, Long> {
@@ -14,4 +15,6 @@ public interface ReservationRepository extends ReactiveCrudRepository<Reservatio
     Flux<Reservation>findAllByStatusAndExpiresAtBefore(String pending, LocalDateTime now);
 
     Flux<Reservation> findByCompartmentId(Long id);
+    Flux<Reservation> findAllByUserId(Long userId);
+    Flux<Reservation> findAllByBakeryId(Long bakeryId);
 }

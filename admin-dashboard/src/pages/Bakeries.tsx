@@ -8,12 +8,37 @@ const Container = styled.div`
     margin: 0 auto;
 `;
 
-const Card = styled.div`
-    background-color: #ffffff;
+
+const Table = styled.table`
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    padding: 20px;
-    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 32px;
+`;
+
+const Th = styled.th`
+    text-align: left;
+    padding: 16px;
+    background-color: #5e5e5e;
+    color: white;
+    border-bottom: 1px solid #ddd;
+    font-weight: 600;
+`;
+
+const Td = styled.td`
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+`;
+
+const TableRow = styled.tr`
+    &:hover {
+        background-color: #f0f8f0;
+    }
 `;
 
 const Title = styled.h1`
@@ -21,9 +46,7 @@ const Title = styled.h1`
     margin-bottom: 24px;
 `;
 
-const Label = styled.p`
-    margin: 4px 0;
-`;
+
 
 const ButtonGroup = styled.div`
     margin-top: 12px;
@@ -151,43 +174,70 @@ const Bakeries: React.FC = () => {
         <Container>
             <Title>Bakeries</Title>
 
-            {bakeries.map(b => (
-                <Card key={b.id}>
-                    {editingId === b.id ? (
-                        <div>
-                            <h3>Edit Bakery</h3>
-                            <Input
-                                value={editData.name}
-                                onChange={e => setEditData({ ...editData, name: e.target.value })}
-                                placeholder="Bakery Name"
-                            />
-                            <Input
-                                value={editData.phone}
-                                onChange={e => setEditData({ ...editData, phone: e.target.value })}
-                                placeholder="Phone Number"
-                            />
+            <Table>
+                <thead>
+                <tr>
+                    <Th>Name</Th>
+                    <Th>Phone</Th>
+                    <Th>Approved</Th>
+                    <Th>Token</Th>
+                    <Th>Actions</Th>
+                </tr>
+                </thead>
+                <tbody>
+                {bakeries.map(b => (
+                    <TableRow key={b.id}>
+                        <Td>
+                            {editingId === b.id ? (
+                                <Input
+                                    value={editData.name}
+                                    onChange={e =>
+                                        setEditData({ ...editData, name: e.target.value })
+                                    }
+                                    placeholder="Bakery Name"
+                                />
+                            ) : (
+                                b.name
+                            )}
+                        </Td>
+                        <Td>
+                            {editingId === b.id ? (
+                                <Input
+                                    value={editData.phone}
+                                    onChange={e =>
+                                        setEditData({ ...editData, phone: e.target.value })
+                                    }
+                                    placeholder="Phone Number"
+                                />
+                            ) : (
+                                b.phone
+                            )}
+                        </Td>
+                        <Td>{b.pluginInstalled ? '✅ Yes' : '❌ No'}</Td>
+                        <Td><code>{b.token}</code></Td>
+                        <Td>
                             <ButtonGroup>
-                                <Button onClick={() => handleSaveEdit(b.id)}>Save</Button>
-                                <Button onClick={() => setEditingId(null)}>Cancel</Button>
-                            </ButtonGroup>
-                        </div>
-                    ) : (
-                        <div>
-                            <h2>{b.name}</h2>
-                            <Label><strong>Phone:</strong> {b.phone}</Label>
-                            <Label><strong>Approved:</strong> {b.pluginInstalled ? '✅ Yes' : '❌ No'}</Label>
-                            <Label><strong>Token:</strong> <code>{b.token}</code></Label>
-                            <ButtonGroup>
-                                <Button onClick={() => handleStartEdit(b)}>Edit</Button>
-                                <Button onClick={() => handleDeleteBakery(b.id)}>Delete</Button>
-                                {!b.pluginInstalled && (
-                                    <Button onClick={() => handleApprove(b.id)}>Approve</Button>
+                                {editingId === b.id ? (
+                                    <>
+                                        <Button onClick={() => handleSaveEdit(b.id)}>Save</Button>
+                                        <Button onClick={() => setEditingId(null)}>Cancel</Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button onClick={() => handleStartEdit(b)}>Edit</Button>
+                                        <Button onClick={() => handleDeleteBakery(b.id)}>Delete</Button>
+                                        {!b.pluginInstalled && (
+                                            <Button onClick={() => handleApprove(b.id)}>Approve</Button>
+                                        )}
+                                    </>
                                 )}
                             </ButtonGroup>
-                        </div>
-                    )}
-                </Card>
-            ))}
+                        </Td>
+                    </TableRow>
+                ))}
+                </tbody>
+            </Table>
+
 
             <Form onSubmit={handleCreateBakery}>
                 <h3>Add New Bakery (Approved)</h3>

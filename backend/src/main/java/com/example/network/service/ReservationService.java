@@ -167,7 +167,7 @@ public class ReservationService {
                 /* ---- per-compartment overlap check ------------------------ */
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()) ||  "pending".equalsIgnoreCase(r.getStatus()))
+                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()))
                                 .filter(r -> r.getReservationStart().isBefore(end) &&
                                         r.getReservationEnd()  .isAfter(start))
                                 .hasElements()
