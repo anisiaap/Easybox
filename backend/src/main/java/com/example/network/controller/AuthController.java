@@ -67,6 +67,7 @@ public class AuthController {
                 .switchIfEmpty(
                         Mono.defer(() -> {
                             String token = jwtUtil.generateTokenBakery(
+                                    bakery.getId(),
                                     bakery.getPhone(),
                                     List.of("BAKERY")
                             );
@@ -104,7 +105,7 @@ public class AuthController {
                         if (!passwordEncoder.matches(password, user.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
-                        String token = jwtUtil.generateTokenBakery(user.getPhoneNumber(), List.of("USER"));
+                        String token = jwtUtil.generateTokenBakery(user.getId(), user.getPhoneNumber(), List.of("USER"));
                         return Mono.just(ResponseEntity.ok(token)); // Still needed for JWT-based auth
                     })
                     .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("User not found")));

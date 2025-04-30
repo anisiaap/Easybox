@@ -4,12 +4,14 @@ import { TextInput, Button, Text, Card, Title } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveToken } from '../lib/auth';
-
+import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '../lib/AuthContext';
 export default function Login() {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'client' | 'bakery'>('client');
     const router = useRouter();
+    const { setAuth } = useAuth();
 
     const handleLogin = async () => {
         const mappedRole = role === 'client' ? 'USER' : 'BAKERY'; // ✅ proper mapping
@@ -21,6 +23,12 @@ export default function Login() {
             });
             const token: string = res.data;
             await saveToken(token);
+            const decoded: any = jwtDecode(token);
+            const userId = decoded.userId || decoded.sub; // adjust based on token content
+
+            // Option 2: Or call /me endpoint to get user info
+
+            setAuth(userId, role);
             router.replace({ pathname: '/redirect', params: { role } });
         } catch (e: any) {
             const msg =
