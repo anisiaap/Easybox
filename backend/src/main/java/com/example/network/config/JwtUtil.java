@@ -23,7 +23,7 @@ public class JwtUtil {
                 .signWith(SignatureAlgorithm.HS256, jwtSecret.getBytes())
                 .compact();
     }
-    public String generateToken(String subject, List<String> roles) {
+    public String generateTokenBakery(String subject, List<String> roles) {
         long validityMs = 1000L * 60 * 60 * 24 * 365; // 1 year
         return Jwts.builder()
                 .setSubject(subject)

@@ -13,17 +13,19 @@ export default function Login() {
 
     const handleLogin = async () => {
         try {
-            const res = await api.post('/auth/login', { phone, password, role: role.toUpperCase() });
+            const res = await api.post('/auth/login', {
+                phone,
+                password,
+                role: role.toUpperCase(),
+            });
             const token: string = res.data;
             await saveToken(token);
-            const isValidRole = role === 'client' || role === 'bakery';
-            if (!isValidRole) {
-                Alert.alert('Invalid role selected');
-                return;
-            }
             router.replace({ pathname: '/redirect', params: { role } });
         } catch (e: any) {
-            const msg = e?.response?.data || 'Login failed';
+            const msg =
+                e?.response?.data?.message ||
+                e?.response?.data ||
+                'Login failed. Check your phone and password.';
             Alert.alert('Login failed', msg);
         }
     };
@@ -54,20 +56,22 @@ export default function Login() {
                     mode="outlined"
                 />
 
-                <Button
-                    mode={role === 'client' ? 'contained' : 'outlined'}
-                    onPress={() => setRole('client')}
-                    style={{ marginBottom: 8 }}
-                >
-                    Login as Client
-                </Button>
-                <Button
-                    mode={role === 'bakery' ? 'contained' : 'outlined'}
-                    onPress={() => setRole('bakery')}
-                    style={{ marginBottom: 24 }}
-                >
-                    Login as Bakery
-                </Button>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
+                    <Button
+                        mode={role === 'client' ? 'contained' : 'outlined'}
+                        onPress={() => setRole('client')}
+                        style={{ flex: 1, marginRight: 8 }}
+                    >
+                        Client
+                    </Button>
+                    <Button
+                        mode={role === 'bakery' ? 'contained' : 'outlined'}
+                        onPress={() => setRole('bakery')}
+                        style={{ flex: 1 }}
+                    >
+                        Bakery
+                    </Button>
+                </View>
 
                 <Button mode="contained" onPress={handleLogin} style={{ borderRadius: 8 }}>
                     Login
@@ -83,3 +87,4 @@ export default function Login() {
         </KeyboardAvoidingView>
     );
 }
+

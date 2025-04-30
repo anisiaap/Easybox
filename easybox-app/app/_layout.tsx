@@ -7,11 +7,12 @@ export default function Layout() {
     const router = useRouter();
 
     const isActive = (path: string) => pathname === path;
-
+    const hideNavbar = pathname === '/login' || pathname === '/signup';
     return (
         <View style={{ flex: 1 }}>
             <Stack screenOptions={{ headerShown: false }} />
-            <View style={styles.navbar}>
+            {!hideNavbar && (
+                <View style={styles.navbar}>
                 <NavItem
                     icon="home-outline"
                     label="Orders"
@@ -27,6 +28,7 @@ export default function Layout() {
                     onPress={() => router.replace('/account')}
                 />
             </View>
+            )}
         </View>
     );
 }
