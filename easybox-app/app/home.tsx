@@ -38,15 +38,19 @@ function getStatusChipStyle(status: string) {
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { role, userId } = useAuth();
     const [orders, setOrders] = useState<Order[] | null>(null);
     const [showPastOrders, setShowPastOrders] = useState(false);
-
+    const { user } = useAuth();
+    const userId = user?.userId;
+    const role = user?.role;
     useEffect(() => {
-        api.get('/orders', { params: { userId, role } })
-            .then(res => setOrders(res.data))
+        if (!userId || !role) return;
+
+        api.get('/orders')
+        .then(res => setOrders(res.data))
             .catch(() => setOrders([]));
     }, [userId, role]);
+
 
     if (!orders) {
         return (
@@ -83,7 +87,7 @@ export default function HomeScreen() {
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={<Text>No active orders.</Text>}
                 renderItem={({ item }) => (
-                    <OrderCard item={item} role={role} router={router} />
+                    <OrderCard item={item} role={user!.role} router={router} />
                 )}
             />
 
@@ -106,7 +110,7 @@ export default function HomeScreen() {
                             data={pastOrders}
                             keyExtractor={(item) => item.id}
                             renderItem={({ item }) => (
-                                <OrderCard item={item} role={role} router={router} />
+                                <OrderCard item={item} role={user!.role} router={router} />
                             )}
                         />
                     )}

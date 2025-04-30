@@ -24,11 +24,13 @@ export default function Login() {
             const token: string = res.data;
             await saveToken(token);
             const decoded: any = jwtDecode(token);
-            const userId = decoded.userId || decoded.sub; // adjust based on token content
 
-            // Option 2: Or call /me endpoint to get user info
-
-            setAuth(userId, role);
+            setAuth({
+                userId: decoded.userId,
+                name: decoded.name,
+                phone: decoded.phone,
+                role: role, // 'client' or 'bakery'
+            });
             router.replace({ pathname: '/redirect', params: { role } });
         } catch (e: any) {
             const msg =

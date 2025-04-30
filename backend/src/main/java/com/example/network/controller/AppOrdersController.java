@@ -7,6 +7,8 @@ import com.example.network.repository.ReservationRepository;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,8 +26,12 @@ public class AppOrdersController {
     }
 
     @GetMapping
-    public Flux<Map<String, Object>> getUserOrders(@RequestParam Long userId, @RequestParam(required = false) String role) {
-        Flux<Reservation> reservations = "bakery".equalsIgnoreCase(role)
+    public Flux<Map<String, Object>> getUserOrders(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        List<String> roles = jwt.getClaim("roles");
+        boolean isBakery = roles.contains("BAKERY");
+
+        Flux<Reservation> reservations = isBakery
                 ? reservationRepository.findAllByBakeryId(userId)
                 : reservationRepository.findAllByUserId(userId);
 
@@ -39,21 +45,27 @@ public class AppOrdersController {
                             result.put("easyboxAddress", easybox.getAddress());
                             return result;
                         })
-                        .switchIfEmpty(Mono.just(new HashMap<>(Map.of(
-                                "id", res.getId(),
-                                "status", res.getStatus(),
-                                "deliveryTime", res.getDeliveryTime().toString(),
-                                "easyboxAddress", "Unknown Location"
-                        ))))
-        );
+                        .switchIfEmpty(Mono.fromSupplier(() -> {
+                            Map<String, Object> fallback = new HashMap<>();
+                            fallback.put("id", res.getId());
+                            fallback.put("status", res.getStatus());
+                            fallback.put("deliveryTime", res.getDeliveryTime().toString());
+                            fallback.put("easyboxAddress", "Unknown Location");
+                            return fallback;
+                        })))
+                ;
     }
+
     @GetMapping("/{id}")
     public Mono<Map<String, Object>> getOrderDetails(
             @PathVariable Long id,
-            @RequestParam String role,
-            @RequestParam Long userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        Mono<Reservation> resMono = "bakery".equalsIgnoreCase(role)
+        Long userId = jwt.getClaim("userId");
+        List<String> roles = jwt.getClaim("roles");
+        boolean isBakery = roles.contains("BAKERY");
+
+        Mono<Reservation> resMono = isBakery
                 ? reservationRepository.findByIdAndBakeryId(id, userId)
                 : reservationRepository.findByIdAndUserId(id, userId);
 
@@ -69,8 +81,8 @@ public class AppOrdersController {
                             map.put("compartmentId", res.getCompartmentId());
 
                             boolean showQr =
-                                    ("bakery".equalsIgnoreCase(role) && "waiting_bakery_drop_off".equalsIgnoreCase(res.getStatus())) ||
-                                            ("client".equalsIgnoreCase(role) && "waiting_client_pick_up".equalsIgnoreCase(res.getStatus()));
+                                    (isBakery && "waiting_bakery_drop_off".equalsIgnoreCase(res.getStatus())) ||
+                                            (!isBakery && "waiting_client_pick_up".equalsIgnoreCase(res.getStatus()));
 
                             if (showQr && res.getQrCodeData() != null) {
                                 map.put("qrCodeData", res.getQrCodeData());
@@ -79,6 +91,7 @@ public class AppOrdersController {
                             return map;
                         }));
     }
+
 
 
 

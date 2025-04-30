@@ -94,7 +94,12 @@ public class AuthController {
                         if (!passwordEncoder.matches(password, bakery.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
-                        return Mono.just(ResponseEntity.ok(bakery.getToken()));
+                        String token = jwtUtil.generateTokenBakery(
+                                bakery.getId(),
+                                bakery.getPhone(),
+                                List.of("BAKERY")
+                        );
+                        return Mono.just(ResponseEntity.ok(token));
                     })
                     .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("Bakery not found")));
         }

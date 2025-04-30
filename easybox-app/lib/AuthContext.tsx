@@ -1,24 +1,36 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// lib/AuthContext.ts
+import React, { createContext, useContext, useState } from 'react';
+import { removeToken } from './auth';
+
+type UserInfo = {
+    userId: number;
+    name: string;
+    phone: string;
+    role: 'bakery' | 'client' | 'cleaner';
+};
 
 type AuthContextType = {
-    userId: number;
-    role: 'bakery' | 'client' | 'cleaner';
-    setAuth: (userId: number, role: 'bakery' | 'client' | 'cleaner') => void;
+    user: UserInfo | null;
+    setAuth: (user: UserInfo) => void;
+    logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [userId, setUserId] = useState<number>(1); // temporary default
-    const [role, setRole] = useState<'bakery' | 'client' | 'cleaner'>('client');
+    const [user, setUser] = useState<UserInfo | null>(null);
 
-    const setAuth = (id: number, r: 'bakery' | 'client' | 'cleaner') => {
-        setUserId(id);
-        setRole(r);
+    const setAuth = (userInfo: UserInfo) => {
+        setUser(userInfo);
+    };
+
+    const logout = async () => {
+        await removeToken();
+        setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ userId, role, setAuth }}>
+        <AuthContext.Provider value={{ user, setAuth, logout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -18,14 +18,19 @@ type Order = {
 
 export default function OrderDetails() {
     const { id } = useLocalSearchParams();
-    const { role } = useAuth();
+    const { user } = useAuth();
+    const role = user?.role;
+
     const [order, setOrder] = useState<Order | null>(null);
 
     useEffect(() => {
-        api.get(`/orders/${id}`, { params: { role } })
+        if (!id || !role) return;
+
+        api.get(`/orders/${id}`)
             .then(res => setOrder(res.data))
             .catch(() => Alert.alert("Error", "Could not load order."));
     }, [id, role]);
+
 
     if (!order) return <Text style={styles.loading}>Loading...</Text>;
 
