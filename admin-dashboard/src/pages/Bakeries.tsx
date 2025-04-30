@@ -213,7 +213,7 @@ const Bakeries: React.FC = () => {
                                 b.phone
                             )}
                         </Td>
-                        <Td>{b.pluginInstalled ? '✅ Yes' : '❌ No'}</Td>
+                        <Td>{b.pluginInstalled ? '✅' : '❌'}</Td>
                         <Td><code>{b.token}</code></Td>
                         <Td>
                             <ButtonGroup>

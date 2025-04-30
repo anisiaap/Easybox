@@ -50,10 +50,15 @@ public class AppOrdersController {
     @GetMapping("/{id}")
     public Mono<Map<String, Object>> getOrderDetails(
             @PathVariable Long id,
-            @RequestParam String role // client, bakery, etc.
+            @RequestParam String role,
+            @RequestParam Long userId
     ) {
-        return reservationRepository.findById(id)
-                .flatMap(res -> easyboxRepository.findById(res.getEasyboxId())
+        Mono<Reservation> resMono = "bakery".equalsIgnoreCase(role)
+                ? reservationRepository.findByIdAndBakeryId(id, userId)
+                : reservationRepository.findByIdAndUserId(id, userId);
+
+        return resMono.flatMap(res ->
+                easyboxRepository.findById(res.getEasyboxId())
                         .defaultIfEmpty(new Easybox(null, 0.0, 0.0, null, "inactive"))
                         .map(easybox -> {
                             Map<String, Object> map = new HashMap<>();
@@ -63,7 +68,6 @@ public class AppOrdersController {
                             map.put("easyboxAddress", easybox.getAddress());
                             map.put("compartmentId", res.getCompartmentId());
 
-                            // Only include QR code if allowed
                             boolean showQr =
                                     ("bakery".equalsIgnoreCase(role) && "waiting_bakery_drop_off".equalsIgnoreCase(res.getStatus())) ||
                                             ("client".equalsIgnoreCase(role) && "waiting_client_pick_up".equalsIgnoreCase(res.getStatus()));
@@ -75,6 +79,7 @@ public class AppOrdersController {
                             return map;
                         }));
     }
+
 
 
 }

@@ -3,6 +3,7 @@ package com.example.network.repository;
 import com.example.network.entity.Reservation;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,4 +18,7 @@ public interface ReservationRepository extends ReactiveCrudRepository<Reservatio
     Flux<Reservation> findByCompartmentId(Long id);
     Flux<Reservation> findAllByUserId(Long userId);
     Flux<Reservation> findAllByBakeryId(Long bakeryId);
+    Mono<Reservation> findByIdAndBakeryId(Long id, Long bakeryId);
+    Mono<Reservation> findByIdAndUserId(Long id, Long userId);
+
 }

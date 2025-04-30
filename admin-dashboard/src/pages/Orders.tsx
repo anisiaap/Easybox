@@ -41,7 +41,7 @@ const TableRow = styled.tr`
 
 const Button = styled.button`
     margin: 4px;
-    background-color: #104208;
+    background-color: #28a745;
     color: white;
     border: none;
     padding: 6px 12px;
@@ -50,7 +50,7 @@ const Button = styled.button`
     cursor: pointer;
     transition: background-color 0.2s ease;
     &:hover {
-        background-color: #0d3318;
+        background-color: #28a745;
     }
     &:disabled {
         background-color: #aaa;
