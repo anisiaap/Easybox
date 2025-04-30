@@ -101,7 +101,7 @@ const Bakeries: React.FC = () => {
     const handleCreateBakery = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await api.post('/auth/register-bakery', newBakery);
+            api.post('/auth/register-bakery', newBakery);
             setNewBakery({ name: '', phone: '', pluginInstalled: true, token: '' });
             fetchBakeries();
         } catch (error) {
