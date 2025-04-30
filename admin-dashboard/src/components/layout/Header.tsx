@@ -27,9 +27,7 @@ const Header: React.FC = () => {
         <HeaderContainer>
             <Logo>Easybox Admin</Logo>
             <HeaderRight>
-                {/* Notifications, user avatar, etc. */}
-                <div>Alerts</div>
-                <div>User Profile</div>
+                <div>Log out</div>
             </HeaderRight>
         </HeaderContainer>
     )

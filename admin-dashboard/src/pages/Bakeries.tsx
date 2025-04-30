@@ -33,7 +33,7 @@ const ButtonGroup = styled.div`
 `;
 
 const Button = styled.button`
-    background-color: #0066cc;
+    background-color: #28a745;
     color: white;
     border: none;
     padding: 8px 14px;
@@ -41,7 +41,7 @@ const Button = styled.button`
     cursor: pointer;
     transition: background 0.2s ease;
     &:hover {
-        background-color: #004a99;
+        background-color: #218838;
     }
 `;
 
@@ -74,7 +74,7 @@ const Bakeries: React.FC = () => {
     const [newBakery, setNewBakery] = useState<Omit<Bakery, 'id'>>({
         name: '',
         phone: '',
-        pluginInstalled: true, // ✅ created by admin = auto approved
+        pluginInstalled: true,
         token: ''
     });
     const [editingId, setEditingId] = useState<number | null>(null);

@@ -1,43 +1,66 @@
-// src/pages/Customers.tsx
-
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { api } from '../api'; // your axios client
+import { api } from '../api';
 
-// Styled Components
-const CustomersContainer = styled.div`
-    padding: 20px;
+const Container = styled.div`
+    padding: 32px;
+    max-width: 800px;
+    margin: 0 auto;
 `;
 
-const CustomerCard = styled.div`
-    background-color: #fff;
-    margin-bottom: 10px;
-    padding: 16px;
-    border-radius: 8px;
-    position: relative;
+const Card = styled.div`
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 20px;
+    margin-bottom: 16px;
+`;
+
+const Title = styled.h1`
+    font-size: 28px;
+    margin-bottom: 24px;
+`;
+
+const Label = styled.p`
+    margin: 4px 0;
+`;
+
+const ButtonGroup = styled.div`
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 `;
 
 const Button = styled.button`
-    margin-right: 8px;
-    background-color: #007bff;
+    background-color: #28a745;
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 8px 14px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background 0.2s ease;
     &:hover {
-        background-color: #0056b3;
+        background-color: #218838;
     }
 `;
 
-const Form = styled.form`
-    margin-top: 20px;
-    background: #fafafa;
-    padding: 16px;
-    border-radius: 8px;
+const Input = styled.input`
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 `;
 
-// Types
+const Form = styled.form`
+    margin-top: 40px;
+    background: #f9f9f9;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+`;
+
 interface Customer {
     id: number;
     name: string;
@@ -99,54 +122,56 @@ const Customers: React.FC = () => {
     };
 
     return (
-        <CustomersContainer>
-            <h1>Customers</h1>
+        <Container>
+            <Title>Customers</Title>
 
-            {/* List of Customers */}
             {customers.map((c) => (
-                <CustomerCard key={c.id}>
+                <Card key={c.id}>
                     {editingId === c.id ? (
                         <div>
-                            <input
+                            <Input
                                 value={editData.name}
                                 onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                                 placeholder="Name"
-                            /><br/>
-                            <input
+                            />
+                            <Input
                                 value={editData.phoneNumber}
                                 onChange={(e) => setEditData({ ...editData, phoneNumber: e.target.value })}
                                 placeholder="Phone Number"
-                            /><br/>
-                            <Button onClick={() => handleSaveEdit(c.id)}>Save</Button>
-                            <Button onClick={() => setEditingId(null)}>Cancel</Button>
+                            />
+                            <ButtonGroup>
+                                <Button onClick={() => handleSaveEdit(c.id)}>Save</Button>
+                                <Button onClick={() => setEditingId(null)}>Cancel</Button>
+                            </ButtonGroup>
                         </div>
                     ) : (
                         <div>
                             <h2>{c.name}</h2>
-                            <p><strong>Phone:</strong> {c.phoneNumber}</p>
-                            <Button onClick={() => handleStartEdit(c)}>Edit</Button>
-                            <Button onClick={() => handleDelete(c.id)}>Delete</Button>
+                            <Label><strong>Phone:</strong> {c.phoneNumber}</Label>
+                            <ButtonGroup>
+                                <Button onClick={() => handleStartEdit(c)}>Edit</Button>
+                                <Button onClick={() => handleDelete(c.id)}>Delete</Button>
+                            </ButtonGroup>
                         </div>
                     )}
-                </CustomerCard>
+                </Card>
             ))}
 
-            {/* Create New Customer Form */}
             <Form onSubmit={handleCreate}>
                 <h3>Add New Customer</h3>
-                <input
+                <Input
                     value={newCustomer.name}
                     onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
                     placeholder="Name"
-                /><br/>
-                <input
+                />
+                <Input
                     value={newCustomer.phoneNumber}
                     onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
                     placeholder="Phone Number"
-                /><br/>
+                />
                 <Button type="submit">Create</Button>
             </Form>
-        </CustomersContainer>
+        </Container>
     );
 };
 

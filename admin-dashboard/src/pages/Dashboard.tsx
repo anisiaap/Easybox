@@ -9,20 +9,38 @@ import {
 } from 'recharts';
 
 const DashboardContainer = styled.div`
-    padding: 20px;
+    padding: 40px;
+    background: #f2f4f8;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+`;
+
+const Header = styled.h1`
+    font-size: 32px;
+    color: #2d3436;
+    margin-bottom: 30px;
+    text-align: center;
 `;
 
 const KPIWrapper = styled.div`
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
+    margin-bottom: 40px;
+`;
+
+const SectionTitle = styled.h2`
+    font-size: 24px;
+    color: #2d3436;
+    margin: 30px 0 20px;
 `;
 
 const ChartsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    width: 100%;
 `;
 
 interface DashboardStats {
@@ -33,7 +51,7 @@ interface DashboardStats {
 }
 
 interface OrdersTrendPoint {
-    date: string; // like "2025-04-28"
+    date: string;
     count: number;
 }
 
@@ -47,7 +65,7 @@ interface CompartmentsStatus {
     busy: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#6c5ce7', '#00b894', '#fdcb6e', '#e17055'];
 
 const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -86,9 +104,8 @@ const Dashboard: React.FC = () => {
 
     return (
         <DashboardContainer>
-            <h1>Dashboard Overview</h1>
+            <Header>📊 Easybox Dashboard</Header>
 
-            {/* KPI Cards */}
             <KPIWrapper>
                 <KPICard label="Total Easyboxes" value={stats?.totalEasyboxes ?? '-'} />
                 <KPICard label="Active Compartments" value={stats?.activeCompartments ?? '-'} />
@@ -96,21 +113,17 @@ const Dashboard: React.FC = () => {
                 <KPICard label="Expired Orders" value={stats?.expiredOrders ?? '-'} />
             </KPIWrapper>
 
-            {/* Charts Section */}
-            <h2>Analytics</h2>
+            <SectionTitle>Analytics</SectionTitle>
             <ChartsGrid>
-
-                {/* Line Chart: Orders Trend */}
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={ordersTrend}>
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip />
-                        <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} />
+                        <Line type="monotone" dataKey="count" stroke="#6c5ce7" strokeWidth={3} />
                     </LineChart>
                 </ResponsiveContainer>
 
-                {/* Pie Chart: Orders by Status */}
                 <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                         <Pie
@@ -119,7 +132,7 @@ const Dashboard: React.FC = () => {
                             nameKey="status"
                             cx="50%"
                             cy="50%"
-                            outerRadius={80}
+                            outerRadius={90}
                             label
                         >
                             {ordersStatus.map((entry, index) => (
@@ -131,19 +144,16 @@ const Dashboard: React.FC = () => {
                     </PieChart>
                 </ResponsiveContainer>
 
-                {/* Horizontal Bar: Easybox occupancy */}
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart layout="vertical" data={easyboxOccupancyData}>
                         <XAxis type="number" />
                         <YAxis dataKey="name" type="category" />
                         <Tooltip />
-                        <Bar dataKey="value" fill="#00c49f" />
+                        <Bar dataKey="value" fill="#00b894" barSize={24} />
                     </BarChart>
                 </ResponsiveContainer>
 
-                {/* Placeholder for new future charts */}
                 <ChartPlaceholder />
-
             </ChartsGrid>
         </DashboardContainer>
     );

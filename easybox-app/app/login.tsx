@@ -12,11 +12,12 @@ export default function Login() {
     const router = useRouter();
 
     const handleLogin = async () => {
+        const mappedRole = role === 'client' ? 'USER' : 'BAKERY'; // ✅ proper mapping
         try {
             const res = await api.post('/auth/login', {
                 phone,
                 password,
-                role: role.toUpperCase(),
+                role: mappedRole,
             });
             const token: string = res.data;
             await saveToken(token);
@@ -29,6 +30,7 @@ export default function Login() {
             Alert.alert('Login failed', msg);
         }
     };
+
 
     return (
         <KeyboardAvoidingView
