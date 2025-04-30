@@ -25,12 +25,18 @@ export default function Login() {
             await saveToken(token);
             const decoded: any = jwtDecode(token);
 
+            await saveToken(token);
+
+            const profileRes = await api.get('/auth/me');
+            const profile = profileRes.data;
+
             setAuth({
-                userId: decoded.userId,
-                name: decoded.name,
-                phone: decoded.phone,
-                role: role, // 'client' or 'bakery'
+                userId: profile.userId,
+                name: profile.name,
+                phone: profile.phone,
+                role: profile.role,
             });
+
             router.replace({ pathname: '/redirect', params: { role } });
         } catch (e: any) {
             const msg =

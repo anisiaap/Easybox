@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-
+import com.example.network.dto.ProfileResponse;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import java.util.List;
 import java.util.Map;
 
@@ -118,5 +120,20 @@ public class AuthController {
 
         return Mono.just(ResponseEntity.badRequest().body("Unknown role"));
     }
+    @GetMapping("/me")
+    public Mono<ResponseEntity<ProfileResponse>> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        String phone = jwt.getSubject();
+        List<String> roles = jwt.getClaim("roles");
 
+        if (roles.contains("BAKERY")) {
+            return bakeryRepo.findById(userId)
+                    .map(b -> ResponseEntity.ok(new ProfileResponse(b.getId(), b.getName(), b.getPhone(), "bakery")));
+        } else if (roles.contains("USER")) {
+            return userRepo.findById(userId)
+                    .map(u -> ResponseEntity.ok(new ProfileResponse(u.getId(), u.getName(), u.getPhoneNumber(), "client")));
+        } else {
+            return Mono.just(ResponseEntity.status(403).build());
+        }
+    }
 }
