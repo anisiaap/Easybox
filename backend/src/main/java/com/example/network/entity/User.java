@@ -10,16 +10,20 @@ public class User {
     private Long id;
     private String name;
     private String phoneNumber;
-
-    public User(Long id, String name, String phoneNumber) {
+    private String password;
+    public User(Long id, String name, String phoneNumber, String password) {
         this.id = id;
         this.name = name;
         this.phoneNumber = phoneNumber;
+        this.password = password;
     }
 
     // Additional fields as needed
 
     // Getters & Setters
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

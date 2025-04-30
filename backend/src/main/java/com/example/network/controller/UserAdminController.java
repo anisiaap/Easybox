@@ -21,6 +21,10 @@ public class UserAdminController {
     public Flux<User> getAllUsers() {
         return userRepository.findAll();
     }
+    @PostMapping
+    public Mono<User> createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
 
     @GetMapping("/{id}")
     public Mono<User> getUserById(@PathVariable Long id) {

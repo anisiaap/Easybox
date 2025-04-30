@@ -12,7 +12,9 @@ public class Bakery {
     private String name;
     private String phone;
     private Boolean pluginInstalled;
-
+    private String password;
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
     private String token;
 
     public String getToken() {
