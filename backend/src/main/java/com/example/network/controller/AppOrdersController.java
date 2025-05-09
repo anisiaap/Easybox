@@ -43,6 +43,10 @@ public class AppOrdersController {
                             result.put("status", res.getStatus());
                             result.put("deliveryTime", res.getDeliveryTime().toString());
                             result.put("easyboxAddress", easybox.getAddress());
+                            result.put("actionDeadline", isBakery
+                                    ? res.getDeliveryTime().toString()
+                                    : res.getReservationEnd().toString());
+
                             return result;
                         })
                         .switchIfEmpty(Mono.fromSupplier(() -> {
@@ -79,6 +83,9 @@ public class AppOrdersController {
                             map.put("deliveryTime", res.getDeliveryTime().toString());
                             map.put("easyboxAddress", easybox.getAddress());
                             map.put("compartmentId", res.getCompartmentId());
+                            map.put("actionDeadline", isBakery
+                                    ? res.getDeliveryTime().toString()
+                                    : res.getReservationEnd().toString());
 
                             boolean showQr =
                                     (isBakery && "waiting_bakery_drop_off".equalsIgnoreCase(res.getStatus())) ||

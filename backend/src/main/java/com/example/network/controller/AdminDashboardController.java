@@ -1,9 +1,6 @@
 package com.example.network.controller;
 
-import com.example.network.dto.DashboardStatsDto;
-import com.example.network.dto.OrdersStatusDto;
-import com.example.network.dto.OrdersTrendDto;
-import com.example.network.dto.CompartmentsStatusDto;
+import com.example.network.dto.*;
 import com.example.network.entity.Reservation;
 import com.example.network.entity.Compartment;
 import com.example.network.repository.EasyboxRepository;
@@ -17,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -86,5 +84,22 @@ public class AdminDashboardController {
                     long busy = map.getOrDefault("busy", 0L);
                     return new CompartmentsStatusDto(free, busy);
                 });
+    }
+    @GetMapping("/orders-weekly")
+    public Flux<OrdersWeeklyDto> getOrdersWeekly() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekAgo = today.minusDays(6); // includes today (7 days)
+
+        return reservationRepository.findAll()
+                .filter(r -> r.getDeliveryTime() != null)
+                .filter(r -> {
+                    LocalDate date = r.getDeliveryTime().toLocalDate();
+                    return (date.isEqual(weekAgo) || date.isAfter(weekAgo)) && (date.isBefore(today.plusDays(1)));
+                })
+                .groupBy(r -> r.getDeliveryTime().toLocalDate())
+                .flatMap(group -> group.count()
+                        .map(count -> new OrdersWeeklyDto(group.key().toString(), count))
+                )
+                .sort(Comparator.comparing(OrdersWeeklyDto::getDay));
     }
 }

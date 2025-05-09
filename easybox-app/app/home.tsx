@@ -75,11 +75,8 @@ export default function HomeScreen() {
                 ListHeaderComponent={
                     <View style={{ padding: 16 }}>
                         <Title style={{ fontWeight: 'bold', fontSize: 22 }}>
-                            Welcome, {role} 👋
+                            Welcome, {user?.name}!
                         </Title>
-                        <Text style={{ marginTop: 4, color: '#666' }}>
-                            Here’s your latest orders
-                        </Text>
                     </View>
                 }
                 contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
@@ -142,7 +139,7 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
                     Location: {item.easyboxAddress}
                 </Text>
                 <Text style={styles.itemText}>
-                    🗓️ Delivery: {new Date(item.deliveryTime).toLocaleString()}
+                     Delivery: {new Date(item.deliveryTime).toLocaleString()}
                 </Text>
             </View>
 

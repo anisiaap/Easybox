@@ -107,6 +107,9 @@ const Customers: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this customer? This action cannot be undone.');
+        if (!confirmDelete) return;
+
         try {
             await api.delete(`/admin/users/${id}`);
             fetchCustomers();
@@ -121,6 +124,8 @@ const Customers: React.FC = () => {
     };
 
     const handleSaveEdit = async (id: number) => {
+        const confirmSave = window.confirm('Are you sure you want to save the changes to this customer?');
+        if (!confirmSave) return;
         try {
             await api.put(`/admin/users/${id}`, editData);
             setEditingId(null);

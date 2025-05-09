@@ -99,6 +99,9 @@ const Orders: React.FC = () => {
     };
 
     const handleDeleteOrder = async (id: number) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this order? This action cannot be undone.');
+        if (!confirmDelete) return;
+
         try {
             await api.delete(`/admin/reservations/${id}`);
             fetchOrders();
@@ -126,6 +129,8 @@ const Orders: React.FC = () => {
         setShowEasyboxPicker(false);
     };
     const handleSaveEdit = async (id: number) => {
+        const confirmSave = window.confirm('Are you sure you want to save the changes to this order?');
+        if (!confirmSave) return;
         try {
             await api.put(`/admin/reservations/${id}`, {
                 status: editStatus,

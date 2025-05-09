@@ -64,17 +64,28 @@ public class AuthController {
 
     @PostMapping("/register-bakery")
     public Mono<ResponseEntity<Bakery>> registerBakery(@RequestBody Bakery bakery) {
+        if (bakery.getPassword() == null || bakery.getPassword().isBlank()) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
+
         return bakeryRepo.findByPhone(bakery.getPhone())
                 .flatMap(existing -> badRequestBakery())
                 .switchIfEmpty(
                         Mono.defer(() -> {
+                            // 🔒 Hash the password
+                            String hashedPassword = passwordEncoder.encode(bakery.getPassword());
+                            bakery.setPassword(hashedPassword);
+
+                            // 🛠 Generate JWT
                             String token = jwtUtil.generateTokenBakery(
                                     bakery.getId(),
                                     bakery.getPhone(),
                                     List.of("BAKERY")
                             );
+
                             bakery.setPluginInstalled(false);
                             bakery.setToken(token);
+
                             return bakeryRepo.save(bakery)
                                     .map(ResponseEntity::ok);
                         })

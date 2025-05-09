@@ -14,12 +14,35 @@ type Order = {
     easyboxAddress: string;
     qrCodeData?: string;
     compartmentId: number;
+    actionDeadline: string; // ✅ new
 };
+function calculateTimeLeft(deadline: string): string {
+    const now = new Date();
+    const end = new Date(deadline);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Expired';
+
+    const minutes = Math.floor((diff / 1000 / 60) % 60);
+    const hours = Math.floor((diff / 1000 / 60 / 60) % 24);
+    const days = Math.floor(diff / 1000 / 60 / 60 / 24);
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+
+    return parts.join(' ');
+}
+
+
 
 export default function OrderDetails() {
     const { id } = useLocalSearchParams();
     const { user } = useAuth();
     const role = user?.role;
+    const [timeLeft, setTimeLeft] = useState<string | null>(null);
+
 
     const [order, setOrder] = useState<Order | null>(null);
 
@@ -30,6 +53,18 @@ export default function OrderDetails() {
             .then(res => setOrder(res.data))
             .catch(() => Alert.alert("Error", "Could not load order."));
     }, [id, role]);
+    useEffect(() => {
+        if (!order?.actionDeadline) return;
+
+        const update = () => {
+            setTimeLeft(calculateTimeLeft(order.actionDeadline));
+        };
+
+        update(); // run once immediately
+        const interval = setInterval(update, 30000); // update every 30s
+
+        return () => clearInterval(interval); // cleanup
+    }, [order?.actionDeadline]);
 
 
     if (!order) return <Text style={styles.loading}>Loading...</Text>;
@@ -89,7 +124,12 @@ export default function OrderDetails() {
 
                             <Text style={styles.label}>Easybox Location:</Text>
                             <Text>{order.easyboxAddress}</Text>
-
+                            <Text style={styles.label}>
+                                Time Left to {role === 'bakery' ? 'place order' : 'pick up'}:
+                            </Text>
+                            <Text style={styles.countdown}>
+                                {timeLeft || '...'}
+                            </Text>
                             {showQr && order.qrCodeData && (
                                 <>
                                     <Divider style={styles.divider} />
@@ -159,4 +199,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     loading: { marginTop: 50, textAlign: 'center' },
+    countdown: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#d32f2f',
+        marginBottom: 12,
+    }
+
 });

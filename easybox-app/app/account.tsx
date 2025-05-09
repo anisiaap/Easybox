@@ -32,13 +32,14 @@ export default function Account() {
                     <Card.Title title="Account Info" />
                     <Card.Content>
                         <Text style={styles.label}>Name:</Text>
-                        <Text>{user.name}</Text>
+                        <Text>{user.name.toUpperCase()}</Text>
 
                         <Text style={styles.label}>Phone:</Text>
-                        <Text>{user.phone}</Text>
+                        <Text>{user.phone.toUpperCase()}</Text>
 
                         <Text style={styles.label}>Role:</Text>
-                        <Text>{user.role}</Text>
+                        <Text>{user.role.toUpperCase()}</Text>
+
                     </Card.Content>
                 </Card>
                 <Button

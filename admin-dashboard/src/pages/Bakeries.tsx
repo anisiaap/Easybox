@@ -7,6 +7,11 @@ const Container = styled.div`
     max-width: 800px;
     margin: 0 auto;
 `;
+const TableWrapper = styled.div`
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 32px;
+`;
 
 
 const Table = styled.table`
@@ -29,11 +34,7 @@ const Th = styled.th`
     font-weight: 600;
 `;
 
-const Td = styled.td`
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-`;
+
 
 const TableRow = styled.tr`
     &:hover {
@@ -83,6 +84,13 @@ const Form = styled.form`
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 `;
+const Td = styled.td`
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+    word-break: break-word;
+    max-width: 250px;
+`;
 
 interface Bakery {
     id: number;
@@ -94,6 +102,7 @@ interface Bakery {
 
 const Bakeries: React.FC = () => {
     const [bakeries, setBakeries] = useState<Bakery[]>([]);
+    const [copiedTokenId, setCopiedTokenId] = useState<number | null>(null);
     const [newBakery, setNewBakery] = useState<Omit<Bakery, 'id'>>({
         name: '',
         phone: '',
@@ -133,6 +142,9 @@ const Bakeries: React.FC = () => {
     };
 
     const handleDeleteBakery = async (id: number) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this bakery? This action cannot be undone.');
+        if (!confirmDelete) return;
+
         try {
             await api.delete(`/admin/bakeries/${id}`);
             fetchBakeries();
@@ -152,6 +164,8 @@ const Bakeries: React.FC = () => {
     };
 
     const handleSaveEdit = async (id: number) => {
+        const confirmSave = window.confirm('Are you sure you want to save the changes to this bakery?');
+        if (!confirmSave) return;
         try {
             await api.put(`/admin/bakeries/${id}`, editData);
             setEditingId(null);
@@ -162,6 +176,8 @@ const Bakeries: React.FC = () => {
     };
 
     const handleApprove = async (id: number) => {
+        const confirmSave = window.confirm('Are you sure you want to approve this order bakery?');
+        if (!confirmSave) return;
         try {
             await api.put(`/admin/bakeries/${id}`, { ...bakeries.find(b => b.id === id), pluginInstalled: true });
             fetchBakeries();
@@ -173,7 +189,7 @@ const Bakeries: React.FC = () => {
     return (
         <Container>
             <Title>Bakeries</Title>
-
+            <TableWrapper>
             <Table>
                 <thead>
                 <tr>
@@ -214,7 +230,16 @@ const Bakeries: React.FC = () => {
                             )}
                         </Td>
                         <Td>{b.pluginInstalled ? '✅' : '❌'}</Td>
-                        <Td><code>{b.token}</code></Td>
+                        <Td>
+                            <Button onClick={() => {
+                                navigator.clipboard.writeText(b.token);
+                                setCopiedTokenId(b.id);
+                                setTimeout(() => setCopiedTokenId(null), 2000);
+                            }}>
+                                📋 Copy
+                            </Button>
+                            {copiedTokenId === b.id && <span style={{ marginLeft: 8, color: 'green' }}>✅ Copied!</span>}
+                        </Td>
                         <Td>
                             <ButtonGroup>
                                 {editingId === b.id ? (
@@ -233,12 +258,18 @@ const Bakeries: React.FC = () => {
                                 )}
                             </ButtonGroup>
                         </Td>
+                        {/*<Td>*/}
+                        {/*    <code style={{ display: 'inline-block', maxWidth: 200, overflowX: 'auto', whiteSpace: 'nowrap' }}>*/}
+                        {/*        {b.token}*/}
+                        {/*    </code>*/}
+                        {/*</Td>*/}
+
                     </TableRow>
                 ))}
                 </tbody>
             </Table>
 
-
+                </TableWrapper>
             <Form onSubmit={handleCreateBakery}>
                 <h3>Add New Bakery (Approved)</h3>
                 <Input
