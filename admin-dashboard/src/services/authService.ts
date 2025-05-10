@@ -6,6 +6,6 @@ interface LoginRequest {
 }
 
 export async function login(data: LoginRequest): Promise<string> {
-    const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, data);
+    const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, data);
     return res.data.token;
 }

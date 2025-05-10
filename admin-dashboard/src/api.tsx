@@ -28,6 +28,7 @@ api.interceptors.response.use(
                 const refreshRes = await api.get('/auth/refresh-token');
                 const newToken = refreshRes.data;
                 localStorage.setItem('token', newToken);
+                originalRequest.headers = originalRequest.headers || {};
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
                 return api(originalRequest); // retry
             } catch (refreshErr) {
