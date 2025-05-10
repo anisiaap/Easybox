@@ -21,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -57,7 +58,8 @@ public class SecurityConfig {
 
     @Bean
     public ReactiveJwtDecoder jwtDecoder(@Value("${JWT_RSA_PUBLIC}") String publicKeyPem) throws Exception {
-        PublicKey key = PemUtils.parsePublicKeyFromPem(publicKeyPem);
+        String pem = new String(Base64.getDecoder().decode(publicKeyPem));
+        PublicKey key = PemUtils.parsePublicKeyFromPem(pem);
 
         if (!(key instanceof RSAPublicKey)) {
             throw new IllegalArgumentException("Provided public key is not an RSA key");

@@ -9,6 +9,7 @@ const OrdersContainer = styled.div`
     background: #f4f6f5;
     min-height: 100vh;
 `;
+import { useCallback } from 'react';
 
 const Table = styled.table`
     width: 100%;
@@ -97,6 +98,7 @@ const Orders: React.FC = () => {
     const [filterDate, setFilterDate] = useState('');
     const [filterBakeryId, setFilterBakeryId] = useState('');
     const [filterUserId, setFilterUserId] = useState('');
+
     type ConfirmAction = null | {
         message: string;
         onConfirm: () => void;
@@ -106,11 +108,7 @@ const Orders: React.FC = () => {
     const [totalOrders, setTotalOrders] = useState(0);
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
-    useEffect(() => {
-        fetchOrders();
-    }, []);
-
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
@@ -131,7 +129,13 @@ const Orders: React.FC = () => {
             toast.error(message);
             console.error('Failed to fetch orders', error);
         }
-    };
+    }, [page, filterDate, filterBakeryId, filterUserId]);
+
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
+
+
     const handleDeleteOrder = (id: number) => {
         setConfirmDialog({
             message: 'Are you sure you want to delete this order? This action cannot be undone.',
@@ -150,8 +154,8 @@ const Orders: React.FC = () => {
 
     const handleStartEdit = (order: Order) => {
         setEditingId(order.id);
-        setEditStatus(statusOptions.find(opt => opt.value === order.status)?.label || order.status);
-        if (order.easyboxId && order.easyboxAddress) {
+        setEditStatus(order.status); // much cleaner and accurate
+         if (order.easyboxId && order.easyboxAddress) {
             setEditEasybox({ id: order.easyboxId, address: order.easyboxAddress });
         } else {
             setEditEasybox(null);

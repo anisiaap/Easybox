@@ -5,6 +5,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import java.security.PrivateKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -19,7 +20,8 @@ public class JwtUtil {
     private final PrivateKey privateKey;
 
     public JwtUtil(@Value("${JWT_RSA_PRIVATE}") String privateKeyPem) throws Exception {
-        this.privateKey = PemUtils.parsePrivateKeyFromPem(privateKeyPem);
+        String pem = new String(Base64.getDecoder().decode(privateKeyPem));
+        this.privateKey = PemUtils.parsePrivateKeyFromPem(pem);
     }
     private static final long EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
 
