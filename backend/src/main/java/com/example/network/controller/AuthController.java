@@ -104,18 +104,22 @@ public class AuthController {
 
                             return bakeryRepo.save(newBakery)
                                     .flatMap(savedBakery -> {
-                                        if (savedBakery.getId() == null) {
+                                        Long newId = savedBakery.getId();
+                                        if (newId == null) {
                                             return Mono.error(new IllegalStateException("Saved bakery has null ID"));
                                         }
 
-                                        String token = jwtUtil.generateLongLivedToken(
-                                                savedBakery.getId(),
-                                                savedBakery.getPhone(),
-                                                List.of("BAKERY")
-                                        );
-                                        savedBakery.setToken(token);
-                                        return bakeryRepo.save(savedBakery)
-                                                .thenReturn(ResponseEntity.ok("New bakery registered"));
+                                        return bakeryRepo.findById(newId) 
+                                                .flatMap(bakeryWithId -> {
+                                                    String token = jwtUtil.generateLongLivedToken(
+                                                            bakeryWithId.getId(),
+                                                            bakeryWithId.getPhone(),
+                                                            List.of("BAKERY")
+                                                    );
+                                                    bakeryWithId.setToken(token);
+                                                    return bakeryRepo.save(bakeryWithId)
+                                                            .thenReturn(ResponseEntity.ok("New bakery registered"));
+                                                });
                                     });
                         })
                 );
