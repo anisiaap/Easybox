@@ -77,11 +77,20 @@ public class AuthController {
                     if (existing.getPassword() != null) {
                         return Mono.error(new ConflictException("Bakery already registered"));
                     }
-                    // Upgrade existing bakery record
+
+                    // Ensure the bakery has an ID before proceeding
+                    if (existing.getId() == null) {
+                        return Mono.error(new IllegalStateException("Existing bakery has no ID"));
+                    }
+
                     existing.setName(name);
                     existing.setPassword(passwordEncoder.encode(password));
                     existing.setPluginInstalled(false);
-                    existing.setToken(jwtUtil.generateLongLivedToken(existing.getId(), existing.getPhone(), List.of("BAKERY")));
+
+                    // Generate token only after making sure ID is not null
+                    String token = jwtUtil.generateLongLivedToken(existing.getId(), existing.getPhone(), List.of("BAKERY"));
+                    existing.setToken(token);
+
                     return bakeryRepo.save(existing)
                             .thenReturn(ResponseEntity.ok("Bakery upgraded to full account"));
                 })
@@ -95,6 +104,10 @@ public class AuthController {
 
                             return bakeryRepo.save(newBakery)
                                     .flatMap(savedBakery -> {
+                                        if (savedBakery.getId() == null) {
+                                            return Mono.error(new IllegalStateException("Saved bakery has null ID"));
+                                        }
+
                                         String token = jwtUtil.generateLongLivedToken(
                                                 savedBakery.getId(),
                                                 savedBakery.getPhone(),

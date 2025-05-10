@@ -13,7 +13,7 @@ export default function Signup() {
     const router = useRouter();
 
     const isValidPhone = /^07\d{8}$/.test(phone);
-    const isStrongPassword = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(password);
+    const isStrongPassword = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\S]{8,}$/.test(password);
     const isFormValid = name.trim() !== '' && isValidPhone && isStrongPassword;
 
     const handleSignup = async () => {
@@ -82,7 +82,7 @@ export default function Signup() {
                     mode="outlined"
                 />
                 <HelperText type="error" visible={password.length > 0 && !isStrongPassword}>
-                    Password must be at least 6 characters and contain letters and numbers
+                    Password must be at least 8 characters and contain letters and numbers and a special character
                 </HelperText>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
