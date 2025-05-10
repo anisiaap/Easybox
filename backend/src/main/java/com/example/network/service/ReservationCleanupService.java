@@ -35,7 +35,7 @@ public class ReservationCleanupService {
         reservationRepository.findAll()
                 .flatMap(reservation -> {
                     // Case 1: Expired reservation
-                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now)) {
+                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now) && reservation.getStatus() != "expired") {
                         return easyboxRepository.findById(reservation.getEasyboxId())
                                 .flatMap(box -> compartmentRepository.findById(reservation.getCompartmentId())
                                         .flatMap(comp -> {

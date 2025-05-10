@@ -9,6 +9,34 @@ import Bakeries from './pages/Bakeries'
 import { Toaster } from 'react-hot-toast';
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
+import { jwtDecode } from 'jwt-decode';
+import { api } from './api'; // axios instance
+
+function scheduleTokenRefresh(token: string) {
+    const decoded: any = jwtDecode(token);
+    const expiry = decoded.exp * 1000;
+    const refreshTime = expiry - Date.now() - 60_000; // 1 min before
+
+    if (refreshTime > 0) {
+        setTimeout(async () => {
+            try {
+                const res = await api.get('/auth/refresh-token');
+                const newToken = res.data;
+                localStorage.setItem('token', newToken);
+                scheduleTokenRefresh(newToken); // chain it
+            } catch (err) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        }, refreshTime);
+    }
+}
+
+// Call this on login
+const token = localStorage.getItem('token');
+if (token) {
+    scheduleTokenRefresh(token);
+}
 const App: React.FC = () => {
     return (
         <Router>

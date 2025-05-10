@@ -27,7 +27,7 @@ export default function Signup() {
             const endpoint = role === 'client' ? '/auth/register-client' : '/auth/register-bakery';
             const payload =
                 role === 'client'
-                    ? { name, phoneNumber: phone, password }
+                    ? { name, phone, password }
                     : { name, phone, password, pluginInstalled: false };
 
             const res = await api.post(endpoint, payload);

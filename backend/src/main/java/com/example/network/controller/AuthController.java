@@ -109,7 +109,7 @@ public class AuthController {
                                             return Mono.error(new IllegalStateException("Saved bakery has null ID"));
                                         }
 
-                                        return bakeryRepo.findById(newId) 
+                                        return bakeryRepo.findById(newId)
                                                 .flatMap(bakeryWithId -> {
                                                     String token = jwtUtil.generateLongLivedToken(
                                                             bakeryWithId.getId(),
