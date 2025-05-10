@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
 import toast from 'react-hot-toast';
@@ -103,11 +103,7 @@ const Customers: React.FC = () => {
     };
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
-    useEffect(() => {
-        fetchCustomers();
-    }, []);
-
-    const fetchCustomers = async () => {
+    const fetchCustomers = useCallback( async () => {
         try {
             const [usersRes, countRes] = await Promise.all([
                 api.get(`/admin/users?page=${page}&size=${pageSize}`),
@@ -116,10 +112,15 @@ const Customers: React.FC = () => {
             setCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
-                const message = error?.response?.data || 'Failed to fetch customers';
-                toast.error(message);
+            const message = error?.response?.data || 'Failed to fetch customers';
+            toast.error(message);
         }
-    };
+    }, [page]);
+    useEffect(() => {
+        fetchCustomers();
+    }, [fetchCustomers]);
+
+
 
     const handleDelete = (id: number) => {
         setConfirmDialog({

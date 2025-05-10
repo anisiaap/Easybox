@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -124,14 +124,7 @@ const Bakeries: React.FC = () => {
         message: string;
         onConfirm: () => void;
     };
-
-    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
-    useEffect(() => {
-        fetchBakeries();
-    }, []);
-
-
-    const fetchBakeries = async () => {
+    const fetchBakeries = useCallback( async () => {
         try {
             const [bakeryRes, countRes] = await Promise.all([
                 api.get(`/admin/bakeries?page=${page}&size=${pageSize}`),
@@ -144,7 +137,14 @@ const Bakeries: React.FC = () => {
             toast.error(message);
             console.error('Failed to fetch customers', err);
         }
-    };
+    }, [page]);
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
+    useEffect(() => {
+        fetchBakeries();
+    }, [fetchBakeries]);
+
+
+
 
     const handleCreateBakery = async (e: React.FormEvent) => {
         e.preventDefault();

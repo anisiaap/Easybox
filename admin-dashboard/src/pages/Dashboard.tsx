@@ -5,7 +5,7 @@ import ChartPlaceholder from '../components/ui/ChartPlaceholder';
 import { api } from '../api';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+    PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import toast from 'react-hot-toast';
 // Styled Components
@@ -68,10 +68,6 @@ interface DashboardStats {
     expiredOrders: number;
 }
 
-interface OrdersTrendPoint {
-    date: string;
-    count: number;
-}
 
 interface OrdersStatusPoint {
     status: string;
