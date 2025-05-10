@@ -2,15 +2,20 @@ package com.example.network.controller;
 
 import com.example.network.dto.ReservationUpdateRequest;
 import com.example.network.entity.Reservation;
+import com.example.network.entity.User;
 import com.example.network.repository.ReservationRepository;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.entity.Bakery;
 import com.example.network.entity.Easybox;
 import com.example.network.dto.ReservationDto;
+import com.example.network.repository.UserRepository;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/admin/reservations")
@@ -19,20 +24,47 @@ public class ReservationAdminController {
     private final ReservationRepository reservationRepository;
     private final BakeryRepository bakeryRepository;
     private final EasyboxRepository easyboxRepository;
+    private final UserRepository userRepository;
 
     public ReservationAdminController(ReservationRepository reservationRepository,
                                       BakeryRepository bakeryRepository,
-                                      EasyboxRepository easyboxRepository) {
+                                      EasyboxRepository easyboxRepository, UserRepository userRepository) {
         this.reservationRepository = reservationRepository;
         this.bakeryRepository = bakeryRepository;
         this.easyboxRepository = easyboxRepository;
+        this.userRepository = userRepository;
     }
 
     // GET all reservations
     @GetMapping
-    public Flux<ReservationDto> getAllReservations() {
+    public Flux<ReservationDto> getAllReservations(@RequestParam(required = false) Long bakeryId,
+                                                   @RequestParam(required = false) Long userId,
+                                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
         return reservationRepository.findAll()
+                .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
+                .filter(r -> userId == null || userId.equals(r.getUserId()))
+                .filter(r -> deliveryDate == null ||
+                        r.getDeliveryTime() != null &&
+                                r.getDeliveryTime().toLocalDate().isEqual(deliveryDate))
+                .skip((long) page * size)
+                .take(size)
                 .flatMap(this::toDto);
+    }
+    @GetMapping("/count")
+    public Mono<Long> countReservations(
+            @RequestParam(required = false) Long bakeryId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate
+    ) {
+        return reservationRepository.findAll()
+                .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
+                .filter(r -> userId == null || userId.equals(r.getUserId()))
+                .filter(r -> deliveryDate == null ||
+                        (r.getDeliveryTime() != null &&
+                                r.getDeliveryTime().toLocalDate().isEqual(deliveryDate)))
+                .count();
     }
 
     // GET one reservation
@@ -65,16 +97,19 @@ public class ReservationAdminController {
     }
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
-        Mono<Bakery> bakeryMono = bakeryRepository.findById(reservation.getBakeryId());
+        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId());
         Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId());
+        Mono<User> userMono = userRepository.findById(reservation.getUserId());
 
-        return Mono.zip(bakeryMono, easyboxMono)
+        return Mono.zip(bakeryMono, easyboxMono, userMono)
                 .map(tuple -> {
                     Bakery bakery = tuple.getT1();
                     Easybox easybox = tuple.getT2();
+                    User user = tuple.getT3();
+
                     return new ReservationDto(
                             reservation.getId(),
-                            reservation.getClient(),
+                            user != null ? user.getPhoneNumber() : "Unknown",
                             bakery != null ? bakery.getName() : "Unknown Bakery",
                             easybox != null ? easybox.getAddress() : "Unknown Easybox",
                             reservation.getStatus()

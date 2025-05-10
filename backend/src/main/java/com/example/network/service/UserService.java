@@ -12,10 +12,10 @@ import reactor.core.publisher.Mono;
 public class UserService {
     private final UserRepository userRepo;
 
-    public Mono<User> getOrCreate(String phone, String name) {
+    public Mono<User> getOrCreate(String phone) {
         return userRepo.findByPhoneNumber(phone)
                 .switchIfEmpty(
-                        userRepo.save(new User(null, name, phone, null))
+                        userRepo.save(new User(null, null, phone, null))
                 )
                 /* handles race when two requests try to insert
                    the same phone concurrently */

@@ -2,19 +2,14 @@
 package com.example.network.dto;
 
 public class CreateReservationRequest {
-    private String client;
     private String address;
     private String deliveryTime;  // ISO-8601 datetime in string form
     private Long easyboxId;
     private Integer minTemperature;
     private Integer totalDimension;
     private Long bakeryId;
-    // Extra optional phone field (some code references it)
     private String phone;
 
-    // Getters & Setters
-    public String getClient() { return client; }
-    public void setClient(String client) { this.client = client; }
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }

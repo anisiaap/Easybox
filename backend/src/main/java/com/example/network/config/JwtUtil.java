@@ -1,6 +1,10 @@
 package com.example.network.config;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+
+import java.security.PrivateKey;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -11,9 +15,12 @@ public class JwtUtil {
 
     @Value("${jwt.device-secret}")
     private String jwtSecret;
-    @Value("${jwt.dashboard-secret}")
-    private String jwtSecret_dashboard;
 
+    private final PrivateKey privateKey;
+
+    public JwtUtil(@Value("${JWT_RSA_PRIVATE}") String privateKeyPem) throws Exception {
+        this.privateKey = PemUtils.parsePrivateKeyFromPem(privateKeyPem);
+    }
     private static final long EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
 
     public String generateToken(String clientId) {
@@ -23,16 +30,23 @@ public class JwtUtil {
                 .signWith(SignatureAlgorithm.HS256, jwtSecret.getBytes())
                 .compact();
     }
-    public String generateTokenBakery(Long userId, String subject, List<String> roles) {
-        long validityMs = 1000L * 60 * 60 * 24 * 365; // 1 year
+    public String generateTokenDuration(Long userId, String phone, List<String> roles, Duration ttl) {
         return Jwts.builder()
-                .setSubject(subject)
-                .claim("roles", roles)
+                .setSubject(phone)
                 .claim("userId", userId)
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + validityMs))
-                .signWith(SignatureAlgorithm.HS256, jwtSecret_dashboard.getBytes())
+                .setExpiration(Date.from(Instant.now().plus(ttl)))
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
+    }
+
+    public String generateShortToken(Long userId, String phone, List<String> roles) {
+        return generateTokenDuration(userId, phone, roles, Duration.ofMinutes(15));
+    }
+
+    public String generateLongLivedToken(Long userId, String phone, List<String> roles) {
+        return generateTokenDuration(userId, phone, roles, Duration.ofDays(90));
     }
 
 }

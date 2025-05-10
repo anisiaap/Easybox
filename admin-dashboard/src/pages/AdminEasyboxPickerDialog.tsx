@@ -1,6 +1,7 @@
 import React, {  useState } from 'react';
 import styled from 'styled-components';
-import { api } from '../api'; // your api instance
+import { api } from '../api';
+import toast from "react-hot-toast"; // your api instance
 
 // Styled
 const DialogContainer = styled.div`
@@ -73,9 +74,11 @@ const AdminEasyboxPickerDialog: React.FC<Props> = ({ onSelect, onClose }) => {
         merged.push(...data.otherBoxes);
       }
       setEasyboxes(merged);
-    } catch (error) {
-      console.error('Search failed:', error);
+    } catch (error: any) {
+      const message = error?.response?.data || 'Search failed:';
+      toast.error(message);
     }
+
   };
 
   const handleConfirm = () => {

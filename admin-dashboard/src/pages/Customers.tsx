@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 const Table = styled.table`
     width: 100%;
     border-collapse: separate;
@@ -92,30 +94,47 @@ const Customers: React.FC = () => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
     const [newCustomer, setNewCustomer] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
+    const [page, setPage] = useState(0);
+    const pageSize = 10;
+    const [totalUsers, setTotalUsers] = useState(0);
+    type ConfirmAction = null | {
+        message: string;
+        onConfirm: () => void;
+    };
 
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     useEffect(() => {
         fetchCustomers();
     }, []);
 
     const fetchCustomers = async () => {
         try {
-            const res = await api.get('/admin/users');
-            setCustomers(res.data);
-        } catch (err) {
-            console.error('Failed to fetch customers', err);
+            const [usersRes, countRes] = await Promise.all([
+                api.get(`/admin/users?page=${page}&size=${pageSize}`),
+                api.get(`/admin/users/count`)
+            ]);
+            setCustomers(usersRes.data);
+            setTotalUsers(countRes.data);
+        } catch (error: any) {
+                const message = error?.response?.data || 'Failed to fetch customers';
+                toast.error(message);
         }
     };
 
-    const handleDelete = async (id: number) => {
-        const confirmDelete = window.confirm('Are you sure you want to delete this customer? This action cannot be undone.');
-        if (!confirmDelete) return;
-
-        try {
-            await api.delete(`/admin/users/${id}`);
-            fetchCustomers();
-        } catch (err) {
-            console.error('Delete error', err);
-        }
+    const handleDelete = (id: number) => {
+        setConfirmDialog({
+            message: 'Are you sure you want to delete this customer? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/admin/users/${id}`);
+                    fetchCustomers();
+                    toast.success('Customer deleted');
+                } catch (err) {
+                    toast.error('Failed to delete customer');
+                }
+                setConfirmDialog(null);
+            },
+        });
     };
 
     const handleStartEdit = (customer: Customer) => {
@@ -123,16 +142,21 @@ const Customers: React.FC = () => {
         setEditData({ name: customer.name, phoneNumber: customer.phoneNumber });
     };
 
-    const handleSaveEdit = async (id: number) => {
-        const confirmSave = window.confirm('Are you sure you want to save the changes to this customer?');
-        if (!confirmSave) return;
-        try {
-            await api.put(`/admin/users/${id}`, editData);
-            setEditingId(null);
-            fetchCustomers();
-        } catch (err) {
-            console.error('Save error', err);
-        }
+    const handleSaveEdit = (id: number) => {
+        setConfirmDialog({
+            message: 'Are you sure you want to save the changes to this customer?',
+            onConfirm: async () => {
+                try {
+                    await api.put(`/admin/users/${id}`, editData);
+                    setEditingId(null);
+                    fetchCustomers();
+                    toast.success('Customer updated');
+                } catch (err) {
+                    toast.error('Failed to update customer');
+                }
+                setConfirmDialog(null);
+            },
+        });
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -140,9 +164,12 @@ const Customers: React.FC = () => {
         try {
             await api.post('/admin/users', newCustomer);
             setNewCustomer({ name: '', phoneNumber: '' });
+            toast.success('Customer created successfully!');
             fetchCustomers();
-        } catch (err) {
-            console.error('Create error', err);
+        }catch (error: any) {
+            const message = error?.response?.data || 'Failed to create customer';
+            toast.error(message);
+            console.error('Error creating customer', error);
         }
     };
 
@@ -206,7 +233,12 @@ const Customers: React.FC = () => {
                 ))}
                 </tbody>
             </Table>
-
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+                <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
+                <span>Page {page + 1} of {Math.ceil(totalUsers / pageSize)}</span>
+                <Button onClick={() => setPage(p => (p + 1 < Math.ceil(totalUsers / pageSize) ? p + 1 : p))}
+                        disabled={(page + 1) >= Math.ceil(totalUsers / pageSize)}>Next</Button>
+            </div>
 
             <Form onSubmit={handleCreate}>
                 <h3>Add New Customer</h3>
@@ -222,6 +254,13 @@ const Customers: React.FC = () => {
                 />
                 <Button type="submit">Create</Button>
             </Form>
+            {confirmDialog && (
+                <ConfirmDialog
+                    message={confirmDialog.message}
+                    onConfirm={confirmDialog.onConfirm}
+                    onCancel={() => setConfirmDialog(null)}
+                />
+            )}
         </Container>
     );
 };

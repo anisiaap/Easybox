@@ -17,7 +17,6 @@ public class Reservation {
     private Long id;
     private String qrCodeData;
 
-    private String client;
     private LocalDateTime deliveryTime;
     private String status; // e.g. "pending", "completed"
     private LocalDateTime expiresAt;      // nullable
@@ -52,12 +51,6 @@ public class Reservation {
         this.id = id;
     }
 
-    public String getClient() {
-        return client;
-    }
-    public void setClient(String client) {
-        this.client = client;
-    }
 
     public LocalDateTime getDeliveryTime() {
         return deliveryTime;

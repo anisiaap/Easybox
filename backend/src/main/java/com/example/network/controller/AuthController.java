@@ -1,11 +1,15 @@
 package com.example.network.controller;
 
 import com.example.network.config.PasswordConfig;
+import com.example.network.dto.BakeryRegistrationRequest;
+import com.example.network.dto.UserRegistrationRequest;
 import com.example.network.entity.Bakery;
 import com.example.network.entity.User;
+import com.example.network.exception.ConflictException;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.UserRepository;
 import com.example.network.config.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -34,15 +38,15 @@ public class AuthController {
 
     // Client sign up
     @PostMapping("/register-client")
-    public Mono<ResponseEntity<String>> registerClient(@RequestBody User user) {
-        String phone = user.getPhoneNumber();
-        String name = user.getName();
-        String password = user.getPassword();
+    public Mono<ResponseEntity<String>> registerClient(@Valid @RequestBody UserRegistrationRequest dto) {
+        String phone = dto.getPhone();
+        String name = dto.getName();
+        String password = dto.getPassword();
 
         return userRepo.findByPhoneNumber(phone)
                 .flatMap(existing -> {
                     if (existing.getPassword() != null) {
-                        return Mono.just(ResponseEntity.badRequest().body("Client already registered"));
+                        return Mono.error(new ConflictException("Client already registered"));
                     }
                     existing.setName(name); // update name if needed
                     existing.setPassword(passwordEncoder.encode(password)); // set password now
@@ -63,31 +67,43 @@ public class AuthController {
     }
 
     @PostMapping("/register-bakery")
-    public Mono<ResponseEntity<Bakery>> registerBakery(@RequestBody Bakery bakery) {
-        if (bakery.getPassword() == null || bakery.getPassword().isBlank()) {
-            return Mono.just(ResponseEntity.badRequest().build());
-        }
+    public Mono<ResponseEntity<String>> registerBakery(@Valid @RequestBody BakeryRegistrationRequest dto) {
+        String phone = dto.getPhone();
+        String name = dto.getName();
+        String password = dto.getPassword();
 
-        return bakeryRepo.findByPhone(bakery.getPhone())
-                .flatMap(existing -> badRequestBakery())
+        return bakeryRepo.findByPhone(phone)
+                .flatMap(existing -> {
+                    if (existing.getPassword() != null) {
+                        return Mono.error(new ConflictException("Bakery already registered"));
+                    }
+                    // Upgrade existing bakery record
+                    existing.setName(name);
+                    existing.setPassword(passwordEncoder.encode(password));
+                    existing.setPluginInstalled(false);
+                    existing.setToken(jwtUtil.generateLongLivedToken(existing.getId(), existing.getPhone(), List.of("BAKERY")));
+                    return bakeryRepo.save(existing)
+                            .thenReturn(ResponseEntity.ok("Bakery upgraded to full account"));
+                })
                 .switchIfEmpty(
                         Mono.defer(() -> {
-                            // 🔒 Hash the password
-                            String hashedPassword = passwordEncoder.encode(bakery.getPassword());
-                            bakery.setPassword(hashedPassword);
+                            Bakery newBakery = new Bakery();
+                            newBakery.setName(name);
+                            newBakery.setPhone(phone);
+                            newBakery.setPassword(passwordEncoder.encode(password));
+                            newBakery.setPluginInstalled(false);
 
-                            // 🛠 Generate JWT
-                            String token = jwtUtil.generateTokenBakery(
-                                    bakery.getId(),
-                                    bakery.getPhone(),
-                                    List.of("BAKERY")
-                            );
-
-                            bakery.setPluginInstalled(false);
-                            bakery.setToken(token);
-
-                            return bakeryRepo.save(bakery)
-                                    .map(ResponseEntity::ok);
+                            return bakeryRepo.save(newBakery)
+                                    .flatMap(savedBakery -> {
+                                        String token = jwtUtil.generateLongLivedToken(
+                                                savedBakery.getId(),
+                                                savedBakery.getPhone(),
+                                                List.of("BAKERY")
+                                        );
+                                        savedBakery.setToken(token);
+                                        return bakeryRepo.save(savedBakery)
+                                                .thenReturn(ResponseEntity.ok("New bakery registered"));
+                                    });
                         })
                 );
     }
@@ -107,7 +123,7 @@ public class AuthController {
                         if (!passwordEncoder.matches(password, bakery.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
-                        String token = jwtUtil.generateTokenBakery(
+                        String token = jwtUtil.generateShortToken(
                                 bakery.getId(),
                                 bakery.getPhone(),
                                 List.of("BAKERY")
@@ -123,13 +139,13 @@ public class AuthController {
                         if (!passwordEncoder.matches(password, user.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
-                        String token = jwtUtil.generateTokenBakery(user.getId(), user.getPhoneNumber(), List.of("USER"));
+                        String token = jwtUtil.generateShortToken(user.getId(), user.getPhoneNumber(), List.of("USER"));
                         return Mono.just(ResponseEntity.ok(token)); // Still needed for JWT-based auth
                     })
                     .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("User not found")));
         }
 
-        return Mono.just(ResponseEntity.badRequest().body("Unknown role"));
+        return Mono.error(new ConflictException("Unknown role"));
     }
     @GetMapping("/me")
     public Mono<ResponseEntity<ProfileResponse>> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
@@ -146,5 +162,14 @@ public class AuthController {
         } else {
             return Mono.just(ResponseEntity.status(403).build());
         }
+    }
+    @GetMapping("/refresh-token")
+    public Mono<ResponseEntity<String>> refreshToken(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        String phone = jwt.getSubject();
+        List<String> roles = jwt.getClaim("roles");
+
+        String newToken = jwtUtil.generateShortToken(userId, phone, roles);
+        return Mono.just(ResponseEntity.ok(newToken));
     }
 }

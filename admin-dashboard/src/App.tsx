@@ -6,59 +6,65 @@ import Easyboxes from './pages/Easyboxes'
 import Orders from './pages/Orders'
 import Customers from './pages/Customers'
 import Bakeries from './pages/Bakeries'
-
+import { Toaster } from 'react-hot-toast';
+import LoginPage from "./pages/LoginPage";
+import ProtectedRoute from './pages/ProtectedRoute';
 const App: React.FC = () => {
     return (
         <Router>
+            <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
             <Routes>
+                <Route path="/login" element={<LoginPage />} />
                 <Route
                     path="/"
                     element={
-                        <MainLayout>
-                            <Dashboard />
-                        </MainLayout>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Dashboard />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/easyboxes"
                     element={
-                        <MainLayout>
-                            <Easyboxes />
-                        </MainLayout>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Easyboxes />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/orders"
                     element={
-                        <MainLayout>
-                            <Orders />
-                        </MainLayout>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Orders />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/customers"
                     element={
-                        <MainLayout>
-                            <Customers />
-                        </MainLayout>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Customers />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
                 <Route
                     path="/bakeries"
                     element={
-                        <MainLayout>
-                            <Bakeries />
-                        </MainLayout>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Bakeries />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
-                {/*<Route*/}
-                {/*    path="/admin-settings"*/}
-                {/*    element={*/}
-                {/*        <MainLayout>*/}
-                {/*            <AdminSettings />*/}
-                {/*        </MainLayout>*/}
-                {/*    }*/}
-                {/*/>*/}
             </Routes>
         </Router>
 

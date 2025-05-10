@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
-
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import toast from 'react-hot-toast';
 const Container = styled.div`
     padding: 32px;
     max-width: 800px;
@@ -116,41 +117,63 @@ const Bakeries: React.FC = () => {
         pluginInstalled: false,
         token: ''
     });
+    const [page, setPage] = useState(0);
+    const pageSize = 10;
+    const [totalBakeries, setTotalBakeries] = useState(0);
+    type ConfirmAction = null | {
+        message: string;
+        onConfirm: () => void;
+    };
 
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     useEffect(() => {
         fetchBakeries();
     }, []);
 
+
     const fetchBakeries = async () => {
         try {
-            const response = await api.get('/admin/bakeries');
-            setBakeries(response.data);
-        } catch (error) {
-            console.error('Error fetching bakeries', error);
+            const [bakeryRes, countRes] = await Promise.all([
+                api.get(`/admin/bakeries?page=${page}&size=${pageSize}`),
+                api.get(`/admin/bakeries/count`)
+            ]);
+            setBakeries(bakeryRes.data);
+            setTotalBakeries(countRes.data);
+        } catch (err:any) {
+            const message = err?.response?.data || 'Failed to fetch customers';
+            toast.error(message);
+            console.error('Failed to fetch customers', err);
         }
     };
 
     const handleCreateBakery = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            api.post('/auth/register-bakery', newBakery);
+            await api.post('/admin/bakeries', newBakery);
+            toast.success('Bakery created successfully!');
             setNewBakery({ name: '', phone: '', pluginInstalled: true, token: '' });
             fetchBakeries();
-        } catch (error) {
+        }  catch (error: any) {
+            const message = error?.response?.data || 'Failed to create bakery';
+            toast.error(message);
             console.error('Error creating bakery', error);
         }
     };
 
     const handleDeleteBakery = async (id: number) => {
-        const confirmDelete = window.confirm('Are you sure you want to delete this bakery? This action cannot be undone.');
-        if (!confirmDelete) return;
-
-        try {
-            await api.delete(`/admin/bakeries/${id}`);
-            fetchBakeries();
-        } catch (error) {
-            console.error('Error deleting bakery', error);
-        }
+        setConfirmDialog({
+            message: 'Are you sure you want to delete this bakery? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/admin/bakeries/${id}`);
+                    fetchBakeries();
+                    toast.success('Bakery deleted!');
+                } catch (error) {
+                    toast.error('Failed to delete bakery.');
+                }
+                setConfirmDialog(null);
+            }
+        });
     };
 
     const handleStartEdit = (bakery: Bakery) => {
@@ -164,26 +187,39 @@ const Bakeries: React.FC = () => {
     };
 
     const handleSaveEdit = async (id: number) => {
-        const confirmSave = window.confirm('Are you sure you want to save the changes to this bakery?');
-        if (!confirmSave) return;
-        try {
-            await api.put(`/admin/bakeries/${id}`, editData);
-            setEditingId(null);
-            fetchBakeries();
-        } catch (error) {
-            console.error('Error updating bakery', error);
-        }
+        setConfirmDialog({
+            message: 'Are you sure you want to save the changes to this bakery?',
+            onConfirm: async () => {
+                try {
+                    await api.put(`/admin/bakeries/${id}`, editData);
+                    setEditingId(null);
+                    fetchBakeries();
+                    toast.success('Bakery updated!');
+                } catch (error) {
+                    toast.error('Error updating bakery');
+                }
+                setConfirmDialog(null);
+            }
+        });
     };
 
     const handleApprove = async (id: number) => {
-        const confirmSave = window.confirm('Are you sure you want to approve this order bakery?');
-        if (!confirmSave) return;
-        try {
-            await api.put(`/admin/bakeries/${id}`, { ...bakeries.find(b => b.id === id), pluginInstalled: true });
-            fetchBakeries();
-        } catch (error) {
-            console.error('Error approving bakery', error);
-        }
+        setConfirmDialog({
+            message: 'Are you sure you want to approve this bakery?',
+            onConfirm: async () => {
+                try {
+                    await api.put(`/admin/bakeries/${id}`, {
+                        ...bakeries.find(b => b.id === id),
+                        pluginInstalled: true,
+                    });
+                    fetchBakeries();
+                    toast.success('Bakery approved!');
+                } catch (error) {
+                    toast.error('Error approving bakery');
+                }
+                setConfirmDialog(null);
+            }
+        });
     };
 
     return (
@@ -236,9 +272,9 @@ const Bakeries: React.FC = () => {
                                 setCopiedTokenId(b.id);
                                 setTimeout(() => setCopiedTokenId(null), 2000);
                             }}>
-                                📋 Copy
+                                Copy token to cliboard.
                             </Button>
-                            {copiedTokenId === b.id && <span style={{ marginLeft: 8, color: 'green' }}>✅ Copied!</span>}
+                            {copiedTokenId === b.id && <span style={{ marginLeft: 8, color: 'green' }}>Copied!</span>}
                         </Td>
                         <Td>
                             <ButtonGroup>
@@ -258,17 +294,17 @@ const Bakeries: React.FC = () => {
                                 )}
                             </ButtonGroup>
                         </Td>
-                        {/*<Td>*/}
-                        {/*    <code style={{ display: 'inline-block', maxWidth: 200, overflowX: 'auto', whiteSpace: 'nowrap' }}>*/}
-                        {/*        {b.token}*/}
-                        {/*    </code>*/}
-                        {/*</Td>*/}
 
                     </TableRow>
                 ))}
                 </tbody>
             </Table>
-
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
+                    <span>Page {page + 1} of {Math.ceil(totalBakeries / pageSize)}</span>
+                    <Button onClick={() => setPage(p => (p + 1 < Math.ceil(totalBakeries / pageSize) ? p + 1 : p))}
+                            disabled={(page + 1) >= Math.ceil(totalBakeries / pageSize)}>Next</Button>
+                </div>
                 </TableWrapper>
             <Form onSubmit={handleCreateBakery}>
                 <h3>Add New Bakery (Approved)</h3>
@@ -284,6 +320,13 @@ const Bakeries: React.FC = () => {
                 />
                 <Button type="submit">Create Bakery</Button>
             </Form>
+            {confirmDialog && (
+                <ConfirmDialog
+                    message={confirmDialog.message}
+                    onConfirm={confirmDialog.onConfirm}
+                    onCancel={() => setConfirmDialog(null)}
+                />
+            )}
         </Container>
     );
 };

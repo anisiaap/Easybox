@@ -18,10 +18,16 @@ public class BakeryAdminController {
 
     // GET all bakeries
     @GetMapping
-    public Flux<Bakery> getAllBakeries() {
-        return bakeryRepository.findAll();
+    public Flux<Bakery> getAllBakeries(@RequestParam(defaultValue = "0") int page,
+                                       @RequestParam(defaultValue = "10") int size) {
+        return bakeryRepository.findAll()
+                .skip((long) page * size)
+                .take(size);
     }
-
+    @GetMapping("/count")
+    public Mono<Long> getUserCount() {
+        return bakeryRepository.count();
+    }
     // GET one bakery by ID
     @GetMapping("/{id}")
     public Mono<Bakery> getOneBakery(@PathVariable Long id) {

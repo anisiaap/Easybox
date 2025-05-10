@@ -42,7 +42,7 @@ public class ReservationService {
 
     @Transactional
     public Mono<Reservation> holdReservation(CreateReservationRequest req) {
-        return userService.getOrCreate(req.getPhone(), req.getClient())
+        return userService.getOrCreate(req.getPhone())
                 .flatMap(user -> {
                     LocalDateTime delivery = LocalDateTime.parse(req.getDeliveryTime());
                     LocalDateTime start = delivery.minusHours(3);
@@ -60,7 +60,6 @@ public class ReservationService {
                                     )
                                             .flatMap(compId -> {
                                                 Reservation r = new Reservation();
-                                                r.setClient(req.getClient());
                                                 r.setDeliveryTime(delivery);
                                                 r.setReservationStart(start);
                                                 r.setReservationEnd(end);

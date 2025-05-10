@@ -44,11 +44,11 @@ public class QrCodeService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Reservation not found")))
                 .flatMap(reservation -> {
                     String currentStatus = reservation.getStatus();
-                    if ("confirmed".equalsIgnoreCase(currentStatus)) {
-                        reservation.setStatus("leftorder");
+                    if ("waiting_bakery_drop_off".equalsIgnoreCase(currentStatus)) {
+                        reservation.setStatus("pickup_order");
                         return updateReservationAndCompartment(reservation, "busy");
-                    } else if ("leftorder".equalsIgnoreCase(currentStatus)) {
-                        reservation.setStatus("pickeduporder");
+                    } else if ("pickup_order".equalsIgnoreCase(currentStatus)) {
+                        reservation.setStatus("completed");
                         return updateReservationAndCompartment(reservation, "free");
                     } else {
                         return Mono.error(new IllegalStateException("Reservation in unexpected state: " + currentStatus));

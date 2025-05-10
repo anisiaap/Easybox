@@ -18,8 +18,16 @@ public class UserAdminController {
     }
 
     @GetMapping
-    public Flux<User> getAllUsers() {
-        return userRepository.findAll();
+    public Flux<User> getAllUsers(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "10") int size) {
+        return userRepository.findAll()
+                .skip((long) page * size)
+                .take(size);
+    }
+    // GET total count of users (for frontend to compute total pages)
+    @GetMapping("/count")
+    public Mono<Long> getUserCount() {
+        return userRepository.count();
     }
     @PostMapping
     public Mono<User> createUser(@RequestBody User user) {

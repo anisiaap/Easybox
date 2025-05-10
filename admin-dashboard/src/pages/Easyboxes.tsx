@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { api } from '../api';  // adjust the path if needed
-
+import toast from 'react-hot-toast';
 // Styled Components
 const DashboardContainer = styled.div`
     display: flex;
@@ -214,10 +214,11 @@ const Dashboard: React.FC = () => {
     // Merge the box with the returned aggregated details.
     const details: DeviceDetails = { ...box, ...response.data };
 setSelectedEasybox(details);
-} catch (error) {
-    console.error('Error fetching device details:', error);
-    alert('Failed to fetch compartment details.');
-}
+} catch (error: any) {
+            const message = error?.response?.data ||' Failed to fetch compartment details.';
+            toast.error(message);
+            console.error('Failed to fetch compartment details.', error);
+        }
 };
 
 return (

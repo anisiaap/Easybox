@@ -5,9 +5,9 @@ import ChartPlaceholder from '../components/ui/ChartPlaceholder';
 import { api } from '../api';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, Legend
+    LineChart, Line, PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
-
+import toast from 'react-hot-toast';
 // Styled Components
 const DashboardContainer = styled.div`
     padding: 40px;
@@ -88,9 +88,9 @@ const COLORS = ['#6c5ce7', '#00b894', '#fdcb6e', '#e17055'];
 // Component
 const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [ordersTrend, setOrdersTrend] = useState<OrdersTrendPoint[]>([]);
     const [ordersStatus, setOrdersStatus] = useState<OrdersStatusPoint[]>([]);
     const [compartmentsStatus, setCompartmentsStatus] = useState<CompartmentsStatus | null>(null);
+    const [radarData, setRadarData] = useState([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -101,16 +101,19 @@ const Dashboard: React.FC = () => {
             const statsRes = await api.get('/admin/dashboard/stats');
             setStats(statsRes.data);
 
-            const trendRes = await api.get('/admin/dashboard/orders-trend');
-            setOrdersTrend(trendRes.data);
+            const radarRes = await api.get('/admin/dashboard/compartments-by-condition');
+            setRadarData(radarRes.data);
 
             const statusRes = await api.get('/admin/dashboard/orders-status');
             setOrdersStatus(statusRes.data);
 
             const compartmentsRes = await api.get('/admin/dashboard/compartments-status');
             setCompartmentsStatus(compartmentsRes.data);
-        } catch (err) {
-            console.error('Error fetching dashboard data', err);
+        }
+        catch (error: any) {
+            const message = error?.response?.data || 'Error fetching dashboard data';
+            toast.error(message);
+            console.error('Error fetching dashboard data', error);
         }
     };
 
@@ -133,27 +136,24 @@ const Dashboard: React.FC = () => {
             </KPIWrapper>
 
             <SectionTitle>Analytics</SectionTitle>
-
             <ChartsGrid>
+                <ChartPlaceholder />
                 {/* Line Chart - Orders Over Time */}
                 <ChartCard>
-                    <ChartTitle>Orders Trend</ChartTitle>
-                    <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={ordersTrend}>
-                            <XAxis dataKey="date" stroke="#999" />
-                            <YAxis stroke="#999" />
+                    <ChartTitle>Compartment Conditions by Easybox</ChartTitle>
+                    <ResponsiveContainer width="100%" height={350}>
+                        <RadarChart data={radarData}>
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="easybox" />
+                            <PolarRadiusAxis />
+                            <Radar name="Good" dataKey="good" stroke="#00b894" fill="#00b894" fillOpacity={0.6} />
+                            <Radar name="Dirty" dataKey="dirty" stroke="#fdcb6e" fill="#fdcb6e" fillOpacity={0.6} />
+                            <Radar name="Broken" dataKey="broken" stroke="#d63031" fill="#d63031" fillOpacity={0.6} />
+                            <Legend />
                             <Tooltip />
-                            <Line
-                                type="monotone"
-                                dataKey="count"
-                                stroke="#6c5ce7"
-                                strokeWidth={3}
-                                dot={{ r: 4 }}
-                            />
-                        </LineChart>
+                        </RadarChart>
                     </ResponsiveContainer>
                 </ChartCard>
-
                 {/* Pie Chart - Orders Status */}
                 <ChartCard>
                     <ChartTitle>Orders by Status</ChartTitle>
@@ -195,9 +195,6 @@ const Dashboard: React.FC = () => {
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartCard>
-
-                {/* Placeholder for future content */}
-                <ChartPlaceholder />
             </ChartsGrid>
         </DashboardContainer>
     );

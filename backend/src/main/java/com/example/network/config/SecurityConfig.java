@@ -19,6 +19,9 @@ import reactor.core.publisher.Flux;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -53,10 +56,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.dashboard-secret}") String secret) {
-        SecretKeySpec key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusReactiveJwtDecoder.withSecretKey(key).build();
+    public ReactiveJwtDecoder jwtDecoder(@Value("${JWT_RSA_PUBLIC}") String publicKeyPem) throws Exception {
+        PublicKey key = PemUtils.parsePublicKeyFromPem(publicKeyPem);
+
+        if (!(key instanceof RSAPublicKey)) {
+            throw new IllegalArgumentException("Provided public key is not an RSA key");
+        }
+
+        return NimbusReactiveJwtDecoder.withPublicKey((RSAPublicKey) key).build();
     }
+
 
     @Bean
     public ReactiveJwtAuthenticationConverter jwtAuthConverter() {

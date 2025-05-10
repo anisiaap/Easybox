@@ -2,6 +2,7 @@ package com.example.network.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
@@ -48,5 +49,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(GeocodingException.class)
     public ResponseEntity<ErrorResponse> handleGeocodingException(GeocodingException ex) {
         return new ResponseEntity<>(new ErrorResponse(ex.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY), HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation error");
+        return new ResponseEntity<>(new ErrorResponse(message, HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST);
     }
 }
