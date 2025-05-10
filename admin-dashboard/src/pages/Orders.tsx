@@ -3,13 +3,14 @@ import styled from 'styled-components';
 import { api } from '../api';
 import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog'; // adjust path!
 import toast from 'react-hot-toast';
-import ConfirmDialog from '../components/ui/ConfirmDialog'; // Adjust path if needed
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { useCallback } from 'react';// Adjust path if needed
 const OrdersContainer = styled.div`
     padding: 20px;
     background: #f4f6f5;
     min-height: 100vh;
 `;
-import { useCallback } from 'react';
+
 
 const Table = styled.table`
     width: 100%;
