@@ -163,12 +163,14 @@
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
+  //env setup
   window.env = {
     WIDGET_URL: "https://widget.easybox-food.xyz/",
     JWT_TOKEN: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIwNzc3Nzc3Nzc3IiwidXNlcklkIjoxNCwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc0Njk2MDEwMywiZXhwIjoxNzU0NzM2MTAzfQ.8rZ5WxL3c8k2G646vQ9QryWgE3eSy_vxIXa-1eWZln1yZ3fvgU_mz_76JDftEx4ZwmKY0Q2jKa1HMm551cen9aHWifsjp8h7mabwI2YU64LLL9ZUmg_xNouELNFHyN3WUzroy2HEIleRsC6V9w44hAPumv-rmyJRwEhOXxwABk4uW9tFBnRKUpuiDkZZZi60CXMtvvWqtjoTa1xsCX8u21CnpdHkfJKuJ_XMB9Mvivq7xJXXvnVkVsfBj4sYxSDe9O5UHuO-t-zkIB5EdG2XaTfSvZA_hqyTgrmmkaoLG4wzySPldrkfeV6zNXkEKDOgwhrIHO1pstzZrO-7eKyyHw"
   };
-
   const API_URL = window.env.WIDGET_URL;
+
+  //set min delivery date on select in form
   window.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('deliveryDate');
 
@@ -186,7 +188,8 @@
     return `${date}T${hour}:00`;
   }
 
-  let pendingReservation = null; // ← declare it at top level
+  //window listener for when easybox was selected in iframe
+  let pendingReservation = null;
 
   window.addEventListener("message", (event) => {
     if (event.data?.type === "easybox-reserved") {
@@ -257,10 +260,6 @@
     return true; // or false if you want to simulate failure
   }
 
-
-  // function closePopup() {
-  //   document.getElementById('popup-overlay').style.display = 'none';
-  // }
 
   async function placeOrder() {
     const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;

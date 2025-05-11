@@ -12,6 +12,7 @@
     window.env = {
         API_URL: "https://api.easybox-food.xyz/api/"
     };
+    //parse the query string in look for the data from the bakery site via the url
     const params = new URLSearchParams(window.location.search);
     window.initEasyboxWidget({
         containerId: 'easybox-plugin-container',
@@ -29,6 +30,7 @@
         }
     });
 
+//listen to when the bakery place order button was pressed
     window.addEventListener("message", async (event) => {
         if (event.data?.type === "bakery-order-confirmed") {
             const { reservationId } = event.data;

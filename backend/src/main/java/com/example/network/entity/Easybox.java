@@ -20,6 +20,8 @@ public class Easybox {
     private String clientId;
     @Version
     private Long version;
+    @Column("public_key_pem")
+    private String publicKeyPem;
     public Easybox() {}
 
     public Easybox(String address, double latitude, double longitude, String status, String clientId) {
@@ -66,5 +68,21 @@ public class Easybox {
     }
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    public String getPublicKeyPem() {
+        return publicKeyPem;
+    }
+
+    public void setPublicKeyPem(String publicKeyPem) {
+        this.publicKeyPem = publicKeyPem;
     }
 }

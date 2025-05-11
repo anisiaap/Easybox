@@ -1,7 +1,6 @@
 // MqttService.java
 package com.example.easyboxdevice.service;
 
-import com.example.easyboxdevice.config.JwtVerifier;
 import com.example.easyboxdevice.dto.MqttProperties;
 import com.example.easyboxdevice.dto.QrResponse;
 import com.example.easyboxdevice.entity.Compartment;
@@ -22,13 +21,11 @@ public class MqttService {
     private final CompartmentService compartmentService;
     private MqttClient client;
     private final JwtUtil jwtUtil;
-    private final JwtVerifier jwtVerifier;
 
-    public MqttService(MqttProperties properties, CompartmentService compartmentService, JwtUtil jwtUtil, JwtVerifier jwtVerifier) {
+    public MqttService(MqttProperties properties, CompartmentService compartmentService, JwtUtil jwtUtil) {
         this.properties = properties;
         this.compartmentService = compartmentService;
         this.jwtUtil = jwtUtil;
-        this.jwtVerifier = jwtVerifier;
     }
 
     @PostConstruct
@@ -139,12 +136,12 @@ public class MqttService {
             String token   = parts[0];
             String payload = parts[1];
 
-            // ── verify it (requires JwtVerifier) ──
-            String fromClient = jwtVerifier.verifyAndExtractClientId(token);
-            if (!fromClient.equals(properties.getClientId())) {
-                System.err.println("❌ QR-response token clientId mismatch");
-                return;
-            }
+//            // ── verify it (requires JwtVerifier) ──
+//            String fromClient = jwtVerifier.verifyAndExtractClientId(token);
+//            if (!fromClient.equals(properties.getClientId())) {
+//                System.err.println("❌ QR-response token clientId mismatch");
+//                return;
+//            }
 
             // ── parse JSON body ──
             ObjectMapper mapper = new ObjectMapper();

@@ -73,7 +73,6 @@ public class MqttClientManager {
         System.out.println("✅ MQTT connected");
     }
 
-
     @PreDestroy
     public void disconnect() throws MqttException {
         if (client != null && client.isConnected()) {
@@ -86,7 +85,6 @@ public class MqttClientManager {
 
         String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
         System.out.println("📡 Preparing to subscribe to " + responseTopic);
-
 
         return Mono.<List<CompartmentDto>>create(sink -> {
                     if (client == null || !client.isConnected()) {
@@ -111,7 +109,6 @@ public class MqttClientManager {
                         client.publish(cmdTopic, msg);
                         System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
 
-
                     } catch (MqttException e) {
                         sink.error(e);
                     }
@@ -125,7 +122,6 @@ public class MqttClientManager {
                 })
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(2)));
     }
-
 
     private MqttCallbackExtended callback() {
         return new MqttCallbackExtended() {
