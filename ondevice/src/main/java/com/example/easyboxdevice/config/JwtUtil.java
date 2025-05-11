@@ -6,16 +6,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 @Component
 public class JwtUtil {
+    private final String jwtSecret;
 
-    @Value("${jwt.device-secret}")
-    private String jwtSecret;
-
-    private static final long EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
+    public JwtUtil() {
+        try {
+            if (!SecretStorageUtil.exists()) throw new RuntimeException("No device secret found!");
+            jwtSecret = SecretStorageUtil.loadSecret();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load secret", e);
+        }
+    }
 
     public String generateToken(String clientId) {
         return Jwts.builder()
                 .setSubject(clientId)
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 10 * 60_000))
                 .signWith(SignatureAlgorithm.HS256, jwtSecret.getBytes())
                 .compact();
     }

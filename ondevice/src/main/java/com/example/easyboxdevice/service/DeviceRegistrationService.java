@@ -1,6 +1,7 @@
 package com.example.easyboxdevice.service;
 
 import com.example.easyboxdevice.config.JwtUtil;
+import com.example.easyboxdevice.config.SecretStorageUtil;
 import com.example.easyboxdevice.dto.RegistrationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -43,9 +45,36 @@ public class DeviceRegistrationService {
     @PostConstruct
     public void init() {
         System.out.println("Starting device heartbeat scheduler...");
-        scheduler.scheduleAtFixedRate(() -> attemptRegistration().subscribe(),
-                                                     0, 30, TimeUnit.MINUTES); }
 
+        if (!SecretStorageUtil.exists()) {
+            System.out.println("🔐 No local secret found – attempting to fetch from backend...");
+
+            // ✅ Use fallback shared-secret JWT
+            String token = jwtUtil.generateToken(clientId);
+
+            String fetchedSecret = webClient.get()
+                    .uri(centralBackendUrl + "device/" + clientId + "/secret")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            if (fetchedSecret != null && !fetchedSecret.isBlank()) {
+                try {
+                    SecretStorageUtil.storeSecret(fetchedSecret);
+                    System.out.println("✅ Pulled secret from backend and saved.");
+                } catch (Exception e) {
+                    throw new IllegalStateException("❌ Failed to store pulled secret.", e);
+                }
+            } else {
+                throw new IllegalStateException("❌ Failed to pull device secret.");
+            }
+        }
+
+        // ✅ Start scheduled heartbeat loop
+        scheduler.scheduleAtFixedRate(() -> attemptRegistration().subscribe(),
+                0, 30, TimeUnit.MINUTES);
+    }
     /**
      * Attempts to register the device as active.
      */
@@ -78,8 +107,22 @@ public class DeviceRegistrationService {
                             .doOnNext(body -> System.err.println("❌ Error body: " + body))
                             .flatMap(errorBody -> response.createException());
                 })
-                .bodyToMono(String.class)
-                .doOnSuccess(response -> System.out.println("✅ Registration successful: " + response))
+                .toEntity(String.class)
+                .doOnSuccess(responseEntity -> {
+                    List<String> header = responseEntity.getHeaders().get("X-Device-Secret");
+                    String newSecret = header != null && !header.isEmpty() ? header.get(0) : null;
+
+                    System.out.println("✅ Registration successful: " + responseEntity.getBody());
+
+                    if (newSecret != null && !newSecret.isBlank()) {
+                        try {
+                            SecretStorageUtil.storeSecret(newSecret);
+                            System.out.println("🔐 New secret saved locally");
+                        } catch (Exception e) {
+                            System.err.println("❌ Failed to save secret: " + e.getMessage());
+                        }
+                    }
+                })
                 .doOnError(error -> System.err.println("⚠️ Registration HTTP error: " + error.getMessage()))
                 .then();
 

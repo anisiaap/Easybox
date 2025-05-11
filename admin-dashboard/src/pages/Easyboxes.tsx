@@ -123,6 +123,7 @@ interface Easybox {
     latitude: number;
     longitude: number;
     status: string;
+    approved?: boolean;
     clientId?: string; // ✅ Correct
 }
 
@@ -266,6 +267,31 @@ return (
                     </BackButton>
                     <h2>{selectedEasybox.address}</h2>
                     <p>Status: {selectedEasybox.status}</p>
+                    {!selectedEasybox.approved && (
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const res = await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
+                                    toast.success("Device approved!");
+                                    setSelectedEasybox(prev => prev ? { ...prev, approved: true } : null);
+                                } catch (err: any) {
+                                    const msg = err?.response?.data || "Failed to approve device.";
+                                    toast.error(msg);
+                                }
+                            }}
+                            style={{
+                                padding: "8px 12px",
+                                marginTop: "10px",
+                                backgroundColor: "#007bff",
+                                border: "none",
+                                borderRadius: "4px",
+                                color: "white",
+                                cursor: "pointer"
+                            }}
+                        >
+                            Approve Device
+                        </button>
+                    )}
                     <h3>Compartments</h3>
                     {selectedEasybox.compartments.length > 0 ? (
                         <CompartmentsGrid>

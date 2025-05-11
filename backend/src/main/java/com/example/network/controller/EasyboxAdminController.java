@@ -17,9 +17,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/easyboxes")
@@ -66,5 +68,35 @@ public class EasyboxAdminController {
                 compartment.getStatus(),
                 compartment.getCondition()
         );
+    }
+    @PostMapping("/{id}/approve")
+    public Mono<ResponseEntity<String>> approveBox(@PathVariable Long id) {
+        return easyboxRepository.findById(id)
+                .flatMap(box -> {
+                    if (Boolean.TRUE.equals(box.getApproved())) {
+                        return Mono.just(ResponseEntity.status(409).body("Already approved"));
+                    }
+                    box.setApproved(true);
+                    box.setSecretKey(UUID.randomUUID().toString());
+                    box.setLastSecretRotation(LocalDateTime.now());
+                    return easyboxRepository.save(box)
+                            .thenReturn(ResponseEntity.ok(box.getSecretKey()));
+                });
+    }
+    @PutMapping("/{id}/rotate-secret")
+    public Mono<ResponseEntity<String>> rotateDeviceSecret(@PathVariable Long id) {
+        return easyboxRepository.findById(id)
+                .flatMap(box -> {
+                    if (!Boolean.TRUE.equals(box.getApproved())) {
+                        return Mono.just(ResponseEntity.status(403).body("Device not approved"));
+                    }
+
+                    box.setSecretKey(UUID.randomUUID().toString());
+                    box.setLastSecretRotation(LocalDateTime.now());
+
+                    return easyboxRepository.save(box)
+                            .thenReturn(ResponseEntity.ok(box.getSecretKey()));
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
     }
 }

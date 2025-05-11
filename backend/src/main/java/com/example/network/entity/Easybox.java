@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.time.LocalDateTime;
+
 @Table("easybox")
 public class Easybox {
 
@@ -14,7 +16,9 @@ public class Easybox {
     private double latitude;
     private double longitude;
     private String status; // e.g., "active"
-
+    private String secretKey;              // unique secret
+    private Boolean approved;              // false or null until approved
+    private LocalDateTime lastSecretRotation; // for JWT invalidation tracking
     // New field for the device’s API URL
     @Column("device_url")
     private String clientId;
@@ -76,4 +80,27 @@ public class Easybox {
         this.version = version;
     }
 
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
+    public Boolean getApproved() {
+        return approved;
+    }
+
+    public void setApproved(Boolean approved) {
+        this.approved = approved;
+    }
+
+    public LocalDateTime getLastSecretRotation() {
+        return lastSecretRotation;
+    }
+
+    public void setLastSecretRotation(LocalDateTime lastSecretRotation) {
+        this.lastSecretRotation = lastSecretRotation;
+    }
 }

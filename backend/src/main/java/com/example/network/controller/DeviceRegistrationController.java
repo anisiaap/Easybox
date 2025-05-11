@@ -15,6 +15,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/device")
 public class DeviceRegistrationController {
@@ -93,11 +96,15 @@ public class DeviceRegistrationController {
                                             /* 4c – INSERT brand-new box */
                                             Easybox newBox = new Easybox();
                                             copyFields(newBox, req, lat, lon);
+                                            newBox.setApproved(false); // pending until manual approval
+                                            newBox.setSecretKey(UUID.randomUUID().toString());
+                                            newBox.setLastSecretRotation(LocalDateTime.now());
                                             return easyboxRepository.save(newBox)
                                                     .flatMap(savedBox ->
-                                                            // Then immediately trigger sync!
                                                             syncService.syncCompartmentsForEasybox(savedBox.getId())
-                                                                    .thenReturn(ResponseEntity.ok(savedBox))
+                                                                    .then(Mono.just(ResponseEntity.ok()
+                                                                            .header("X-Device-Secret", savedBox.getSecretKey() != null ? savedBox.getSecretKey() : "")
+                                                                            .body(savedBox)))
                                                     );
                                         });
                             });
@@ -112,6 +119,27 @@ public class DeviceRegistrationController {
         box.setStatus(req.getStatus());
         box.setLatitude(lat);
         box.setLongitude(lon);
+    }
+
+    @GetMapping("/{clientId}/secret")
+    public Mono<ResponseEntity<String>> getDeviceSecret(
+            @PathVariable String clientId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        // Verify the JWT matches the requested clientId
+        if (!clientId.equals(jwt.getSubject())) {
+            return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));
+        }
+
+        return easyboxRepository.findByClientId(clientId)
+                .flatMap(box -> {
+                    if (!Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
+                        return Mono.just(ResponseEntity.status(403).body("Device not approved or secret not assigned"));
+                    }
+
+                    return Mono.just(ResponseEntity.ok(box.getSecretKey()));
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
     }
 }
 

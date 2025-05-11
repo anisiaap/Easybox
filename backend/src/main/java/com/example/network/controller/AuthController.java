@@ -9,6 +9,7 @@ import com.example.network.exception.ConflictException;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.UserRepository;
 import com.example.network.config.JwtUtil;
+import com.example.network.service.BakeryService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,11 +30,20 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserRepository userRepo, BakeryRepository bakeryRepo, JwtUtil jwtUtil, BCryptPasswordEncoder passwordEncoder) {
+    private final BakeryService bakeryService;
+
+    public AuthController(
+            UserRepository userRepo,
+            BakeryRepository bakeryRepo,
+            JwtUtil jwtUtil,
+            BCryptPasswordEncoder passwordEncoder,
+            BakeryService bakeryService
+    ) {
         this.userRepo = userRepo;
         this.bakeryRepo = bakeryRepo;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.bakeryService = bakeryService;
     }
 
     // Client sign up
@@ -140,12 +150,15 @@ public class AuthController {
                         if (!passwordEncoder.matches(password, bakery.getPassword())) {
                             return Mono.just(ResponseEntity.status(401).body("Invalid password"));
                         }
-                        String token = jwtUtil.generateShortToken(
-                                bakery.getId(),
-                                bakery.getPhone(),
-                                List.of("BAKERY")
-                        );
-                        return Mono.just(ResponseEntity.ok(token));
+                        return bakeryService.refreshTokenIfExpired(bakery)
+                                .flatMap(updated -> {
+                                    String shortToken = jwtUtil.generateShortToken(
+                                            updated.getId(),
+                                            updated.getPhone(),
+                                            List.of("BAKERY")
+                                    );
+                                    return Mono.just(ResponseEntity.ok(shortToken));
+                                });
                     })
                     .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("Bakery not found")));
         }

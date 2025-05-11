@@ -34,6 +34,33 @@ public class ReservationCleanupService {
 
         reservationRepository.findAll()
                 .flatMap(reservation -> {
+                    LocalDateTime start = reservation.getReservationStart();
+                    boolean startingSoon = start != null && !start.isAfter(now.plusHours(1)); // starts in <= 1h
+
+                    // 💥 New condition: cancel if Easybox inactive or compartment dirty/broken, and reservation starts soon
+                    if (startingSoon) {
+                        return easyboxRepository.findById(reservation.getEasyboxId())
+                                .flatMap(easybox -> {
+                                    if (!"active".equals(easybox.getStatus())) {
+                                        reservation.setStatus("expired");
+                                        return Mono.just(reservation);
+                                    }
+                                    return compartmentRepository.findById(reservation.getCompartmentId())
+                                            .flatMap(compartment -> {
+                                                String status = compartment.getStatus();
+                                                if ("dirty".equalsIgnoreCase(status) || "broken".equalsIgnoreCase(status)) {
+                                                    reservation.setStatus("expired");
+                                                    return Mono.just(reservation);
+                                                }
+                                                if ("waiting_cleaning".equalsIgnoreCase(reservation.getStatus())) {
+                                                    reservation.setStatus("expired");
+                                                    return Mono.just(reservation);
+                                                }
+                                                return Mono.empty(); // no update needed
+                                            });
+                                });
+                    }
+
                     // Case 1: Expired reservation
                     if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now) && !"expired".equalsIgnoreCase(reservation.getStatus()))  {
                         return easyboxRepository.findById(reservation.getEasyboxId())
@@ -67,7 +94,6 @@ public class ReservationCleanupService {
                         reservation.setStatus("waiting_cleaning");
                         return Mono.just(reservation);
                     }
-
                     // No changes
                     return Mono.empty();
                 })
