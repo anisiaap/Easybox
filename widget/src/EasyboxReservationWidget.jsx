@@ -228,8 +228,7 @@ const EasyboxReservationWidget = forwardRef(
                 minTemperature,
                 totalDimension,
                 reservationStart : start.toISOString().slice(0,-1),
-                reservationEnd   : end.toISOString().slice(0,-1),
-                bakeryId: params.get("bakeryId")
+                reservationEnd   : end.toISOString().slice(0,-1)
             };
 
             const res = await api.post(`widget/reservation/hold`, payload, {

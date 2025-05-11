@@ -44,7 +44,7 @@ public class DeviceRegistrationService {
     public void init() {
         System.out.println("Starting device heartbeat scheduler...");
         scheduler.scheduleAtFixedRate(() -> attemptRegistration().subscribe(),
-                                                     0, 10, TimeUnit.MINUTES); }
+                                                     0, 30, TimeUnit.MINUTES); }
 
     /**
      * Attempts to register the device as active.

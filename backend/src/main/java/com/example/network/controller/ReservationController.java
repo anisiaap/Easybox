@@ -39,9 +39,8 @@ public class ReservationController {
 
     @PostMapping("/reservation/hold")
     public Mono<Reservation> hold(@RequestBody CreateReservationRequest req, Authentication authentication) {
-        Long bakeryId = Long.parseLong(authentication.getName()); // Now 'sub' is the bakery ID
-        req.setBakeryId(bakeryId);  // Inject authenticated bakery ID
-        return reservationService.holdReservation(req);
+         // Inject authenticated bakery ID
+        return reservationService.holdReservation(req, authentication);
     }
 
     @PatchMapping("/reservation/{id}/confirm")

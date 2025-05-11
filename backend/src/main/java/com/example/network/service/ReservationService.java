@@ -5,6 +5,8 @@ import com.example.network.entity.*;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -41,7 +43,8 @@ public class ReservationService {
     /* -------------------------------------------------------------------- */
 
     @Transactional
-    public Mono<Reservation> holdReservation(CreateReservationRequest req) {
+    public Mono<Reservation> holdReservation(CreateReservationRequest req, Authentication auth) {
+        Long bakeryId = extractUserIdFromJwt(auth);
         return userService.getOrCreate(req.getPhone())
                 .flatMap(user -> {
                     LocalDateTime delivery = LocalDateTime.parse(req.getDeliveryTime());
@@ -68,7 +71,7 @@ public class ReservationService {
                                                 r.setEasyboxId(req.getEasyboxId());
                                                 r.setCompartmentId(compId);
                                                 r.setUserId(user.getId());
-                                                r.setBakeryId(req.getBakeryId());
+                                                r.setBakeryId(bakeryId);
 
                                                 return reservationRepository.save(r)
                                                         .onErrorResume(DuplicateKeyException.class, e -> {
@@ -118,7 +121,10 @@ public class ReservationService {
                             });
                 });
     }
-
+    private Long extractUserIdFromJwt(Authentication auth) {
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        return jwt.getClaim("userId");
+    }
     public Mono<RecommendedBoxesResponse> findAvailableBoxes(
             String address,
             LocalDateTime start,

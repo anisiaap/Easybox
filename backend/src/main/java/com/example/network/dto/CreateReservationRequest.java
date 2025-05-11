@@ -7,7 +7,6 @@ public class CreateReservationRequest {
     private Long easyboxId;
     private Integer minTemperature;
     private Integer totalDimension;
-    private Long bakeryId;
     private String phone;
 
 
@@ -28,9 +27,4 @@ public class CreateReservationRequest {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
-    public Long getBakeryId() { return bakeryId; }
-
-    public void setBakeryId(Long bakeryId) {
-        this.bakeryId = bakeryId;
-    }
 }
