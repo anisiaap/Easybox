@@ -286,13 +286,12 @@ const EasyboxReservationWidget = forwardRef(
             }
         };
         // ⬇️ runs exactly once after the component mounts
+        // fire once, but only after we have a token
         useEffect(() => {
-            // only if you actually received a starter address
-            if (searchAddress?.trim()) {
+            if (jwtToken && searchAddress?.trim()) {
                 handleCheckAvailability(searchAddress.trim());
             }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, []);            // 👈 empty deps => run once
+        }, [jwtToken]);
         // -------------------
         // Rendering
         // -------------------
