@@ -10,6 +10,7 @@ export const api = axios.create({
 api.interceptors.request.use(config => {
     const token = localStorage.getItem('token');
     if (token) {
+        config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -21,22 +22,35 @@ api.interceptors.response.use(
     async err => {
         const originalRequest = err.config;
 
-        // Prevent infinite loop
-        if (err.response?.status === 401 && !originalRequest._retry) {
+        // 401: Try refresh token once
+        if (
+            err.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes('/auth/refresh-token')
+        ) {
             originalRequest._retry = true;
+
             try {
                 const refreshRes = await api.get('/auth/refresh-token');
                 const newToken = refreshRes.data;
+
                 localStorage.setItem('token', newToken);
-                originalRequest.headers = originalRequest.headers || {};
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                return api(originalRequest); // retry
+
+                return api(originalRequest); // Retry original request
             } catch (refreshErr) {
-                toast.error('Session expired');
+                // 🔐 Auto logout
                 localStorage.removeItem('token');
+                toast.error('Session expired. Please log in again.');
+
+                // 🔁 Optional redirect to login
+                window.location.href = '/login';
+
+                return Promise.reject(refreshErr);
             }
         }
 
+        // General error
         toast.error(
             err.response?.data?.message || err.response?.statusText || 'Network / server error'
         );
