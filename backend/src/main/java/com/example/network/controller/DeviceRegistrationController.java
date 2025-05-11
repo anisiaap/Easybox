@@ -77,7 +77,9 @@ public class DeviceRegistrationController {
                                 if (box.getId() != null) {
                                     copyFields(box, req, lat, lon);
                                     return easyboxRepository.save(box)
-                                            .map(ResponseEntity::ok);
+                                            .map(saved -> ResponseEntity.ok()
+                                                    .header("X-Device-Secret", saved.getSecretKey())
+                                                    .body(saved));
                                 }
 
                                 /* 4b – CONFLICT check <100 m */

@@ -5,6 +5,8 @@ import com.example.easyboxdevice.config.SecretStorageUtil;
 import com.example.easyboxdevice.dto.RegistrationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,7 +31,8 @@ public class DeviceRegistrationService {
 
     @Value("${mqtt.client-id}")
     private String clientId;
-
+    @Value("${jwt.device-secret}")
+    private String fallbackSecret;
     private final JwtUtil jwtUtil;
 
     private final WebClient webClient;
@@ -42,37 +46,14 @@ public class DeviceRegistrationService {
     /**
      * Initialize the heartbeat scheduler to send a registration update every 10 minutes.
      */
+
     @PostConstruct
     public void init() {
         System.out.println("Starting device heartbeat scheduler...");
 
-        if (!SecretStorageUtil.exists()) {
-            System.out.println("🔐 No local secret found – attempting to fetch from backend...");
-
-            // ✅ Use fallback shared-secret JWT
-            String token = jwtUtil.generateToken(clientId);
-
-            String fetchedSecret = webClient.get()
-                    .uri(centralBackendUrl + "device/" + clientId + "/secret")
-                    .header("Authorization", "Bearer " + token)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            if (fetchedSecret != null && !fetchedSecret.isBlank()) {
-                try {
-                    SecretStorageUtil.storeSecret(fetchedSecret);
-                    System.out.println("✅ Pulled secret from backend and saved.");
-                } catch (Exception e) {
-                    throw new IllegalStateException("❌ Failed to store pulled secret.", e);
-                }
-            } else {
-                throw new IllegalStateException("❌ Failed to pull device secret.");
-            }
-        }
-
-        // ✅ Start scheduled heartbeat loop
-        scheduler.scheduleAtFixedRate(() -> attemptRegistration().subscribe(),
+        scheduler.scheduleAtFixedRate(() -> attemptRegistration()
+                        .doOnError(e -> System.err.println("⚠️ Registration failed: " + e.getMessage()))
+                        .subscribe(),                       // NB: keep the chain reactive
                 0, 30, TimeUnit.MINUTES);
     }
     /**
@@ -80,52 +61,47 @@ public class DeviceRegistrationService {
      */
     @Retry(name = "deviceRegistration", fallbackMethod = "registrationFallback")
     private Mono<Void> attemptRegistration() {
-        System.out.println("🔄 Attempting to register device...");
-        RegistrationRequest request = new RegistrationRequest();
-        request.setAddress(deviceAddress);
-        request.setClientId(clientId);
-        request.setStatus("active");
+        RegistrationRequest req = new RegistrationRequest();
+        req.setAddress(deviceAddress);
+        req.setClientId(clientId);
+        req.setStatus("active");
 
-        try {
-            String jsonPayload = new ObjectMapper().writeValueAsString(request);
-            System.out.println("Sending payload: " + jsonPayload);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        String token = jwtUtil.generateToken(clientId);
-
+        String token = createToken();   // NEW
 
         return webClient.post()
                 .uri(centralBackendUrl + "device/register")
                 .header("Authorization", "Bearer " + token)
-                .bodyValue(request)
+                .bodyValue(req)
                 .retrieve()
-                .onStatus(status -> status.isError(), response -> {
-                    System.err.println("❌ Registration failed with status: " + response.statusCode());
-                    return response.bodyToMono(String.class)
-                            .doOnNext(body -> System.err.println("❌ Error body: " + body))
-                            .flatMap(errorBody -> response.createException());
-                })
                 .toEntity(String.class)
-                .doOnSuccess(responseEntity -> {
-                    List<String> header = responseEntity.getHeaders().get("X-Device-Secret");
-                    String newSecret = header != null && !header.isEmpty() ? header.get(0) : null;
-
-                    System.out.println("✅ Registration successful: " + responseEntity.getBody());
-
+                .flatMap(resp -> {
+                    // save fresh secret whenever we get one
+                    String newSecret = resp.getHeaders().getFirst("X-Device-Secret");
                     if (newSecret != null && !newSecret.isBlank()) {
                         try {
                             SecretStorageUtil.storeSecret(newSecret);
-                            System.out.println("🔐 New secret saved locally");
                         } catch (Exception e) {
-                            System.err.println("❌ Failed to save secret: " + e.getMessage());
+                            throw new RuntimeException(e);
                         }
+                        System.out.println("🔐 Stored new device secret");
                     }
-                })
-                .doOnError(error -> System.err.println("⚠️ Registration HTTP error: " + error.getMessage()))
-                .then();
+                    System.out.println("✅ Registration OK: " + resp.getBody());
+                    return Mono.empty();
+                });
+    }
 
+    private String createToken() {
+        // If we already have a per‑device secret, use it
+        if (SecretStorageUtil.exists()) {
+            return jwtUtil.generateToken(clientId);
+        }
+        // First contact → sign with shared “fallback” secret
+        return Jwts.builder()
+                .setSubject(clientId)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 10 * 60_000))
+                .signWith(SignatureAlgorithm.HS256, fallbackSecret.getBytes())
+                .compact();
     }
 
     /**

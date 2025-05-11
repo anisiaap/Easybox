@@ -271,7 +271,7 @@ return (
                         <button
                             onClick={async () => {
                                 try {
-                                    const res = await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
+                                    await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
                                     toast.success("Device approved!");
                                     setSelectedEasybox(prev => prev ? { ...prev, approved: true } : null);
                                 } catch (err: any) {
