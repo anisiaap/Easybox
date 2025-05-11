@@ -1,18 +1,28 @@
-import { useAuth } from '../lib/AuthContext';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Clipboard } from 'react-native';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-
+import * as ClipboardAPI from 'expo-clipboard'; // ✅ for clipboard
+import { useAuth } from '../lib/AuthContext';
 import ScreenHeader from './ScreenHeader';
+import { useNotification } from '../components/NotificationContext';
+
 export default function Account() {
     const { user, logout } = useAuth();
     const router = useRouter();
+    const { notify } = useNotification();
 
     const handleLogout = async () => {
         await logout();
         router.replace('/login');
+    };
+
+    const copyToken = async () => {
+        if (user?.token) {
+            await ClipboardAPI.setStringAsync(user.token);
+            notify({ type: 'success', message: 'Token copied to clipboard!' });
+        }
     };
 
     if (!user) {
@@ -40,6 +50,21 @@ export default function Account() {
                         <Text style={styles.label}>Role:</Text>
                         <Text>{user.role.toUpperCase()}</Text>
 
+                        {user.role === 'bakery' && user.token && (
+                            <>
+                                <Text style={styles.label}>API Token:</Text>
+                                <Text selectable style={{ fontFamily: 'monospace' }}>
+                                    {user.token}
+                                </Text>
+                                <Button
+                                    mode="outlined"
+                                    style={styles.copyBtn}
+                                    onPress={copyToken}
+                                >
+                                    Copy Token
+                                </Button>
+                            </>
+                        )}
                     </Card.Content>
                 </Card>
                 <Button
@@ -53,6 +78,7 @@ export default function Account() {
         </SafeAreaView>
     );
 }
+
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#fff' },
     centered: {
@@ -66,5 +92,8 @@ const styles = StyleSheet.create({
     label: { fontWeight: 'bold', marginTop: 12 },
     logoutBtn: {
         marginTop: 20,
+    },
+    copyBtn: {
+        marginTop: 12,
     },
 });

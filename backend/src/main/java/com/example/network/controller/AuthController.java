@@ -172,10 +172,22 @@ public class AuthController {
 
         if (roles.contains("BAKERY")) {
             return bakeryRepo.findById(userId)
-                    .map(b -> ResponseEntity.ok(new ProfileResponse(b.getId(), b.getName(), b.getPhone(), "bakery")));
+                    .map(b -> ResponseEntity.ok(new ProfileResponse(
+                            b.getId(),
+                            b.getName(),
+                            b.getPhone(),
+                            "bakery",
+                            b.getToken() // ✱ include token
+                    )));
         } else if (roles.contains("USER")) {
             return userRepo.findById(userId)
-                    .map(u -> ResponseEntity.ok(new ProfileResponse(u.getId(), u.getName(), u.getPhoneNumber(), "client")));
+                    .map(u -> ResponseEntity.ok(new ProfileResponse(
+                            u.getId(),
+                            u.getName(),
+                            u.getPhoneNumber(),
+                            "client",
+                            null // ✱ no token for clients
+                    )));
         } else {
             return Mono.just(ResponseEntity.status(403).build());
         }

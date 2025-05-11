@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
 import api from '../lib/api';
 import ScreenHeader from './ScreenHeader';
-
+import { useNotification } from '../components/NotificationContext';
 type Issue = {
     id: string;
     reason: string;
@@ -13,7 +13,7 @@ type Issue = {
 export default function Maintenance() {
     const [issues, setIssues] = useState<Issue[]>([]);
     const [history, setHistory] = useState<Issue[]>([]);
-
+    const { notify } = useNotification();
     const load = async () => {
         const curr = await api.get('/issues/current');
         const past = await api.get('/issues/history');

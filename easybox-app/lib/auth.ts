@@ -13,3 +13,4 @@ export async function getToken(): Promise<string | null> {
 export async function removeToken() {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
+

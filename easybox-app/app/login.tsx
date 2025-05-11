@@ -1,34 +1,43 @@
 import React, { useState } from 'react';
-import { View, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Card, Title } from 'react-native-paper';
+import {
+    View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+} from 'react-native';
+import {TextInput, Button, Text, Card, Title} from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveToken } from '../lib/auth';
-import { jwtDecode } from 'jwt-decode';
 import { useAuth } from '../lib/AuthContext';
+import { useNotification } from '../components/NotificationContext';
+const PHONE_REGEX = /^07\d{8}$/;
+
+
 export default function Login() {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'client' | 'bakery'>('client');
     const router = useRouter();
     const { setAuth } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const { notify } = useNotification();
+    const isValid = PHONE_REGEX.test(phone) && password.length > 0;
 
     const handleLogin = async () => {
-        const mappedRole = role === 'client' ? 'USER' : 'BAKERY'; // ✅ proper mapping
+        const mappedRole = role === 'client' ? 'USER' : 'BAKERY';
         try {
-            const res = await api.post('/auth/login', {
+            setLoading(true);
+            const { data: token } = await api.post<string>('/auth/login', {
                 phone,
                 password,
                 role: mappedRole,
             });
-            const token: string = res.data;
-            await saveToken(token);
-            const decoded: any = jwtDecode(token);
+            await saveToken(token); // ✱ CHANGE: removed duplicate
 
-            await saveToken(token);
+            const profile = await api.get('/auth/me').then(r => r.data);
 
-            const profileRes = await api.get('/auth/me');
-            const profile = profileRes.data;
 
             setAuth({
                 userId: profile.userId,
@@ -36,14 +45,14 @@ export default function Login() {
                 phone: profile.phone,
                 role: profile.role,
             });
-
+            setPassword('');
             router.replace({ pathname: '/redirect', params: { role } });
         } catch (e: any) {
             const msg =
                 e?.response?.data?.message ||
                 e?.response?.data ||
                 'Login failed. Check your phone and password.';
-            Alert.alert('Login failed', msg);
+                notify({ type: 'error', message: msg });
         }
     };
 
@@ -64,6 +73,7 @@ export default function Login() {
                     autoCapitalize="none"
                     style={{ marginBottom: 16 }}
                     mode="outlined"
+                    error={phone.length > 0 && !PHONE_REGEX.test(phone)}
                 />
                 <TextInput
                     label="Password"
@@ -74,21 +84,31 @@ export default function Login() {
                     mode="outlined"
                 />
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
+                <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 22,
+                    height: 44,
+                    borderColor: 'red',
+                }}>
+                    <>
                     <Button
                         mode={role === 'client' ? 'contained' : 'outlined'}
                         onPress={() => setRole('client')}
-                        style={{ flex: 1, marginRight: 8 }}
+                        style={styles.toggleBtn}
+                        accessibilityState={{ selected: role === 'client' }}
                     >
                         Client
                     </Button>
                     <Button
                         mode={role === 'bakery' ? 'contained' : 'outlined'}
                         onPress={() => setRole('bakery')}
-                        style={{ flex: 1 }}
+                        style={styles.toggleBtn}
+                        accessibilityState={{ selected: role === 'bakery' }} // ✱ CHANGE
                     >
                         Bakery
                     </Button>
+                    </>
                 </View>
 
                 <Button mode="contained" onPress={handleLogin} style={{ borderRadius: 8 }}>
@@ -106,3 +126,18 @@ export default function Login() {
     );
 }
 
+const styles = StyleSheet.create({
+    container: { flex: 1, justifyContent: 'center', padding: 20 },
+    card: { padding: 20, borderRadius: 16, elevation: 4 },
+    title: { textAlign: 'center', marginBottom: 20 },
+    input: { marginBottom: 16 },
+    toggleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 22,
+        height: 44,
+    },
+    toggleBtn: { flex: 1, marginHorizontal: 4 },
+    submit: { borderRadius: 8 },
+    footer: { marginTop: 20, textAlign: 'center' },
+});

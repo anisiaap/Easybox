@@ -1,8 +1,25 @@
 import React, { useState } from 'react';
-import { Alert, View } from 'react-native';
-import { TextInput, Button, Text, Card, Title, HelperText } from 'react-native-paper';
+import {
+    View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+} from 'react-native';
+import {
+    TextInput,
+    Button,
+    Text,
+    Card,
+    HelperText,
+    Title,
+} from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
+import { useNotification } from '../components/NotificationContext';
+const PHONE_REGEX = /^07\d{8}$/;
+const PWD_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#^])[A-Za-z\d@$!%*?&.#^]{8,}$/;
 
 export default function Signup() {
     const [name, setName] = useState('');
@@ -11,47 +28,49 @@ export default function Signup() {
     const [role, setRole] = useState<'client' | 'bakery'>('client');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-
-    const isValidPhone = /^07\d{8}$/.test(phone);
-    const isStrongPassword = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d\S]{8,}$/.test(password);
-    const isFormValid = name.trim() !== '' && isValidPhone && isStrongPassword;
+    const { notify } = useNotification();
+    const isFormValid =
+        name.trim() !== '' && PHONE_REGEX.test(phone) && PWD_REGEX.test(password);
 
     const handleSignup = async () => {
         if (!isFormValid) {
-            Alert.alert('Invalid input', 'Please correct the errors before submitting.');
+            notify({ type: 'error', message: 'Please correct the errors before submitting.' });
             return;
         }
-
         try {
             setLoading(true);
             const endpoint = role === 'client' ? '/auth/register-client' : '/auth/register-bakery';
             const payload =
                 role === 'client'
                     ? { name, phone, password }
-                    : { name, phone, password, pluginInstalled: false };
+                    : { name, phone, password};
 
             const res = await api.post(endpoint, payload);
 
-            Alert.alert(
-                'Success',
-                role === 'client'
-                    ? 'Client account created!'
-                    : 'Bakery created. Please wait for approval.'
-            );
+            notify({
+                type: 'success',
+                message:
+                    role === 'client'
+                        ? 'Client account created!'
+                        : 'Bakery created. Please wait for approval.',
+            });
             router.replace('/login');
         } catch (err: any) {
             const msg =
                 err?.response?.data?.message ??
                 err?.response?.data ??
                 'Signup failed. Try again.';
-            Alert.alert('Error', msg);
+            notify({ type: 'error', message: msg });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f9f9f9' }}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.container}
+        >
             <Card style={{ padding: 20, borderRadius: 16 }}>
                 <Title style={{ textAlign: 'center', marginBottom: 20 }}>Sign Up</Title>
 
@@ -69,8 +88,9 @@ export default function Signup() {
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                     mode="outlined"
+                    error={phone.length > 0 && !PHONE_REGEX.test(phone)}
                 />
-                <HelperText type="error" visible={phone.length > 0 && !isValidPhone}>
+                <HelperText type="error" visible={phone.length > 0 && !PHONE_REGEX.test(phone)}>
                     Phone must start with 07 and be 10 digits
                 </HelperText>
 
@@ -80,26 +100,32 @@ export default function Signup() {
                     onChangeText={setPassword}
                     secureTextEntry
                     mode="outlined"
+                    error={password.length > 0 && !PWD_REGEX.test(password)}
                 />
-                <HelperText type="error" visible={password.length > 0 && !isStrongPassword}>
-                    Password must be at least 8 characters and contain letters and numbers and a special character
+                <HelperText type="error" visible={password.length > 0 && !PWD_REGEX.test(password)}>
+                    Minimum 8 chars, upper‑, lower‑case, number, special
                 </HelperText>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+
+                <View style={styles.toggleRow}>
+                <>
                     <Button
                         mode={role === 'client' ? 'contained' : 'outlined'}
                         onPress={() => setRole('client')}
-                        style={{ flex: 1, marginRight: 8 }}
+                        style={styles.toggleBtn}
+                        accessibilityState={{ selected: role === 'client' }} // ✱ CHANGE
                     >
                         Client
                     </Button>
                     <Button
                         mode={role === 'bakery' ? 'contained' : 'outlined'}
                         onPress={() => setRole('bakery')}
-                        style={{ flex: 1 }}
+                        style={styles.toggleBtn}
+                        accessibilityState={{ selected: role === 'bakery' }} // ✱ CHANGE
                     >
                         Bakery
                     </Button>
+                </>
                 </View>
 
                 <Button
@@ -112,6 +138,19 @@ export default function Signup() {
                     Create Account
                 </Button>
             </Card>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
+const styles = StyleSheet.create({
+    container: { flex: 1, justifyContent: 'center', padding: 20 },
+    card: { padding: 20, borderRadius: 16 },
+    title: { textAlign: 'center', marginBottom: 20 },
+    input: { marginBottom: 12 },
+    toggleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+        height: 44,
+    },
+    toggleBtn: { flex: 1, marginHorizontal: 4 },
+});

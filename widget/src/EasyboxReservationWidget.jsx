@@ -57,7 +57,7 @@ const EasyboxReservationWidget = forwardRef(
         const [easyboxes, setEasyboxes] = useState([]);
         // The user’s current selection
         const [selectedBox, setSelectedBox] = useState(null);
-
+        const [loading, setLoading] = useState(false);
         // Imperative handle so parent can call "invalidateMapSize()" if needed
         useImperativeHandle(ref, () => ({
             invalidateMapSize() {
@@ -175,52 +175,43 @@ const EasyboxReservationWidget = forwardRef(
         // -------------------
         // Handlers
         // -------------------
-        const handleCheckAvailability = async () => {
+        const handleCheckAvailability = async (address = clientAddress) => {
+            setLoading(true);
             try {
                 const { deliveryTime, minTemperature, totalDimension } = additionalCriteria;
 
                 let start = null;
-                let end = null;
-
+                let end   = null;
                 if (deliveryTime) {
                     const window = computeReservationWindow(deliveryTime);
-                    start = window.start.toISOString().split('.')[0]; // removes .000Z
-                    end = window.end.toISOString().split('.')[0];
+                    start = window.start.toISOString().split('.')[0];
+                    end   = window.end  .toISOString().split('.')[0];
                 }
 
                 const body = {
-                    address: clientAddress,
-                    minTemperature: parseInt(minTemperature),
-                    totalDimension: parseInt(totalDimension),
+                    address,                              // 👈  use the argument
+                    minTemperature : parseInt(minTemperature),
+                    totalDimension : parseInt(totalDimension),
                     start,
                     end
                 };
 
-
-                // Fetch from /reservations/available
-                // which returns { recommendedBox, otherBoxes }
-                console.log(body)
-                const res = await api.post(`widget/reservation/available`, body, {
+                const res  = await api.post('widget/reservation/available', body, {
                     headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
                 });
                 const data = res.data;
 
-                // data = { recommendedBox: {...}, otherBoxes: [...] }
-                // Merge into a single array for local state
                 const merged = [];
                 if (data.recommendedBox) {
-                    merged.push({
-                        ...data.recommendedBox,
-                        recommended: true
-                    });
+                    merged.push({ ...data.recommendedBox, recommended: true });
                 }
-                if (data.otherBoxes && Array.isArray(data.otherBoxes)) {
-                    merged.push(...data.otherBoxes);
-                }
+                if (Array.isArray(data.otherBoxes)) merged.push(...data.otherBoxes);
 
-                setEasyboxes(merged); // Now we have 0..1 recommended + rest
+                setEasyboxes(merged);
                 setSelectedBox(null);
-            }catch (_) { /* toast already shown by interceptor */ }
+            }finally {
+                setLoading(false);
+            }
         };
 
         const handleReserve = async () => {
@@ -279,7 +270,12 @@ const EasyboxReservationWidget = forwardRef(
         }, []);
         const handleSearchSubmit = (e) => {
             e.preventDefault();
-            setSearchAddress(searchInput); // ← triggers geocoding
+
+            const addr = searchInput.trim();
+            if (!addr) return;
+
+            setSearchAddress(addr);      // triggers geocoding / fly‑to
+            handleCheckAvailability(addr); // 👈 immediately fetch boxes
         };
 
         // Let the user click on a box in the side panel to focus it on the map
@@ -289,7 +285,14 @@ const EasyboxReservationWidget = forwardRef(
                 leafletMap.flyTo([box.latitude, box.longitude], 15, { duration: 1.0 });
             }
         };
-
+        // ⬇️ runs exactly once after the component mounts
+        useEffect(() => {
+            // only if you actually received a starter address
+            if (searchAddress?.trim()) {
+                handleCheckAvailability(searchAddress.trim());
+            }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, []);            // 👈 empty deps => run once
         // -------------------
         // Rendering
         // -------------------
@@ -320,9 +323,9 @@ const EasyboxReservationWidget = forwardRef(
                             </form>
 
                             {/* Availability button */}
-                            <button onClick={handleCheckAvailability} style={styles.checkBtn}>
-                                Check Available Easyboxes
-                            </button>
+                            {/*<button onClick={handleCheckAvailability} style={styles.checkBtn}>*/}
+                            {/*    Check Available Easyboxes*/}
+                            {/*</button>*/}
 
                             {/* List of easyboxes */}
                             <div style={styles.easyboxList}>
@@ -367,8 +370,12 @@ const EasyboxReservationWidget = forwardRef(
                                 {selectedBox.recommended && <span> (Recommended)</span>}
                             </div>
                         )}
-                        <button onClick={handleReserve} style={styles.reserveBtn}>
-                            Reserve Selected Box
+                        <button
+                            onClick={handleReserve}
+                            style={styles.reserveBtn}
+                            disabled={loading || !selectedBox}  // ← prevents clicks while data is coming
+                        >
+                            {loading ? 'Loading…' : 'Reserve Selected Box'}
                         </button>
                     </div>
                 </div>

@@ -1,12 +1,12 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, View, StyleSheet, ScrollView, Image } from 'react-native';
-import { Text, Card, Divider, Button } from 'react-native-paper';
+import {Text, Card, Divider, Button, Portal, Dialog, Paragraph} from 'react-native-paper';
 import api from '../lib/api';
 import ScreenHeader from './ScreenHeader';
 import { useAuth } from '../lib/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { useNotification } from '../components/NotificationContext';
 type Order = {
     id: string;
     status: string;
@@ -14,7 +14,7 @@ type Order = {
     easyboxAddress: string;
     qrCodeData?: string;
     compartmentId: number;
-    actionDeadline: string; // ✅ new
+    actionDeadline: string; //
 };
 function calculateTimeLeft(deadline: string): string {
     const now = new Date();
@@ -42,8 +42,8 @@ export default function OrderDetails() {
     const { user } = useAuth();
     const role = user?.role;
     const [timeLeft, setTimeLeft] = useState<string | null>(null);
-
-
+    const { notify } = useNotification();
+    const [confirm, setConfirm] = useState<null | { type: 'dirty' | 'broken' }>(null);
     const [order, setOrder] = useState<Order | null>(null);
 
     useEffect(() => {
@@ -51,7 +51,7 @@ export default function OrderDetails() {
 
         api.get(`/orders/${id}`)
             .then(res => setOrder(res.data))
-            .catch(() => Alert.alert("Error", "Could not load order."));
+            .catch(() => notify({type: 'error', message: "Could not load order."}));
     }, [id, role]);
     useEffect(() => {
         if (!order?.actionDeadline) return;
@@ -73,35 +73,24 @@ export default function OrderDetails() {
         (role === 'bakery' && order.status === 'waiting_bakery_drop_off') ||
         (role === 'client' && order.status === 'waiting_client_pick_up');
 
-    const reportIssue = (type: 'dirty' | 'broken') => {
+    const reportIssue = async (type: 'dirty' | 'broken') => {
         const label = type === 'dirty' ? 'dirty' : 'broken';
-        Alert.alert(
-            'Confirm Report',
-            `Are you sure you want to mark the compartment as ${label}?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Yes, report',
-                    style: 'destructive',
-                    onPress: () => {
-                        const apiCall = role === 'bakery'
-                            ? api.post(
-                                `/compartments/${order!.compartmentId}/report-and-reevaluate`,
-                                null,
-                                { params: { issue: type, reservationId: order!.id } }
-                            )
-                            : api.post(
-                                `/compartments/${order!.compartmentId}/report-condition?issue=${type}`
-                            );
+        try {
+            const apiCall = role === 'bakery'
+                ? api.post(
+                    `/compartments/${order!.compartmentId}/report-and-reevaluate`,
+                    null,
+                    { params: { issue: type, reservationId: order!.id } }
+                )
+                : api.post(
+                    `/compartments/${order!.compartmentId}/report-condition?issue=${type}`
+                );
 
-                        apiCall
-                            .then(() => Alert.alert('Success', `Compartment marked as ${label}.`))
-                            .catch(() => Alert.alert('Error', 'Could not report the issue.'));
-
-                    },
-                },
-            ]
-        );
+            await apiCall;
+            notify({ type: 'success', message: `Compartment marked as ${label}.` });
+        } catch {
+            notify({ type: 'error', message: 'Could not report the issue.' });
+        }
     };
 
 
@@ -165,6 +154,23 @@ export default function OrderDetails() {
                     </View>
                 )}
             </View>
+            {/* ✱ NEW: Dialog to confirm report */}
+            <Portal>
+                <Dialog visible={!!confirm} onDismiss={() => setConfirm(null)}>
+                    <Dialog.Title>Confirm Report</Dialog.Title>
+                    <Dialog.Content>
+                        <Paragraph>
+                            Are you sure you want to mark the compartment as {confirm?.type}?
+                        </Paragraph>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setConfirm(null)}>Cancel</Button>
+                        <Button onPress={() => confirm && reportIssue(confirm.type)}>
+                            Yes, report
+                        </Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </SafeAreaView>
     );
 }
