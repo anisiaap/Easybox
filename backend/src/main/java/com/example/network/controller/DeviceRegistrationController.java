@@ -77,9 +77,13 @@ public class DeviceRegistrationController {
                                 if (box.getId() != null) {
                                     copyFields(box, req, lat, lon);
                                     return easyboxRepository.save(box)
-                                            .map(saved -> ResponseEntity.ok()
-                                                    .header("X-Device-Secret", saved.getSecretKey())
-                                                    .body(saved));
+                                            .map(saved -> {
+                                                ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
+                                                if (Boolean.TRUE.equals(saved.getApproved())) {
+                                                    builder = builder.header("X-Device-Secret", saved.getSecretKey());
+                                                }
+                                                return builder.body(saved);
+                                            });
                                 }
 
                                 /* 4b – CONFLICT check <100 m */

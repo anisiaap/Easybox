@@ -97,10 +97,10 @@ public class DeviceRegistrationService {
                     String newSecret = resp.getHeaders().getFirst("X-Device-Secret");
                     boolean isApproved = Boolean.TRUE.equals(body.get("approved"));
 
-                    if (newSecret != null && !newSecret.isBlank() && !SecretStorageUtil.exists()) {
+                    if (isApproved && newSecret != null && !newSecret.isBlank() && !SecretStorageUtil.exists()) {
                         try {
                             SecretStorageUtil.storeSecret(newSecret);
-                            System.out.println("🔐 Pending secret cached");
+                            System.out.println("🔐 Approved secret stored");
                         } catch (Exception e) {
                             System.err.println("❌ Failed to store device secret: " + e.getMessage());
                         }
