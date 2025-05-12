@@ -41,7 +41,6 @@ public class AdminAuthController {
             );
             return Mono.just(new LoginResponse(token));
         }
-
         return Mono.error(new RuntimeException("Invalid credentials"));
     }
     @GetMapping("/refresh-token")

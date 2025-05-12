@@ -104,7 +104,7 @@ public class MqttClientManager {
                         MqttMessage msg = new MqttMessage(
                                 "{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
                         msg.setQos(1);
-
+                        msg.setRetained(true);
                         // ─── 2️⃣  publish the command
                         client.publish(cmdTopic, msg);
                         System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);

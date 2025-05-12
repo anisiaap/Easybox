@@ -75,6 +75,9 @@ public class DeviceRegistrationController {
 
                                 /* 4a – UPDATE (same locker) */
                                 if (box.getId() != null) {
+                                    if (!box.getClientId().equals(req.getClientId())) {
+                                        return Mono.error(new SecurityException("Device clientId mismatch"));
+                                    }
                                     copyFields(box, req, lat, lon);
                                     return easyboxRepository.save(box)
                                             .map(saved -> {
@@ -122,11 +125,29 @@ public class DeviceRegistrationController {
                             double lat, double lon) {
         box.setAddress(req.getAddress());
         box.setClientId(req.getClientId());
-        box.setStatus(req.getStatus());
         box.setLatitude(lat);
         box.setLongitude(lon);
     }
 
+    @GetMapping("/{clientId}/secret")
+    public Mono<ResponseEntity<String>> getDeviceSecret(
+            @PathVariable String clientId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        // Verify the JWT matches the requested clientId
+        if (!clientId.equals(jwt.getSubject())) {
+            return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));
+        }
 
+        return easyboxRepository.findByClientId(clientId)
+                .flatMap(box -> {
+                    if (!Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
+                        return Mono.just(ResponseEntity.status(403).body("Device not approved or secret not assigned"));
+                    }
+
+                    return Mono.just(ResponseEntity.ok(box.getSecretKey()));
+                })
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+    }
 }
 

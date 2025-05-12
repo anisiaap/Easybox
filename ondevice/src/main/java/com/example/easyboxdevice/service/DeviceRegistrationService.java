@@ -84,7 +84,7 @@ public class DeviceRegistrationService {
                 .header("Authorization", "Bearer " + token)
                 .bodyValue(req)
                 .retrieve()
-                .onStatus(status -> status.value() == 403, resp -> {
+                .onStatus(status -> status.value() == 403 || status.value() == 400, resp -> {
                     System.err.println("❌ JWT rejected — attempting secret refresh");
                     return fetchNewSecretAndRetry().flatMap(approved -> {
                         if (approved) return Mono.empty();

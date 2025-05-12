@@ -89,7 +89,7 @@ const ApprovedBadge = styled.span`
     display: inline-block;
     background-color: #28a745;
     color: white;
-    font-size: 0.85em;
+    font-size: 0.55em;
     font-weight: bold;
     padding: 4px 8px;
     border-radius: 12px;
@@ -277,7 +277,7 @@ return (
                     <h2>
                         {selectedEasybox.address}
                         {selectedEasybox.approved ? (
-                            <ApprovedBadge>Approved ✅</ApprovedBadge>
+                            <ApprovedBadge>Approved</ApprovedBadge>
                         ) : (
                             <button
                                 onClick={async () => {
@@ -298,10 +298,10 @@ return (
                                     border: "none",
                                     borderRadius: "12px",
                                     cursor: "pointer",
-                                    fontSize: "0.85em"
+                                    fontSize: "0.55em"
                                 }}
                             >
-                                ✅ Approve Device
+                                Approve Device.
                             </button>
                         )}
                 </h2>

@@ -58,4 +58,8 @@ public class GlobalExceptionHandler {
                 .orElse("Validation error");
         return new ResponseEntity<>(new ErrorResponse(message, HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST);
     }
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<String> handleSecurity(SecurityException e) {
+        return ResponseEntity.status(403).body("Forbidden: " + e.getMessage());
+    }
 }
