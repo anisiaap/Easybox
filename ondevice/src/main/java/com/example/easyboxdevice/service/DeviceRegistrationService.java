@@ -7,11 +7,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -51,18 +53,29 @@ public class DeviceRegistrationService {
 
     @PostConstruct
     public void init() {
-        scheduler.scheduleAtFixedRate(
-                () -> attemptRegistration()
-                        .onErrorResume(e -> Mono.empty())   // swallow, retry next tick
-                        .subscribe(),
-                0, 10, TimeUnit.MINUTES);
+        keepTryingUntilApproved();
     }
-
-    private Mono<Void> attemptRegistration() {
+    private void keepTryingUntilApproved() {
+        attemptRegistration()
+                .flatMap(approved -> {
+                    if (approved) {
+                        return Mono.empty();  // success! stop retrying
+                    } else {
+                        return Mono.delay(Duration.ofMinutes(10)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
+                    }
+                })
+                .onErrorResume(e -> {
+                    System.err.println("❌ Registration error: " + e.getMessage());
+                    return Mono.delay(Duration.ofMinutes(1))
+                            .then(Mono.fromRunnable(this::keepTryingUntilApproved));
+                })
+                .subscribe();
+    }
+    private Mono<Boolean> attemptRegistration() {
         RegistrationRequest req = new RegistrationRequest();
         req.setAddress(deviceAddress);
         req.setClientId(clientId);
-        req.setStatus("active");
+        req.setStatus(SecretStorageUtil.exists() ? "active" : "in_approval");
 
         String token = createToken();
 
@@ -71,30 +84,46 @@ public class DeviceRegistrationService {
                 .header("Authorization", "Bearer " + token)
                 .bodyValue(req)
                 .retrieve()
-                .toEntity(Map.class)  // 👈 we read approval from body JSON: { approved: true/false }
+                .onStatus(status -> status.value() == 403, resp -> {
+                    System.err.println("❌ JWT rejected — attempting secret refresh");
+                    return fetchNewSecretAndRetry().flatMap(approved -> {
+                        if (approved) return Mono.empty();
+                        return Mono.error(new SecurityException("Secret refresh failed"));
+                    });
+                })
+                .toEntity(Map.class)
                 .flatMap(resp -> {
                     Map<String, Object> body = resp.getBody();
                     String newSecret = resp.getHeaders().getFirst("X-Device-Secret");
                     boolean isApproved = Boolean.TRUE.equals(body.get("approved"));
 
-                    if (isApproved && newSecret != null && !newSecret.isBlank() && !SecretStorageUtil.exists()) {
+                    if (newSecret != null && !newSecret.isBlank() && !SecretStorageUtil.exists()) {
                         try {
                             SecretStorageUtil.storeSecret(newSecret);
-                            mqttService.start();         // 👈 connect to MQTT *only* after approval
-                            scheduler.shutdown();        // 👈 stop polling
-                            System.out.println("🔐 Device approved — secret saved and broker started");
+                            System.out.println("🔐 Pending secret cached");
                         } catch (Exception e) {
                             System.err.println("❌ Failed to store device secret: " + e.getMessage());
                         }
                     }
 
-                    return Mono.empty();
+                    if (isApproved) {
+                        try {
+                            mqttService.start();
+                        } catch (MqttException e) {
+                            throw new RuntimeException(e);
+                        }
+                        System.out.println("✅ Device approved — MQTT started");
+                    } else {
+                        System.out.println("⏳ Still waiting for admin approval…");
+                    }
+
+                    return Mono.just(isApproved);
                 });
     }
 
     private String createToken() {
         if (SecretStorageUtil.exists()) {
-            return jwtUtil.generateToken(clientId);
+            return jwtUtil.generateToken(clientId, null);
         }
 
         // First boot — use fallback secret
@@ -137,5 +166,27 @@ public class DeviceRegistrationService {
         } catch (Exception e) {
             System.err.println("Deregistration failed: " + e.getMessage());
         }
+    }
+    private Mono<Boolean> fetchNewSecretAndRetry() {
+        String fallbackToken = createToken();  // fallback is safe to use here
+        return webClient.get()
+                .uri(centralBackendUrl + "device/" + clientId + "/secret")
+                .header("Authorization", "Bearer " + fallbackToken)
+                .retrieve()
+                .bodyToMono(String.class)
+                .flatMap(secret -> {
+                    try {
+                        SecretStorageUtil.storeSecret(secret);
+                        System.out.println("🔁 Fetched and stored new secret after rotation");
+                        return attemptRegistration(); // retry with fresh secret
+                    } catch (Exception e) {
+                        System.err.println("❌ Failed to store fetched secret: " + e.getMessage());
+                        return Mono.just(false);
+                    }
+                })
+                .onErrorResume(e -> {
+                    System.err.println("❌ Failed to fetch new secret: " + e.getMessage());
+                    return Mono.just(false);
+                });
     }
 }

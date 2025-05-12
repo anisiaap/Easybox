@@ -85,7 +85,16 @@ const getBackgroundColor = (condition: string) => {
             return "white";
     }
 };
-
+const ApprovedBadge = styled.span`
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    font-size: 0.85em;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+`;
 const CompartmentCard = styled.div<{ status: string; condition: string }>`
     padding: 12px;
     border: 2px solid ${props => getBorderColor(props.status)};
@@ -265,31 +274,35 @@ return (
                     <BackButton onClick={() => setSelectedEasybox(null)}>
                         &larr; Back to List
                     </BackButton>
-                    <h2>{selectedEasybox.address}</h2>
+                    <h2>
+                        {selectedEasybox.address}
+                        {selectedEasybox.approved && <ApprovedBadge>Approved ✅</ApprovedBadge>}
+                    </h2>
                     <p>Status: {selectedEasybox.status}</p>
-                    {!selectedEasybox.approved && (
+
+                    {selectedEasybox.approved && (
                         <button
                             onClick={async () => {
                                 try {
-                                    await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
-                                    toast.success("Device approved!");
-                                    setSelectedEasybox(prev => prev ? { ...prev, approved: true } : null);
+                                    await api.put(`/admin/easyboxes/${selectedEasybox.id}/rotate-secret`);
+                                    toast.success("Secret rotated!");
                                 } catch (err: any) {
-                                    const msg = err?.response?.data || "Failed to approve device.";
+                                    const msg = err?.response?.data || "Failed to rotate secret.";
                                     toast.error(msg);
                                 }
                             }}
                             style={{
-                                padding: "8px 12px",
-                                marginTop: "10px",
-                                backgroundColor: "#007bff",
+                                padding: "6px 12px",
+                                marginTop: "6px",
+                                backgroundColor: "#6f42c1",
                                 border: "none",
                                 borderRadius: "4px",
                                 color: "white",
-                                cursor: "pointer"
+                                cursor: "pointer",
+                                fontSize: "0.9em"
                             }}
                         >
-                            Approve Device
+                            🔄 Rotate Secret
                         </button>
                     )}
                     <h3>Compartments</h3>

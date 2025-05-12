@@ -177,8 +177,10 @@ public class MqttService {
             System.out.println("📝 Serialized compartments JSON: " + json);
 
             String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
-            String signedPayload = createSignedPayload(json);
-            client.publish(topic, new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8)));
+            String signedPayload = jwtUtil.generateToken(properties.getClientId(), newSecret -> {
+                System.out.println("🔁 Secret refreshed mid-MQTT operation");
+            });
+            client.publish(topic, new MqttMessage((signedPayload + "::" + json).getBytes(StandardCharsets.UTF_8)));
 
             System.out.println("📤 Sent compartments response");
 
@@ -204,8 +206,9 @@ public class MqttService {
     }
 
     private String createSignedPayload(String payload) {
-        String token = jwtUtil.generateToken(properties.getClientId());
-        return token + "::" + payload;
+        return jwtUtil.generateToken(properties.getClientId(), newSecret -> {
+            System.out.println("🔁 Secret refreshed during createSignedPayload()");
+        }) + "::" + payload;
     }
 
     @PreDestroy

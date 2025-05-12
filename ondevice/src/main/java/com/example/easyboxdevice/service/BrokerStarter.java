@@ -18,10 +18,11 @@ public class BrokerStarter {
     public void onReady() {
         if (SecretStorageUtil.exists()) {
             try {
+                SecretStorageUtil.loadSecret(); // ensure it's valid
                 mqttService.start();
                 System.out.println("✅ MQTT broker started at boot");
             } catch (Exception e) {
-                System.err.println("❌ Failed to start MQTT at boot: " + e.getMessage());
+                System.err.println("❌ Invalid stored secret, skipping MQTT startup");
             }
         }
     }
