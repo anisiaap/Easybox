@@ -17,7 +17,7 @@ public class JwtUtil {
     @Value("${jwt.device-secret}")     // the shared bootstrap secret
     private String fallbackSecret;
 
-    public String generateToken(String subject, JwtRecoveryHandler onRecover) {
+    public String generateToken(String subject) {
         String secret;
         try {
             secret = SecretStorageUtil.exists()
@@ -27,41 +27,12 @@ public class JwtUtil {
             System.err.println("❌ Failed to load secret: " + ex.getMessage());
             secret = fallbackSecret;
         }
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 10 * 60_000))
+                .signWith(SignatureAlgorithm.HS256, secret.getBytes())
+                .compact();
 
-        try {
-            return Jwts.builder()
-                    .setSubject(subject)
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + 10 * 60_000))
-                    .signWith(SignatureAlgorithm.HS256, secret.getBytes())
-                    .compact();
-        } catch (Exception e) {
-            System.err.println("⚠️ JWT signing failed, attempting recovery…");
-            if (onRecover != null) {
-                try {
-                    String fallback = fallbackSecret;
-                    // fetch new secret
-                    String newSecret = fetchNewSecretFromServer(subject, fallback);
-                    SecretStorageUtil.storeSecret(newSecret);
-                    onRecover.onSecretRotated(newSecret);
-                    return generateToken(subject, null);  // try again without recovery
-                } catch (Exception ex2) {
-                    System.err.println("❌ Failed secret recovery: " + ex2.getMessage());
-                }
-            }
-            throw new RuntimeException("JWT signing failed", e);
-        }
-    }
-    private String fetchNewSecretFromServer(String clientId, String fallbackToken) throws Exception {
-        WebClient client = WebClient.builder().build();
-        return client.get()
-                .uri(centralBackendUrl + "device/" + clientId + "/secret")
-                .header("Authorization", "Bearer " + fallbackToken)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(Duration.ofSeconds(5));
-    }
-    public interface JwtRecoveryHandler {
-        void onSecretRotated(String newSecret);
     }
 }

@@ -240,7 +240,7 @@ return (
             >
                 <SetView center={center} zoom={zoom} />
                 <TileLayer {...tileLayerProps} />
-                {filteredEasyboxes.map(box => (
+                {filteredEasyboxes.filter(box => box.approved).map(box => (
                     <Marker
                         key={box.id}
                         position={[box.latitude, box.longitude]}
@@ -307,31 +307,31 @@ return (
                 </h2>
                     <p>Status: {selectedEasybox.status}</p>
 
-                    {selectedEasybox.approved && (
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await api.put(`/admin/easyboxes/${selectedEasybox.id}/rotate-secret`);
-                                    toast.success("Secret rotated!");
-                                } catch (err: any) {
-                                    const msg = err?.response?.data || "Failed to rotate secret.";
-                                    toast.error(msg);
-                                }
-                            }}
-                            style={{
-                                padding: "6px 12px",
-                                marginTop: "6px",
-                                backgroundColor: "#6f42c1",
-                                border: "none",
-                                borderRadius: "4px",
-                                color: "white",
-                                cursor: "pointer",
-                                fontSize: "0.9em"
-                            }}
-                        >
-                            🔄 Rotate Secret
-                        </button>
-                    )}
+                    {/*{selectedEasybox.approved && (*/}
+                    {/*    <button*/}
+                    {/*        onClick={async () => {*/}
+                    {/*            try {*/}
+                    {/*                await api.put(`/admin/easyboxes/${selectedEasybox.id}/rotate-secret`);*/}
+                    {/*                toast.success("Secret rotated!");*/}
+                    {/*            } catch (err: any) {*/}
+                    {/*                const msg = err?.response?.data || "Failed to rotate secret.";*/}
+                    {/*                toast.error(msg);*/}
+                    {/*            }*/}
+                    {/*        }}*/}
+                    {/*        style={{*/}
+                    {/*            padding: "6px 12px",*/}
+                    {/*            marginTop: "6px",*/}
+                    {/*            backgroundColor: "#6f42c1",*/}
+                    {/*            border: "none",*/}
+                    {/*            borderRadius: "4px",*/}
+                    {/*            color: "white",*/}
+                    {/*            cursor: "pointer",*/}
+                    {/*            fontSize: "0.9em"*/}
+                    {/*        }}*/}
+                    {/*    >*/}
+                    {/*        🔄 Rotate Secret*/}
+                    {/*    </button>*/}
+                    {/*)}*/}
                     <h3>Compartments</h3>
                     {selectedEasybox.compartments.length > 0 ? (
                         <CompartmentsGrid>
@@ -357,9 +357,17 @@ return (
                 <div>
                     <h2>Select an Easybox on the map</h2>
                     <p>Click on a marker or a list item to view details.</p>
-                    {filteredEasyboxes.map(box => (
+                    <h3>Approved Devices</h3>
+                    {filteredEasyboxes.filter(box => box.approved).map(box => (
                         <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
                             <strong>{box.address}</strong> — Status: {box.status}
+                        </EasyboxItem>
+                    ))}
+
+                    <h3 style={{ marginTop: '20px' }}>Awaiting Approval</h3>
+                    {filteredEasyboxes.filter(box => !box.approved).map(box => (
+                        <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
+                            <strong>{box.address}</strong> — <span style={{ color: 'gray' }}>Pending</span>
                         </EasyboxItem>
                     ))}
                 </div>

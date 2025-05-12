@@ -3,6 +3,7 @@ package com.example.easyboxdevice.config;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -17,19 +18,31 @@ public class SecretStorageUtil {
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] encrypted = cipher.doFinal(secret.getBytes("UTF-8"));
-        Files.write(Paths.get(FILE), Base64.getEncoder().encode(encrypted));
+        Files.write(getFilePath(), Base64.getEncoder().encode(encrypted));
     }
 
     public static String loadSecret() throws Exception {
         SecretKeySpec key = getKey();
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.DECRYPT_MODE, key);
-        byte[] encrypted = Base64.getDecoder().decode(Files.readAllBytes(Paths.get(FILE)));
+        byte[] encrypted = Base64.getDecoder().decode(Files.readAllBytes(getFilePath()));
         return new String(cipher.doFinal(encrypted), "UTF-8");
     }
 
     public static boolean exists() {
-        return Files.exists(Paths.get(FILE));
+        return Files.exists(getFilePath());
+    }
+
+    public static void deleteSecret() throws Exception {
+        Path path = getFilePath();
+        if (Files.exists(path)) {
+            Files.delete(path);
+            System.out.println("🗑️ Deleted stored secret: " + path.toAbsolutePath());
+        }
+    }
+
+    private static Path getFilePath() {
+        return Paths.get(FILE);
     }
 
     private static SecretKeySpec getKey() throws Exception {

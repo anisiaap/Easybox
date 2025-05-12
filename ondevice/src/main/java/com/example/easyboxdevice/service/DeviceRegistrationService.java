@@ -115,6 +115,16 @@ public class DeviceRegistrationService {
                         System.out.println("✅ Device approved — MQTT started");
                     } else {
                         System.out.println("⏳ Still waiting for admin approval…");
+
+                        // 🧹 If we somehow have a stored secret, delete it to force fallback usage
+                        if (SecretStorageUtil.exists()) {
+                            try {
+                                SecretStorageUtil.deleteSecret();  // implement this method
+                                System.out.println("🧹 Removed secret since device is not yet approved");
+                            } catch (Exception e) {
+                                System.err.println("❌ Failed to delete stale secret: " + e.getMessage());
+                            }
+                        }
                     }
 
                     return Mono.just(isApproved);
@@ -122,8 +132,20 @@ public class DeviceRegistrationService {
     }
 
     private String createToken() {
+        // Only use stored secret if we're approved
         if (SecretStorageUtil.exists()) {
-            return jwtUtil.generateToken(clientId, null);
+            try {
+                // attempt to load and validate it
+                String secret = SecretStorageUtil.loadSecret();
+                return Jwts.builder()
+                        .setSubject(clientId)
+                        .setIssuedAt(new Date())
+                        .setExpiration(new Date(System.currentTimeMillis() + 10 * 60_000))
+                        .signWith(SignatureAlgorithm.HS256, secret.getBytes())
+                        .compact();
+            } catch (Exception e) {
+                System.err.println("⚠️ Stored secret unusable, fallback to general key");
+            }
         }
 
         // First boot — use fallback secret

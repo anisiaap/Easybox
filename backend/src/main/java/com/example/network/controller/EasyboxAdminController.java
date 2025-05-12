@@ -76,6 +76,7 @@ public class EasyboxAdminController {
                     if (Boolean.TRUE.equals(box.getApproved())) {
                         return Mono.just(ResponseEntity.status(409).body("Already approved"));
                     }
+                    box.setStatus("active");
                     box.setApproved(true);
                     box.setSecretKey(UUID.randomUUID().toString());
                     box.setLastSecretRotation(LocalDateTime.now());
@@ -83,20 +84,20 @@ public class EasyboxAdminController {
                             .thenReturn(ResponseEntity.ok(box.getSecretKey()));
                 });
     }
-    @PutMapping("/{id}/rotate-secret")
-    public Mono<ResponseEntity<String>> rotateDeviceSecret(@PathVariable Long id) {
-        return easyboxRepository.findById(id)
-                .flatMap(box -> {
-                    if (!Boolean.TRUE.equals(box.getApproved())) {
-                        return Mono.just(ResponseEntity.status(403).body("Device not approved"));
-                    }
-
-                    box.setSecretKey(UUID.randomUUID().toString());
-                    box.setLastSecretRotation(LocalDateTime.now());
-
-                    return easyboxRepository.save(box)
-                            .thenReturn(ResponseEntity.ok(box.getSecretKey()));
-                })
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
-    }
+//    @PutMapping("/{id}/rotate-secret")
+//    public Mono<ResponseEntity<String>> rotateDeviceSecret(@PathVariable Long id) {
+//        return easyboxRepository.findById(id)
+//                .flatMap(box -> {
+//                    if (!Boolean.TRUE.equals(box.getApproved())) {
+//                        return Mono.just(ResponseEntity.status(403).body("Device not approved"));
+//                    }
+//
+//                    box.setSecretKey(UUID.randomUUID().toString());
+//                    box.setLastSecretRotation(LocalDateTime.now());
+//
+//                    return easyboxRepository.save(box)
+//                            .thenReturn(ResponseEntity.ok(box.getSecretKey()));
+//                })
+//                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+//    }
 }
