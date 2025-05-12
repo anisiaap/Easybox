@@ -276,8 +276,35 @@ return (
                     </BackButton>
                     <h2>
                         {selectedEasybox.address}
-                        {selectedEasybox.approved && <ApprovedBadge>Approved ✅</ApprovedBadge>}
-                    </h2>
+                        {selectedEasybox.approved ? (
+                            <ApprovedBadge>Approved ✅</ApprovedBadge>
+                        ) : (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const res = await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
+                                        toast.success("Device approved!");
+                                        setSelectedEasybox({ ...selectedEasybox, approved: true });
+                                    } catch (err: any) {
+                                        const msg = err?.response?.data || "Failed to approve device.";
+                                        toast.error(msg);
+                                    }
+                                }}
+                                style={{
+                                    marginLeft: "10px",
+                                    padding: "6px 12px",
+                                    backgroundColor: "#28a745",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    fontSize: "0.85em"
+                                }}
+                            >
+                                ✅ Approve Device
+                            </button>
+                        )}
+                </h2>
                     <p>Status: {selectedEasybox.status}</p>
 
                     {selectedEasybox.approved && (
