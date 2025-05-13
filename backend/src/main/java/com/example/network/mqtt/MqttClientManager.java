@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Minimal, battle‑tested MQTT manager that works with HiveMQ Cloud (TLS + SNI).
@@ -111,23 +112,15 @@ public class MqttClientManager {
                 System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
             } catch (MqttException e) {
                 sink.error(e);
-                return;
             }
-
-            // ⏱️ Schedule a timeout if no response is received
-            ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
-            timeoutExecutor.schedule(() -> {
-                if (currentRequestSink != null) {
-                    System.err.println("⏰ Timeout waiting for compartment response from clientId: " + clientId);
-                    currentRequestSink.error(new RuntimeException("Timeout waiting for device response"));
-                    cleanup(clientId, responseTopic);
-                }
-                timeoutExecutor.shutdown();
-            }, 300, TimeUnit.SECONDS); // adjust as needed
-        });
+        }).timeout(Duration.ofSeconds(30)) // ⏱️ Reactor handles timeout for you
+                .doOnError(TimeoutException.class, ex -> {
+                    System.err.println("⏰ Timeout waiting for response from clientId: " + clientId);
+                    cleanup(responseTopic);
+                });
     }
 
-    private void cleanup(String clientId, String responseTopic) {
+    private void cleanup( String responseTopic) {
         try {
             client.unsubscribe(responseTopic);
             System.out.println("🚫 Unsubscribed from " + responseTopic);

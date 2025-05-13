@@ -2,11 +2,13 @@ package com.example.network.config;
 
 import com.example.network.entity.Easybox;
 import com.example.network.repository.EasyboxRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
@@ -23,19 +25,24 @@ public class JwtVerifier {
     public String verifyAndExtractClientId(String token) {
         String clientId;
 
-        // Step 1: Try extracting subject (clientId) without verifying
+        // Step 1: Decode JWT payload (middle part) manually, without verifying signature
         try {
-            Claims claims = Jwts.parser()
-                    .parseClaimsJws(token)
-                    .getBody();
-            clientId = claims.getSubject();
-        } catch (JwtException e) {
-            throw new SecurityException("Unable to parse token subject", e);
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                throw new SecurityException("Invalid JWT format");
+            }
+
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+            ObjectMapper mapper = new ObjectMapper();
+            clientId = mapper.readTree(payloadJson).get("sub").asText(); // "sub" = subject
+        } catch (Exception e) {
+            throw new SecurityException("Unable to extract clientId from token", e);
         }
 
+        // Step 2: Fetch Easybox by clientId
         Easybox box = easyboxRepository.findByClientId(clientId).block();
 
-        // Step 2: If device is known and approved, prefer device-specific verification
+        // Step 3: If approved and secret exists → verify using device-specific key
         if (box != null && box.getSecretKey() != null && Boolean.TRUE.equals(box.getApproved())) {
             try {
                 Claims verifiedClaims = Jwts.parser()
@@ -55,7 +62,7 @@ public class JwtVerifier {
             }
         }
 
-        // Step 3: Fallback to shared secret if device not found or not yet approved
+        // Step 4: Fallback to shared secret (bootstrap)
         try {
             Claims bootstrapClaims = Jwts.parser()
                     .setSigningKey(sharedSecret.getBytes())

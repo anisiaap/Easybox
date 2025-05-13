@@ -60,7 +60,7 @@ public class DeviceRegistrationService {
                 .flatMap(approved -> {
                     if (approved) {
                         System.out.println("✅ Registration response received: approved=" + approved);
-                        return Mono.delay(Duration.ofMinutes(30)).then(Mono.fromRunnable(this::attemptRegistration));
+                        return Mono.delay(Duration.ofMinutes(30)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     } else {
                         return Mono.delay(Duration.ofMinutes(1)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     }

@@ -6,6 +6,7 @@ import com.example.network.dto.RegistrationRequest;
 import com.example.network.entity.Easybox;
 import com.example.network.exception.ConflictException;
 import com.example.network.exception.GeocodingException;
+import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
 import com.example.network.service.GeocodingService;
@@ -25,20 +26,17 @@ public class DeviceRegistrationController {
     private final EasyboxRepository easyboxRepository;
     private final GeocodingService  geocodingService;
     private final CompartmentSyncService syncService;
+    private final CompartmentRepository compartmentRepository;
     private final JwtVerifier jwtVerifier;
     public DeviceRegistrationController(EasyboxRepository easyboxRepository,
-                                        GeocodingService  geocodingService, CompartmentSyncService syncService, JwtVerifier jwtVerifier) {
+                                        GeocodingService  geocodingService, CompartmentSyncService syncService, CompartmentRepository compartmentRepository, JwtVerifier jwtVerifier) {
         this.easyboxRepository = easyboxRepository;
         this.geocodingService  = geocodingService;
         this.syncService = syncService;
+        this.compartmentRepository = compartmentRepository;
         this.jwtVerifier = jwtVerifier;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────────
-    //  POST /api/device/register
-    //  – idempotent for the same locker
-    //  – rejects another locker within 100 m
-    // ──────────────────────────────────────────────────────────────────────────────
     @PostMapping("/register")
     public Mono<ResponseEntity<Easybox>> registerDevice(
             @AuthenticationPrincipal Jwt jwt,
@@ -82,6 +80,23 @@ public class DeviceRegistrationController {
 
                                     copyFields(box, req, lat, lon);
                                     return easyboxRepository.save(box)
+                                            .flatMap(saved ->
+                                                    compartmentRepository.findByEasyboxId(saved.getId())
+                                                            .hasElements()
+                                                            .flatMap(hasCompartments -> {
+                                                                if (hasCompartments) {
+                                                                    // already synced at least once, no need to sync again
+                                                                    return Mono.just(saved);
+                                                                }
+                                                                // first time sync
+                                                                return syncService.syncCompartmentsForEasybox(saved.getId())
+                                                                        .onErrorResume(e -> {
+                                                                            System.err.println("❌ Failed to sync compartments on registration: " + e.getMessage());
+                                                                            return Mono.empty();
+                                                                        })
+                                                                        .thenReturn(saved);
+                                                            })
+                                            )
                                             .map(saved -> {
                                                 ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
                                                 if (Boolean.TRUE.equals(saved.getApproved()) && saved.getSecretKey() != null) {
@@ -108,8 +123,6 @@ public class DeviceRegistrationController {
                                             Easybox newBox = new Easybox();
                                             copyFields(newBox, req, lat, lon);
                                             newBox.setApproved(false); // pending until manual approval
-                                            //newBox.setSecretKey(UUID.randomUUID().toString());
-                                           // newBox.setLastSecretRotation(LocalDateTime.now());
                                             return easyboxRepository.save(newBox)
                                                     .map(saved -> ResponseEntity.ok(saved));
                                         });
@@ -124,6 +137,7 @@ public class DeviceRegistrationController {
         box.setClientId(req.getClientId());
         box.setLatitude(lat);
         box.setLongitude(lon);
+        box.setStatus(req.getStatus());
     }
 
     @GetMapping("/{clientId}/secret")
