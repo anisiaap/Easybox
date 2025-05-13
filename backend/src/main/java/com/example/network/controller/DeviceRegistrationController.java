@@ -136,7 +136,7 @@ public class DeviceRegistrationController {
         }
 
         String token = authHeader.substring("Bearer ".length());
-        return jwtVerifier.verifyAndExtractClientId(token)
+        return jwtVerifier.verifyAndExtractClientId_GetSecret(token)
                 .flatMap(extractedClientId -> {
                     if (!extractedClientId.equals(clientId)) {
                         return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));

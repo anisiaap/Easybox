@@ -89,4 +89,16 @@ public class JwtVerifier {
                     }
                 }));
     }
+    public Mono<String> verifyAndExtractClientId_GetSecret(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(sharedSecret.getBytes())
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            return Mono.just(claims.getSubject());
+        } catch (JwtException e) {
+            return Mono.error(new SecurityException("Token invalid for shared fallback secret", e));
+        }
+    }
 }
