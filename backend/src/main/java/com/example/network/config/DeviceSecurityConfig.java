@@ -33,13 +33,7 @@ public class DeviceSecurityConfig {
 
                 // require a valid JWT on /api/device/register
                 .authorizeExchange(ex -> ex
-                        .pathMatchers("/api/device/register").permitAll()
-                )
-                .oauth2ResourceServer(oauth -> oauth
-                        .jwt(jwt -> jwt
-                                .jwtDecoder(deviceJwtDecoder)
-                                .jwtAuthenticationConverter(authConverter)
-                        )
+                        .pathMatchers("/api/device/register","/api/device/**").permitAll()
                 )
                 .build();
     }
