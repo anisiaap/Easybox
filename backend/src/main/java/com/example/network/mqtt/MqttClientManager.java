@@ -85,47 +85,56 @@ public class MqttClientManager {
     }
 
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
-
         String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
         System.out.println("📡 Preparing to subscribe to " + responseTopic);
 
         return Mono.<List<CompartmentDto>>create(sink -> {
-                    if (client == null || !client.isConnected()) {
-                        sink.error(new IllegalStateException("MQTT not connected"));
-                        return;
-                    }
-                    currentRequestSink      = sink;
-                    currentExpectedClientId = clientId;
+            if (client == null || !client.isConnected()) {
+                sink.error(new IllegalStateException("MQTT not connected"));
+                return;
+            }
 
-                    try {
-                        // ─── 1️⃣  subscribe to the exact response topic
-                        client.subscribe(responseTopic, 1);
+            currentRequestSink = sink;
+            currentExpectedClientId = clientId;
 
-                        System.out.println("📡 Subscribed to response topic for clientId: " + clientId);
+            try {
+                client.subscribe(responseTopic, 1);
+                System.out.println("📡 Subscribed to response topic for clientId: " + clientId);
 
-                        String cmdTopic = properties.getTopicPrefix() + "/commands"+ "/" + clientId;
-                        MqttMessage msg = new MqttMessage(
-                                "{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8));
-                        msg.setQos(1);
-                        msg.setRetained(true);
-                        // ─── 2️⃣  publish the command
-                        client.publish(cmdTopic, msg);
-                        System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
+                String cmdTopic = properties.getTopicPrefix() + "/commands/" + clientId;
+                MqttMessage msg = new MqttMessage(
+                        "{\"type\":\"request-compartments\"}".getBytes(StandardCharsets.UTF_8)
+                );
+                msg.setQos(1);
+                msg.setRetained(true);
+                client.publish(cmdTopic, msg);
+                System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
+            } catch (MqttException e) {
+                sink.error(e);
+                return;
+            }
 
-                    } catch (MqttException e) {
-                        sink.error(e);
-                    }
-                })
-                .timeout(Duration.ofSeconds(10))
-                .doFinally(sig -> {
-                    // 3️⃣  always unsubscribe and clear state
-                    try { client.unsubscribe(responseTopic); } catch (Exception ignored) {}
-                    currentRequestSink      = null;
-                    currentExpectedClientId = null;
-                })
-                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2)));
+            // ⏱️ Schedule a timeout if no response is received
+            ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+            timeoutExecutor.schedule(() -> {
+                if (currentRequestSink != null) {
+                    System.err.println("⏰ Timeout waiting for compartment response from clientId: " + clientId);
+                    currentRequestSink.error(new RuntimeException("Timeout waiting for device response"));
+                    cleanup(clientId, responseTopic);
+                }
+                timeoutExecutor.shutdown();
+            }, 15, TimeUnit.SECONDS); // adjust as needed
+        });
     }
 
+    private void cleanup(String clientId, String responseTopic) {
+        try {
+            client.unsubscribe(responseTopic);
+            System.out.println("🚫 Unsubscribed from " + responseTopic);
+        } catch (Exception ignored) {}
+        currentRequestSink = null;
+        currentExpectedClientId = null;
+    }
     private MqttCallbackExtended callback() {
         return new MqttCallbackExtended() {
             @Override
