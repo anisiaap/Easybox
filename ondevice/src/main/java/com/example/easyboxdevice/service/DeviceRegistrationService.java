@@ -89,13 +89,16 @@ public class DeviceRegistrationService {
                         resp.bodyToMono(String.class).flatMap(errorBody -> {
                             System.err.println("❌ Server returned " + resp.statusCode().value() + ": " + errorBody);
 
-                            boolean hasSecret = SecretStorageUtil.exists();
-                            if (!hasSecret) {
-                                System.err.println("ℹ️ No stored secret. Probably first registration, waiting for approval.");
-                                return Mono.error(new SecurityException("Not yet approved — wait for admin approval"));
+                            if (!SecretStorageUtil.exists()) {
+                                // This means we tried to register with fallback, got rejected, but MAY be approved already
+                                System.err.println("⚠️ No stored secret — trying to fetch assigned secret...");
+                                return fetchNewSecretAndRetry().flatMap(approved -> {
+                                    if (approved) return Mono.empty();
+                                    return Mono.error(new SecurityException("Secret fetch failed or device not approved"));
+                                });
                             }
 
-                            System.err.println("⚠️ JWT rejected with stored secret — attempting secret refresh...");
+                            System.err.println("⚠️ JWT rejected with stored secret — possibly rotated, trying refresh...");
                             return fetchNewSecretAndRetry().flatMap(approved -> {
                                 if (approved) return Mono.empty();
                                 return Mono.error(new SecurityException("Secret refresh failed"));

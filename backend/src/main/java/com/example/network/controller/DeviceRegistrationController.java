@@ -129,22 +129,32 @@ public class DeviceRegistrationController {
     @GetMapping("/{clientId}/secret")
     public Mono<ResponseEntity<String>> getDeviceSecret(
             @PathVariable String clientId,
-            @AuthenticationPrincipal Jwt jwt
+            @RequestHeader("Authorization") String authHeader
     ) {
-        // Verify the JWT matches the requested clientId
-        if (!clientId.equals(jwt.getSubject())) {
-            return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));
+        if (!authHeader.startsWith("Bearer ")) {
+            return Mono.just(ResponseEntity.status(403).body("Missing or invalid Authorization header"));
         }
 
-        return easyboxRepository.findByClientId(clientId)
-                .flatMap(box -> {
-                    if (!Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
-                        return Mono.just(ResponseEntity.status(403).body("Device not approved or secret not assigned"));
+        String token = authHeader.substring("Bearer ".length());
+        return jwtVerifier.verifyAndExtractClientId(token)
+                .flatMap(extractedClientId -> {
+                    if (!extractedClientId.equals(clientId)) {
+                        return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));
                     }
 
-                    return Mono.just(ResponseEntity.ok(box.getSecretKey()));
+                    return easyboxRepository.findByClientId(clientId)
+                            .flatMap(box -> {
+                                if (!Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
+                                    return Mono.just(ResponseEntity.status(403).body("Device not approved or secret not assigned"));
+                                }
+
+                                return Mono.just(ResponseEntity.ok(box.getSecretKey()));
+                            })
+                            .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
                 })
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+                .onErrorResume(e -> {
+                    return Mono.just(ResponseEntity.status(403).body("Invalid token: " + e.getMessage()));
+                });
     }
 }
 
