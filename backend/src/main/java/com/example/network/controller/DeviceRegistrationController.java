@@ -39,17 +39,18 @@ public class DeviceRegistrationController {
 
     @PostMapping("/register")
     public Mono<ResponseEntity<Easybox>> registerDevice(
-            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody RegistrationRequest req
     ) {
-        // jwt.getSubject() is the clientId
-        String extractedClientId = jwt.getSubject();
+        if (!authHeader.startsWith("Bearer ")) {
+            return Mono.error(new SecurityException("Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring("Bearer ".length());
+        String extractedClientId = jwtVerifier.verifyAndExtractClientId(token);
 
         if (!extractedClientId.equals(req.getClientId())) {
             return Mono.error(new SecurityException("ClientId in JWT does not match"));
-        }
-        if (req.getAddress() == null || req.getAddress().isBlank()) {
-            return Mono.error(new GeocodingException("Address is blank"));
         }
 
         /* 1️⃣  Geocode the address */
