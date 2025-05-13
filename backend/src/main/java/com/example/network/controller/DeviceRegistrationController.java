@@ -75,14 +75,16 @@ public class DeviceRegistrationController {
 
                                 /* 4a – UPDATE (same locker) */
                                 if (box.getId() != null) {
+
                                     if (!box.getClientId().equals(req.getClientId())) {
                                         return Mono.error(new SecurityException("Device clientId mismatch"));
                                     }
+
                                     copyFields(box, req, lat, lon);
                                     return easyboxRepository.save(box)
                                             .map(saved -> {
                                                 ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
-                                                if (Boolean.TRUE.equals(saved.getApproved())) {
+                                                if (Boolean.TRUE.equals(saved.getApproved()) && saved.getSecretKey() != null) {
                                                     builder = builder.header("X-Device-Secret", saved.getSecretKey());
                                                 }
                                                 return builder.body(saved);
@@ -106,15 +108,10 @@ public class DeviceRegistrationController {
                                             Easybox newBox = new Easybox();
                                             copyFields(newBox, req, lat, lon);
                                             newBox.setApproved(false); // pending until manual approval
-                                            newBox.setSecretKey(UUID.randomUUID().toString());
-                                            newBox.setLastSecretRotation(LocalDateTime.now());
+                                            //newBox.setSecretKey(UUID.randomUUID().toString());
+                                           // newBox.setLastSecretRotation(LocalDateTime.now());
                                             return easyboxRepository.save(newBox)
-                                                    .flatMap(savedBox ->
-                                                            syncService.syncCompartmentsForEasybox(savedBox.getId())
-                                                                    .then(Mono.just(ResponseEntity.ok()
-                                                                            .header("X-Device-Secret", savedBox.getSecretKey() != null ? savedBox.getSecretKey() : "")
-                                                                            .body(savedBox)))
-                                                    );
+                                                    .map(saved -> ResponseEntity.ok(saved));
                                         });
                             });
                 });

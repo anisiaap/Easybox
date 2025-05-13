@@ -14,8 +14,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.device-secret}")
-    private String jwtSecret;
 
     private final PrivateKey privateKey;
 
@@ -25,11 +23,12 @@ public class JwtUtil {
     }
     private static final long EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
 
-    public String generateToken(String clientId) {
+    public String generateToken(String clientId, String secret) {
         return Jwts.builder()
                 .setSubject(clientId)
+                .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS256, jwtSecret.getBytes())
+                .signWith(SignatureAlgorithm.HS256, secret.getBytes())
                 .compact();
     }
     public String generateTokenDuration(Long userId, String phone, List<String> roles, Duration ttl) {

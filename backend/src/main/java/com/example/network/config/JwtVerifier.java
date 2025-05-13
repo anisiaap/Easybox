@@ -21,36 +21,45 @@ public class JwtVerifier {
         this.easyboxRepository = easyboxRepository;
     }
     public String verifyAndExtractClientId(String token) {
+        String clientId;
+        Easybox box;
+
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(sharedSecret.getBytes()) // fallback
+            // Try extracting clientId from shared secret
+            Claims bootstrapClaims = Jwts.parser()
+                    .setSigningKey(sharedSecret.getBytes())
                     .parseClaimsJws(token)
                     .getBody();
 
-            String clientId = claims.getSubject();
+            clientId = bootstrapClaims.getSubject();
+            box = easyboxRepository.findByClientId(clientId).block();
 
-            Easybox box = easyboxRepository.findByClientId(clientId).block();
+        } catch (JwtException e) {
+            // ⛔ Fallback failed: maybe it was signed directly with device secret
+            // Try brute-force checking all Easyboxes (NOT recommended in prod)
+            throw new SecurityException("Invalid token or not signed with shared secret", e);
+        }
 
-            if (box == null || box.getSecretKey() == null || !box.getApproved()) {
-                throw new SecurityException("Device not approved or not found");
-            }
+        if (box == null || box.getSecretKey() == null || !Boolean.TRUE.equals(box.getApproved())) {
+            throw new SecurityException("Device not approved or not found");
+        }
 
-            // Re-parse with per-device secret
-            claims = Jwts.parser()
+        // ✅ Re-verify with per-device secret
+        try {
+            Claims verifiedClaims = Jwts.parser()
                     .setSigningKey(box.getSecretKey().getBytes())
                     .parseClaimsJws(token)
                     .getBody();
 
-            // Check token not older than last rotation
-            Date issuedAt = claims.getIssuedAt();
-            if (issuedAt == null || issuedAt.toInstant().isBefore(box.getLastSecretRotation().atZone(ZoneId.systemDefault()).toInstant())) {
+            Date issuedAt = verifiedClaims.getIssuedAt();
+            if (issuedAt == null || issuedAt.toInstant().isBefore(
+                    box.getLastSecretRotation().atZone(ZoneId.systemDefault()).toInstant())) {
                 throw new SecurityException("Token is too old (rotated)");
             }
 
-            return claims.getSubject(); // clientId
-
+            return verifiedClaims.getSubject();
         } catch (JwtException e) {
-            throw new SecurityException("Invalid token", e);
+            throw new SecurityException("Token invalid for device-specific secret", e);
         }
     }
 }

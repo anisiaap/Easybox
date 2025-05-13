@@ -34,7 +34,7 @@ public class DeviceRegistrationService {
 
     @Value("${jwt.device-secret}")
     private String fallbackSecret;
-
+    private volatile boolean mqttStarted = false;
     private final JwtUtil jwtUtil;
     private final MqttService mqttService;  // 👈 injected
     private final WebClient webClient;
@@ -59,7 +59,8 @@ public class DeviceRegistrationService {
         attemptRegistration()
                 .flatMap(approved -> {
                     if (approved) {
-                        return Mono.empty();  // success! stop retrying
+                        System.out.println("✅ Registration response received: approved=" + approved);
+                        return Mono.delay(Duration.ofMinutes(30)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     } else {
                         return Mono.delay(Duration.ofMinutes(10)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     }
@@ -106,9 +107,11 @@ public class DeviceRegistrationService {
                         }
                     }
 
-                    if (isApproved) {
+                    if (isApproved && !mqttStarted) {
                         try {
+                            mqttStarted = true;
                             mqttService.start();
+                            System.out.println("✅ Device approved — MQTT started");
                         } catch (MqttException e) {
                             throw new RuntimeException(e);
                         }

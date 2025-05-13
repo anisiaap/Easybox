@@ -8,6 +8,7 @@ import com.example.network.entity.Compartment;
 import com.example.network.entity.Easybox;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
+import com.example.network.service.CompartmentSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +32,11 @@ public class EasyboxAdminController {
     @Autowired
     private PredefinedValuesDto predefinedValuesDto;
     private final CompartmentRepository compartmentRepository;
-
-    public EasyboxAdminController(EasyboxRepository easyboxRepository, CompartmentRepository compartmentRepository) {
+    private final CompartmentSyncService syncService;
+    public EasyboxAdminController(EasyboxRepository easyboxRepository, CompartmentRepository compartmentRepository, CompartmentSyncService syncService) {
         this.easyboxRepository = easyboxRepository;
         this.compartmentRepository = compartmentRepository;
+        this.syncService = syncService;
     }
 
     // GET all Easyboxes as a reactive stream
@@ -76,12 +78,22 @@ public class EasyboxAdminController {
                     if (Boolean.TRUE.equals(box.getApproved())) {
                         return Mono.just(ResponseEntity.status(409).body("Already approved"));
                     }
+
                     box.setStatus("active");
                     box.setApproved(true);
                     box.setSecretKey(UUID.randomUUID().toString());
                     box.setLastSecretRotation(LocalDateTime.now());
+
                     return easyboxRepository.save(box)
-                            .thenReturn(ResponseEntity.ok(box.getSecretKey()));
+                            .flatMap(saved ->
+                                    // 🟡 Immediately try to sync compartments from device
+                                    syncService.syncCompartmentsForEasybox(saved.getId())
+                                            .onErrorResume(e -> {
+                                                System.err.println("❌ Failed to sync compartments: " + e.getMessage());
+                                                return Mono.empty();  // Don't block approval on this
+                                            })
+                                            .thenReturn(ResponseEntity.ok(saved.getSecretKey()))
+                            );
                 });
     }
 

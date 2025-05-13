@@ -4,6 +4,8 @@ import com.example.network.config.JwtUtil;
 import com.example.network.config.JwtVerifier;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.dto.MqttProperties;
+import com.example.network.entity.Easybox;
+import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.QrCodeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -37,14 +39,15 @@ public class MqttClientManager {
     private MqttClient client;
     private final ObjectMapper mapper = new ObjectMapper();
     private final JwtVerifier jwtVerifier;
-
+    private final EasyboxRepository easyboxRepository;
     private volatile MonoSink<List<CompartmentDto>> currentRequestSink;
     private volatile String currentExpectedClientId;
     private final QrCodeService qrCodeService;
     private final JwtUtil jwtUtil;
-    public MqttClientManager(MqttProperties properties, JwtVerifier jwtVerifier, QrCodeService qrCodeService, JwtUtil jwtUtil) {
+    public MqttClientManager(MqttProperties properties, JwtVerifier jwtVerifier, EasyboxRepository easyboxRepository, QrCodeService qrCodeService, JwtUtil jwtUtil) {
         this.properties = properties;
         this.jwtVerifier = jwtVerifier;
+        this.easyboxRepository = easyboxRepository;
         this.qrCodeService = qrCodeService;
         this.jwtUtil = jwtUtil;
     }
@@ -237,8 +240,12 @@ public class MqttClientManager {
                 payload = "{\"result\":\"error\",\"reason\":\"" + errorReason + "\"}";
             }
 
-            String signedPayload = jwtUtil.generateToken(clientId) + "::" + payload;
-            MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
+            Easybox box = easyboxRepository.findByClientId(clientId).block();
+            if (box == null || box.getSecretKey() == null) {
+                throw new IllegalStateException("Device not found or secret missing");
+            }
+            String token = jwtUtil.generateToken(clientId, box.getSecretKey());
+            String signedPayload = token + "::" + payload;MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
             message.setQos(1);
             client.publish(responseTopic, message);
 
