@@ -123,7 +123,7 @@ public class MqttClientManager {
                     cleanup(clientId, responseTopic);
                 }
                 timeoutExecutor.shutdown();
-            }, 15, TimeUnit.SECONDS); // adjust as needed
+            }, 300, TimeUnit.SECONDS); // adjust as needed
         });
     }
 
