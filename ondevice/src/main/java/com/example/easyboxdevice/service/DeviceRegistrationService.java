@@ -86,6 +86,12 @@ public class DeviceRegistrationService {
                 .bodyValue(req)
                 .retrieve()
                 .onStatus(status -> status.value() == 403 || status.value() == 400, resp -> {
+                    boolean hasSecret = SecretStorageUtil.exists();
+                    if (!hasSecret) {
+                        System.err.println("❌ JWT rejected — likely not approved yet (no stored secret)");
+                        return Mono.error(new SecurityException("Not yet approved — wait for admin approval"));
+                    }
+
                     System.err.println("❌ JWT rejected — attempting secret refresh");
                     return fetchNewSecretAndRetry().flatMap(approved -> {
                         if (approved) return Mono.empty();
