@@ -85,19 +85,23 @@ public class DeviceRegistrationService {
                 .header("Authorization", "Bearer " + token)
                 .bodyValue(req)
                 .retrieve()
-                .onStatus(status -> status.value() == 403 || status.value() == 400, resp -> {
-                    boolean hasSecret = SecretStorageUtil.exists();
-                    if (!hasSecret) {
-                        System.err.println("❌ JWT rejected — likely not approved yet (no stored secret)");
-                        return Mono.error(new SecurityException("Not yet approved — wait for admin approval"));
-                    }
+                .onStatus(status -> status.value() == 403 || status.value() == 400, resp ->
+                        resp.bodyToMono(String.class).flatMap(errorBody -> {
+                            System.err.println("❌ Server returned " + resp.statusCode().value() + ": " + errorBody);
 
-                    System.err.println("❌ JWT rejected — attempting secret refresh");
-                    return fetchNewSecretAndRetry().flatMap(approved -> {
-                        if (approved) return Mono.empty();
-                        return Mono.error(new SecurityException("Secret refresh failed"));
-                    });
-                })
+                            boolean hasSecret = SecretStorageUtil.exists();
+                            if (!hasSecret) {
+                                System.err.println("ℹ️ No stored secret. Probably first registration, waiting for approval.");
+                                return Mono.error(new SecurityException("Not yet approved — wait for admin approval"));
+                            }
+
+                            System.err.println("⚠️ JWT rejected with stored secret — attempting secret refresh...");
+                            return fetchNewSecretAndRetry().flatMap(approved -> {
+                                if (approved) return Mono.empty();
+                                return Mono.error(new SecurityException("Secret refresh failed"));
+                            });
+                        })
+                )
                 .toEntity(Map.class)
                 .flatMap(resp -> {
                     Map<String, Object> body = resp.getBody();

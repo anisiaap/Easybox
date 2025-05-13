@@ -142,7 +142,7 @@ public class MqttClientManager {
             }
 
             @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
+            public void messageArrived(String topic, MqttMessage message) {
                 System.out.println("📥 MQTT message arrived on topic: " + topic);
                 String qrPrefix = properties.getTopicPrefix() + "/qrcode/";
                 if (topic.startsWith(qrPrefix)) {
@@ -157,19 +157,21 @@ public class MqttClientManager {
                     String token = parts[0];
                     String qrContent = parts[1];
 
-                    // Verify JWT
-                    String tokenClientId = jwtVerifier.verifyAndExtractClientId(token);
-                    System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
-
-                    if (!tokenClientId.equals(clientId)) {
-                        System.err.println("Token clientId does not match expected clientId.");
-                        return;
-                    }
-                    qrCodeService.handleQrScan(qrContent)
-                            .flatMap(result -> sendQrCodeResponse(clientId, true, result.getCompartmentId(), result.getNewReservationStatus(), null))
-                            .onErrorResume(ex -> sendQrCodeResponse(clientId, false, null, null, ex.getMessage()))
+                    jwtVerifier.verifyAndExtractClientId(token)
+                            .flatMap(tokenClientId -> {
+                                System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
+                                if (!tokenClientId.equals(clientId)) {
+                                    System.err.println("Token clientId does not match expected clientId.");
+                                    return Mono.empty();
+                                }
+                                return qrCodeService.handleQrScan(qrContent)
+                                        .flatMap(result -> sendQrCodeResponse(clientId, true, result.getCompartmentId(), result.getNewReservationStatus(), null))
+                                        .onErrorResume(ex -> sendQrCodeResponse(clientId, false, null, null, ex.getMessage()));
+                            })
+                            .doOnError(ex -> System.err.println("JWT verification failed: " + ex.getMessage()))
                             .subscribe();
-                    return; // Important: stop processing further
+
+                    return;
                 }
 
                 String prefix = properties.getTopicPrefix() + "/response/";
@@ -179,7 +181,6 @@ public class MqttClientManager {
 
                     if (clientId.equals(currentExpectedClientId)) {
                         String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
-                        // 🔥 Split token and payload
                         System.out.println("📝 Raw message received, length = " + receivedMessage.length());
 
                         String[] parts = receivedMessage.split("::", 2);
@@ -189,26 +190,28 @@ public class MqttClientManager {
                         }
                         String token = parts[0];
                         String payload = parts[1];
-                        try {
-                            // 🔥 Verify token
-                            String tokenClientId = jwtVerifier.verifyAndExtractClientId(token);
-                            System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
 
-                            if (!tokenClientId.equals(clientId)) {
-
-                                System.err.println("Token clientId does not match expected clientId.");
-                                return;
-                            }
-                        } catch (Exception e) {
-                            System.err.println("JWT verification failed: " + e.getMessage());
-                            return;
-                        }
-                        List<CompartmentDto> list = Arrays.asList(
-                                mapper.readValue(payload, CompartmentDto[].class)
-                        );
-                        currentRequestSink.success(list);
-                        currentRequestSink = null;
-                        currentExpectedClientId = null;
+                        jwtVerifier.verifyAndExtractClientId(token)
+                                .flatMap(tokenClientId -> {
+                                    System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
+                                    if (!tokenClientId.equals(clientId)) {
+                                        System.err.println("Token clientId does not match expected clientId.");
+                                        return Mono.empty();
+                                    }
+                                    try {
+                                        List<CompartmentDto> list = Arrays.asList(
+                                                mapper.readValue(payload, CompartmentDto[].class)
+                                        );
+                                        currentRequestSink.success(list);
+                                        currentRequestSink = null;
+                                        currentExpectedClientId = null;
+                                    } catch (Exception e) {
+                                        System.err.println("❌ Failed to parse compartments: " + e.getMessage());
+                                    }
+                                    return Mono.empty();
+                                })
+                                .doOnError(ex -> System.err.println("JWT verification failed: " + ex.getMessage()))
+                                .subscribe();
                     }
                 }
             }

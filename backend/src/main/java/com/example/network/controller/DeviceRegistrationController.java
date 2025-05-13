@@ -47,90 +47,75 @@ public class DeviceRegistrationController {
         }
 
         String token = authHeader.substring("Bearer ".length());
-        String extractedClientId = jwtVerifier.verifyAndExtractClientId(token);
+        return jwtVerifier.verifyAndExtractClientId(token)
+                .flatMap(extractedClientId -> {
+                    if (!extractedClientId.equals(req.getClientId())) {
+                        return Mono.error(new SecurityException("ClientId in JWT does not match"));
+                    }
 
-        if (!extractedClientId.equals(req.getClientId())) {
-            return Mono.error(new SecurityException("ClientId in JWT does not match"));
-        }
+                    return geocodingService.geocodeAddress(req.getAddress())
+                            .flatMap(coords -> {
+                                double lat = coords[0], lon = coords[1];
 
-        /* 1️⃣  Geocode the address */
-        return geocodingService.geocodeAddress(req.getAddress())
-                .flatMap(coords -> {
-                    double lat = coords[0], lon = coords[1];
-
-                    /* 2️⃣  Try to find the box by client-id first */
-                    return easyboxRepository.findByClientId(req.getClientId())
-                            /* 3️⃣  …or by ~10 m coordinate match                                       */
-                            .switchIfEmpty(
-                                    easyboxRepository.findAll()
-                                            .filter(box -> geocodingService.distance(
-                                                    lat, lon, box.getLatitude(), box.getLongitude()
-                                            ) < 10)                               // same physical box
-                                            .next()
-                            )
-                            .defaultIfEmpty(new Easybox())               // brand-new object
-                            /* 4️⃣  Decide: update / conflict / insert                                   */
-                            .flatMap(box -> {
-
-                                /* 4a – UPDATE (same locker) */
-                                if (box.getId() != null) {
-
-                                    if (!box.getClientId().equals(req.getClientId())) {
-                                        return Mono.error(new SecurityException("Device clientId mismatch"));
-                                    }
-
-                                    copyFields(box, req, lat, lon);
-                                    return easyboxRepository.save(box)
-                                            .flatMap(saved ->
-                                                    compartmentRepository.findByEasyboxId(saved.getId())
-                                                            .hasElements()
-                                                            .flatMap(hasCompartments -> {
-                                                                if (hasCompartments) {
-                                                                    // already synced at least once, no need to sync again
-                                                                    return Mono.just(saved);
-                                                                }
-                                                                // first time sync
-                                                                return syncService.syncCompartmentsForEasybox(saved.getId())
-                                                                        .onErrorResume(e -> {
-                                                                            System.err.println("❌ Failed to sync compartments on registration: " + e.getMessage());
-                                                                            return Mono.empty();
-                                                                        })
-                                                                        .thenReturn(saved);
-                                                            })
-                                            )
-                                            .map(saved -> {
-                                                ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
-                                                if (Boolean.TRUE.equals(saved.getApproved()) && saved.getSecretKey() != null) {
-                                                    builder = builder.header("X-Device-Secret", saved.getSecretKey());
+                                return easyboxRepository.findByClientId(req.getClientId())
+                                        .switchIfEmpty(
+                                                easyboxRepository.findAll()
+                                                        .filter(box -> geocodingService.distance(
+                                                                lat, lon, box.getLatitude(), box.getLongitude()) < 10)
+                                                        .next()
+                                        )
+                                        .defaultIfEmpty(new Easybox())
+                                        .flatMap(box -> {
+                                            if (box.getId() != null) {
+                                                if (!box.getClientId().equals(req.getClientId())) {
+                                                    return Mono.error(new SecurityException("Device clientId mismatch"));
                                                 }
-                                                return builder.body(saved);
-                                            });
-                                }
 
-                                /* 4b – CONFLICT check <100 m */
-                                return easyboxRepository.findAll()
-                                        .any(other -> geocodingService.distance(
-                                                lat, lon,
-                                                other.getLatitude(), other.getLongitude()
-                                        ) < 100)
-                                        .flatMap(tooClose -> {
-                                            if (tooClose) {
-                                                return Mono.error(new ConflictException(
-                                                        "Another Easybox is within 100 m")
-                                                );
+                                                copyFields(box, req, lat, lon);
+                                                return easyboxRepository.save(box)
+                                                        .flatMap(saved ->
+                                                                compartmentRepository.findByEasyboxId(saved.getId())
+                                                                        .hasElements()
+                                                                        .flatMap(hasCompartments -> {
+                                                                            if (hasCompartments) {
+                                                                                return Mono.just(saved);
+                                                                            }
+                                                                            return syncService.syncCompartmentsForEasybox(saved.getId())
+                                                                                    .onErrorResume(e -> {
+                                                                                        System.err.println("❌ Failed to sync compartments on registration: " + e.getMessage());
+                                                                                        return Mono.empty();
+                                                                                    })
+                                                                                    .thenReturn(saved);
+                                                                        })
+                                                        )
+                                                        .map(saved -> {
+                                                            ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
+                                                            if (Boolean.TRUE.equals(saved.getApproved()) && saved.getSecretKey() != null) {
+                                                                builder = builder.header("X-Device-Secret", saved.getSecretKey());
+                                                            }
+                                                            return builder.body(saved);
+                                                        });
                                             }
 
-                                            /* 4c – INSERT brand-new box */
-                                            Easybox newBox = new Easybox();
-                                            copyFields(newBox, req, lat, lon);
-                                            newBox.setApproved(false); // pending until manual approval
-                                            return easyboxRepository.save(newBox)
-                                                    .map(saved -> ResponseEntity.ok(saved));
+                                            return easyboxRepository.findAll()
+                                                    .any(other -> geocodingService.distance(
+                                                            lat, lon,
+                                                            other.getLatitude(), other.getLongitude()) < 100)
+                                                    .flatMap(tooClose -> {
+                                                        if (tooClose) {
+                                                            return Mono.error(new ConflictException("Another Easybox is within 100 m"));
+                                                        }
+
+                                                        Easybox newBox = new Easybox();
+                                                        copyFields(newBox, req, lat, lon);
+                                                        newBox.setApproved(false);
+                                                        return easyboxRepository.save(newBox)
+                                                                .map(saved -> ResponseEntity.ok(saved));
+                                                    });
                                         });
                             });
                 });
     }
-
     // ──────────────────────────────────────────────────────────────────────────────
     private void copyFields(Easybox box, RegistrationRequest req,
                             double lat, double lon) {
