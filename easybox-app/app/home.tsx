@@ -41,6 +41,9 @@ export default function HomeScreen() {
     const [orders, setOrders] = useState<Order[] | null>(null);
     const [showPastOrders, setShowPastOrders] = useState(false);
     const { user } = useAuth();
+    if (!user) {
+        return null; // or show a loading spinner while redirect happens
+    }
     const userId = user?.userId;
     const role = user?.role;
     useEffect(() => {
@@ -126,11 +129,12 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
                     size={20}
                     color="#6200ee"
                 />
-                <Text style={styles.orderTitle}>Order #{item.id}</Text>
-                <Chip style={getStatusChipStyle(item.status)} textStyle={{ color: '#fff' }}>
-                    {item.status.toUpperCase()}
-                </Chip>
             </View>
+            <Text style={styles.orderTitle}>Order #{item.id}</Text>
+            <Chip style={getStatusChipStyle(item.status)} textStyle={{ color: '#fff' }}>
+                {item.status.toUpperCase()}
+            </Chip>
+
 
             <Divider style={{ marginVertical: 10 }} />
 

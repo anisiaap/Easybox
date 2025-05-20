@@ -50,8 +50,13 @@ export default function OrderDetails() {
         if (!id || !role) return;
 
         api.get(`/orders/${id}`)
-            .then(res => setOrder(res.data))
+            .then(res => {
+                console.log('⚡ fetched order', JSON.stringify(res.data, null, 2));
+                console.log('⚡ role =', role);
+                setOrder(res.data);
+            })
             .catch(() => notify({type: 'error', message: "Could not load order."}));
+
     }, [id, role]);
     useEffect(() => {
         if (!order?.actionDeadline) return;

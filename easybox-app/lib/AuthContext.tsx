@@ -27,7 +27,7 @@ export type UserInfo = {
 };
 
 type AuthContextType = {
-    user: UserInfo | null;
+    user: UserInfo | null | undefined;
     setAuth: (user: UserInfo) => void;
     logout: () => Promise<void>;
 };
@@ -35,7 +35,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<UserInfo | null>(null);
+    const [user, setUser] = useState<UserInfo | null | undefined>(undefined);
     const refreshTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     /** Clears any pending timeout before scheduling the next one. */
     const scheduleTokenRefresh = (token: string) => {

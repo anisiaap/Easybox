@@ -29,7 +29,7 @@ public class AppOrdersController {
     public Flux<Map<String, Object>> getUserOrders(@AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         List<String> roles = jwt.getClaim("roles");
-        boolean isBakery = roles.contains("BAKERY");
+        boolean isBakery = roles.contains("ROLE_BAKERY");
 
         Flux<Reservation> reservations = isBakery
                 ? reservationRepository.findAllByBakeryId(userId)
@@ -67,7 +67,7 @@ public class AppOrdersController {
     ) {
         Long userId = jwt.getClaim("userId");
         List<String> roles = jwt.getClaim("roles");
-        boolean isBakery = roles.contains("BAKERY");
+        boolean isBakery = roles.contains("ROLE_BAKERY");
 
         Mono<Reservation> resMono = isBakery
                 ? reservationRepository.findByIdAndBakeryId(id, userId)

@@ -233,11 +233,11 @@ const Orders: React.FC = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    <div style={{ marginTop: 8 }}>
-                                        <b>Easybox:</b> {editEasybox?.address || 'None selected'}
-                                        <br />
-                                        <Button onClick={handleChangeEasybox}>Change Easybox</Button>
-                                    </div>
+                                    {/*<div style={{ marginTop: 8 }}>*/}
+                                    {/*    <b>Easybox:</b> {editEasybox?.address || 'None selected'}*/}
+                                    {/*    <br />*/}
+                                    {/*    <Button onClick={handleChangeEasybox}>Change Easybox</Button>*/}
+                                    {/*</div>*/}
                                 </>
                             ) : (
                                 order.status

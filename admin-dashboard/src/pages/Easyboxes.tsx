@@ -183,7 +183,8 @@ const Dashboard: React.FC = () => {
     const [filteredEasyboxes, setFilteredEasyboxes] = useState<Easybox[]>([]);
     const [search, setSearch] = useState<string>('');
     const [selectedEasybox, setSelectedEasybox] = useState<DeviceDetails | null>(null);
-
+    const [showApproved, setShowApproved] = useState(true);
+    const [showPending, setShowPending] = useState(true);
     const center: [number, number] = [45.9432, 24.9668]; // Center in Romania
     const zoom = 6;
     const tileLayerProps = {
@@ -286,8 +287,16 @@ return (
                                         toast.success("Device approved!");
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
                                     } catch (err: any) {
-                                        const msg = err?.response?.data || "Failed to approve device.";
-                                        toast.error(msg);
+                                        const isNetworkError = !err?.response;
+                                        const msg = isNetworkError
+                                            ? "Network error: Check your internet connection."
+                                            : err?.response?.data || "Failed to approve device.";
+
+                                        if (err?.response?.status && err.response.status >= 400) {
+                                            toast.error(msg);
+                                        } else {
+                                            console.warn("Unexpected (non-error) caught:", err);
+                                        }
                                     }
                                 }}
                                 style={{
@@ -357,15 +366,19 @@ return (
                 <div>
                     <h2>Select an Easybox on the map</h2>
                     <p>Click on a marker or a list item to view details.</p>
-                    <h3>Approved Devices</h3>
-                    {filteredEasyboxes.filter(box => box.approved).map(box => (
+                    <h3 onClick={() => setShowApproved(prev => !prev)} style={{ cursor: 'pointer' }}>
+                        {showApproved ? '▼' : '▶'} Approved Devices
+                    </h3>
+                    {showApproved && filteredEasyboxes.filter(box => box.approved).map(box => (
                         <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
                             <strong>{box.address}</strong> — Status: {box.status}
                         </EasyboxItem>
                     ))}
 
-                    <h3 style={{ marginTop: '20px' }}>Awaiting Approval</h3>
-                    {filteredEasyboxes.filter(box => !box.approved).map(box => (
+                    <h3 onClick={() => setShowPending(prev => !prev)} style={{ cursor: 'pointer', marginTop: '20px' }}>
+                        {showPending ? '▼' : '▶'} Awaiting Approval
+                    </h3>
+                    {showPending && filteredEasyboxes.filter(box => !box.approved).map(box => (
                         <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
                             <strong>{box.address}</strong> — <span style={{ color: 'gray' }}>Pending</span>
                         </EasyboxItem>

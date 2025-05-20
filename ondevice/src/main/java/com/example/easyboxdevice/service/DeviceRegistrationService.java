@@ -133,14 +133,14 @@ public class DeviceRegistrationService {
                         System.out.println("⏳ Still waiting for admin approval…");
 
                         // 🧹 If we somehow have a stored secret, delete it to force fallback usage
-                        if (SecretStorageUtil.exists()) {
-                            try {
-                                SecretStorageUtil.deleteSecret();  // implement this method
-                                System.out.println("🧹 Removed secret since device is not yet approved");
-                            } catch (Exception e) {
-                                System.err.println("❌ Failed to delete stale secret: " + e.getMessage());
-                            }
-                        }
+//                        if (SecretStorageUtil.exists()) {
+//                            try {
+//                                SecretStorageUtil.deleteSecret();  // implement this method
+//                                System.out.println("🧹 Removed secret since device is not yet approved");
+//                            } catch (Exception e) {
+//                                System.err.println("❌ Failed to delete stale secret: " + e.getMessage());
+//                            }
+//                        }
                     }
 
                     return Mono.just(isApproved);
