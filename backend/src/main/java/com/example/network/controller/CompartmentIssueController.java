@@ -36,7 +36,7 @@ public class CompartmentIssueController {
                 });
     }
 
-    @PostMapping("/compartments/{compartmentId}/report-and-reevaluate")
+    @PostMapping("/{compartmentId}/report-and-reevaluate")
     public Mono<Reservation> reportAndReevaluate(
             @PathVariable Long compartmentId,
             @RequestParam String issue,

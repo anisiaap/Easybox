@@ -83,8 +83,8 @@ interface Order {
 const statusOptions = [
     { label: 'Pending', value: 'pending' },
     { label: 'Confirmed', value: 'confirmed' },
-    { label: 'Waiting for Bakery Dropoff', value: 'waiting_for_bakery_dropoff' },
-    { label: 'Pickup Order', value: 'pickup_order' },
+    { label: 'Waiting for Bakery Dropoff', value: 'waiting_bakery_drop_off' },
+    { label: 'Pickup Order', value: 'waiting_client_pick_up' },
     { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
     { label: 'Expired', value: 'expired' },
     { label: 'Completed', value: 'completed' },
