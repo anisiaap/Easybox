@@ -14,7 +14,10 @@ public interface ReservationRepository extends ReactiveCrudRepository<Reservatio
     Flux<Reservation> findByEasyboxId(Long easyboxId);
 
     Flux<Reservation>findAllByStatusAndExpiresAtBefore(String pending, LocalDateTime now);
-
+    Flux<Reservation> findAllByBakeryIdOrderByReservationStartDesc(Long bakeryId);
+    // For all reservations, sorted descending by reservationStart
+    Flux<Reservation> findAllByOrderByReservationStartDesc();
+    Flux<Reservation> findAllByUserIdOrderByReservationStartDesc(Long userId);
     Flux<Reservation> findByCompartmentId(Long id);
     Flux<Reservation> findAllByUserId(Long userId);
     Flux<Reservation> findAllByBakeryId(Long bakeryId);

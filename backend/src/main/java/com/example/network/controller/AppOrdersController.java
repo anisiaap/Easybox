@@ -24,12 +24,16 @@ public class AppOrdersController {
         this.reservationRepository = reservationRepository;
         this.easyboxRepository = easyboxRepository;
     }
-
+    private static boolean hasRole(List<String> roles, String target) {
+        return roles.stream()
+                .map(String::toUpperCase)
+                .anyMatch(r -> r.equals(target) || r.equals("ROLE_" + target));
+    }
     @GetMapping
     public Flux<Map<String, Object>> getUserOrders(@AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         List<String> roles = jwt.getClaim("roles");
-        boolean isBakery = roles.contains("ROLE_BAKERY");
+        boolean isBakery = hasRole(roles, "BAKERY");
 
         Flux<Reservation> reservations = isBakery
                 ? reservationRepository.findAllByBakeryId(userId)
@@ -67,7 +71,7 @@ public class AppOrdersController {
     ) {
         Long userId = jwt.getClaim("userId");
         List<String> roles = jwt.getClaim("roles");
-        boolean isBakery = roles.contains("ROLE_BAKERY");
+        boolean isBakery = hasRole(roles, "BAKERY");
 
         Mono<Reservation> resMono = isBakery
                 ? reservationRepository.findByIdAndBakeryId(id, userId)

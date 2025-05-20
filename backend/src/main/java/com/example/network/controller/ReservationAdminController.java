@@ -42,8 +42,11 @@ public class ReservationAdminController {
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
                                                    @RequestParam(defaultValue = "0") int page,
                                                    @RequestParam(defaultValue = "10") int size) {
-        return reservationRepository.findAll()
-                .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
+        Flux<Reservation> base = (bakeryId != null)
+                ? reservationRepository.findAllByBakeryIdOrderByReservationStartDesc(bakeryId)
+                : reservationRepository.findAllByOrderByReservationStartDesc();
+
+        return base
                 .filter(r -> userId == null || userId.equals(r.getUserId()))
                 .filter(r -> deliveryDate == null ||
                         r.getDeliveryTime() != null &&

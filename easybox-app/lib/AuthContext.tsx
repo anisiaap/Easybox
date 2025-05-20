@@ -76,29 +76,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // ✱ CHANGE: auto‑log‑in on cold start
     useEffect(() => {
+        let cancelled = false;
+
         (async () => {
-            const token = await getToken();
-            if (token) {
-                try {
-                    const { exp } = jwtDecode<JwtPayload>(token);
-                    if (exp * 1000 > Date.now()) {
-                        const profile = await api.get('/auth/me').then(r => r.data);
-                        setAuth({
-                            userId: profile.userId,
-                            name: profile.name,
-                            phone: profile.phone,
-                            role: profile.role,
-                            token: profile.token || null
-                        });
-                        scheduleTokenRefresh(token);
-                    } else {
-                        await removeToken();
-                    }
-                } catch {
-                    await removeToken();
+            try {
+                const token = await getToken();                 // 1️⃣ read from storage
+                console.log('[AUTH] stored token =', token?.slice(0, 20) || 'null');
+
+                if (cancelled) return;
+
+                if (!token) {
+                    console.log('[AUTH] no token on disk → guest');
+                    setUser(null);
+                    return;
                 }
+
+                // 2️⃣ check token expiry
+                const { exp } = jwtDecode<JwtPayload>(token);
+                if (exp * 1000 <= Date.now()) {
+                    console.log('[AUTH] token expired → remove & guest');
+                    await removeToken();
+                    setUser(null);
+                    return;
+                }
+
+                // 3️⃣ fetch profile
+                const { data: profile } = await api.get('/auth/me');
+                if (cancelled) return;
+
+                console.log('[AUTH] fetched profile OK → logged-in');
+
+                setAuth({
+                    userId: profile.userId,
+                    name:   profile.name,
+                    phone:  profile.phone,
+                    role:   profile.role,
+                    token,                               // keep original token
+                });
+                scheduleTokenRefresh(token);
+            } catch (err) {
+                if (cancelled) return;
+                console.warn('[AUTH] bootstrap failed → guest', err);
+                await removeToken().catch(() => {});
+                setUser(null);
             }
         })();
+
+        return () => {
+            cancelled = true;                        // cleanup on unmount
+        };
     }, []);
 
     return (

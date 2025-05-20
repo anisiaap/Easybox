@@ -44,6 +44,7 @@ export default function Login() {
                 name: profile.name,
                 phone: profile.phone,
                 role: profile.role,
+                token
             });
             setPassword('');
             router.replace({ pathname: '/redirect', params: { role } });
@@ -53,6 +54,9 @@ export default function Login() {
                 e?.response?.data ||
                 'Login failed. Check your phone and password.';
                 notify({ type: 'error', message: msg });
+        }
+        finally{
+            setLoading(false);
         }
     };
 
