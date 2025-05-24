@@ -3,6 +3,8 @@ package com.example.network.service;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.entity.Compartment;
 import com.example.network.entity.Easybox;
+import com.example.network.exception.ConfigurationException;
+import com.example.network.exception.InvalidRequestException;
 import com.example.network.mqtt.MqttClientManager;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
@@ -25,7 +27,7 @@ public class CompartmentSyncService {
     }
     public Mono<Void> updateStatus(Long id, String status) {
         return compartmentRepository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Compartment " + id + " not found")))
+                .switchIfEmpty(Mono.error(new InvalidRequestException("Compartment " + id + " not found")))
                 .flatMap(comp -> {
                     comp.setStatus(status);
                     return compartmentRepository.save(comp);
@@ -36,11 +38,11 @@ public class CompartmentSyncService {
         System.out.println("🔄 Syncing compartments for easyboxId=" + easyboxId);
 
         return easyboxRepository.findById(easyboxId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Easybox " + easyboxId + " not found")))
+                .switchIfEmpty(Mono.error(new InvalidRequestException("Easybox " + easyboxId + " not found")))
                 .flatMap(easybox -> {
                     String clientId = easybox.getClientId();
                     if (clientId == null || clientId.isBlank()) {
-                        return Mono.error(new RuntimeException("No clientId for easybox " + easyboxId));
+                        return Mono.error(new ConfigurationException("No clientId for easybox " + easyboxId));
                     }
                     return mqttClientManager.requestCompartments(clientId)
                             .flatMapMany(Flux::fromIterable)

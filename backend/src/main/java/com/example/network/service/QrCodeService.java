@@ -1,6 +1,7 @@
 package com.example.network.service;
 
 import com.example.network.dto.QrCodeResult;
+import com.example.network.exception.InvalidRequestException;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.common.BitMatrix;
@@ -30,18 +31,18 @@ public class QrCodeService {
 
     public Mono<QrCodeResult> handleQrScan(String qrContent) {
         if (!qrContent.startsWith("reservation:")) {
-            return Mono.error(new IllegalArgumentException("Invalid QR format"));
+            return Mono.error(new InvalidRequestException("Invalid QR format"));
         }
 
         Long reservationId;
         try {
             reservationId = Long.parseLong(qrContent.substring("reservation:".length()));
         } catch (NumberFormatException e) {
-            return Mono.error(new IllegalArgumentException("Invalid reservation ID"));
+            return Mono.error(new InvalidRequestException("Invalid reservation ID"));
         }
 
         return reservationRepository.findById(reservationId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Reservation not found")))
+                .switchIfEmpty(Mono.error(new InvalidRequestException("Reservation not found")))
                 .flatMap(reservation -> {
                     String currentStatus = reservation.getStatus();
                     if ("waiting_bakery_drop_off".equalsIgnoreCase(currentStatus)) {
@@ -51,7 +52,7 @@ public class QrCodeService {
                         reservation.setStatus("completed");
                         return updateReservationAndCompartment(reservation, "free");
                     } else {
-                        return Mono.error(new IllegalStateException("Reservation in unexpected state: " + currentStatus));
+                        return Mono.error(new InvalidRequestException("Reservation in unexpected state: " + currentStatus));
                     }
                 });
     }

@@ -2,6 +2,7 @@
 package com.example.network.controller;
 
 import com.example.network.entity.User;
+import com.example.network.exception.NotFoundException;
 import com.example.network.repository.UserRepository;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -42,7 +43,7 @@ public class UserAdminController {
     @PutMapping("/{id}")
     public Mono<User> updateUser(@PathVariable Long id, @RequestBody User userUpdate) {
         return userRepository.findById(id)
-                .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
+                .switchIfEmpty(Mono.error(new NotFoundException("User not found")))
                 .flatMap(user -> {
                     user.setName(userUpdate.getName());
                     user.setPhoneNumber(userUpdate.getPhoneNumber());

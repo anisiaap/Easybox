@@ -48,6 +48,9 @@ public class ReservationController {
         return reservationService.confirmReservation(id);
     }
 
-
+    @PutMapping("/{id}/reassign-easybox")
+    public Mono<Reservation> reassignEasybox(@PathVariable Long id, @RequestParam Long newEasyboxId) {
+        return reservationService.reassignEasybox(id, newEasyboxId);
+    }
     // If you want endpoints for listing or reading reservations, add them here...
 }

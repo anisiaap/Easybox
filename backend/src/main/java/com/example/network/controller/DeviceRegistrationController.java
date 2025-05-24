@@ -132,20 +132,20 @@ public class DeviceRegistrationController {
             @RequestHeader("Authorization") String authHeader
     ) {
         if (!authHeader.startsWith("Bearer ")) {
-            return Mono.just(ResponseEntity.status(403).body("Missing or invalid Authorization header"));
+            return Mono.error(new SecurityException("Missing or invalid Authorization header"));
         }
 
         String token = authHeader.substring("Bearer ".length());
         return jwtVerifier.verifyAndExtractClientId_GetSecret(token)
                 .flatMap(extractedClientId -> {
                     if (!extractedClientId.equals(clientId)) {
-                        return Mono.just(ResponseEntity.status(403).body("Invalid clientId"));
+                        return Mono.error(new SecurityException("Invalid clientId"));
                     }
 
                     return easyboxRepository.findByClientId(clientId)
                             .flatMap(box -> {
                                 if (!Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
-                                    return Mono.just(ResponseEntity.status(403).body("Device not approved or secret not assigned"));
+                                    return Mono.error(new SecurityException("Device not approved or secret not assigned"));
                                 }
 
                                 return Mono.just(ResponseEntity.ok(box.getSecretKey()));
@@ -153,7 +153,7 @@ public class DeviceRegistrationController {
                             .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
                 })
                 .onErrorResume(e -> {
-                    return Mono.just(ResponseEntity.status(403).body("Invalid token: " + e.getMessage()));
+                    return Mono.error(new SecurityException("Invalid token: " + e.getMessage()));
                 });
     }
 }

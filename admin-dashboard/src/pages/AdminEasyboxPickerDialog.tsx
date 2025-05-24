@@ -1,20 +1,12 @@
-import React, {  useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { api } from '../api';
-import toast from "react-hot-toast"; // your api instance
-
-// Styled
+import toast from 'react-hot-toast';
+import type { EasyboxDto } from '../types/easybox'; // adjust path as needed
 const DialogContainer = styled.div`
   padding: 20px;
   background: white;
   width: 400px;
   border-radius: 8px;
-`;
-
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
 `;
 
 const Button = styled.button`
@@ -37,88 +29,49 @@ const BoxItem = styled.div<{ selected: boolean }>`
   border-radius: 4px;
 `;
 
-interface Easybox {
-  id: number;
-  address: string;
-  status: string;
-  latitude: number;
-  longitude: number;
-  recommended?: boolean;
-}
 
 interface Props {
-  onSelect: (easybox: Easybox) => void;
+  boxes: EasyboxDto[];
+  onSelect: (box: EasyboxDto) => void | Promise<void>;
   onClose: () => void;
 }
 
-const AdminEasyboxPickerDialog: React.FC<Props> = ({ onSelect, onClose }) => {
-  const [address, setAddress] = useState('');
-  const [easyboxes, setEasyboxes] = useState<Easybox[]>([]);
+const AdminEasyboxPickerDialog: React.FC<Props> = ({ boxes, onSelect, onClose }) => {
   const [selectedBoxId, setSelectedBoxId] = useState<number | null>(null);
 
-  const handleSearch = async () => {
-    try {
-      const body = {
-        address,
-        minTemperature: 5,
-        totalDimension: 10,
-      };
-      const res = await api.post('/widget/reservation/available', body);
-      const data = res.data;
-
-      const merged: Easybox[] = [];
-      if (data.recommendedBox) {
-        merged.push({ ...data.recommendedBox, recommended: true });
-      }
-      if (data.otherBoxes) {
-        merged.push(...data.otherBoxes);
-      }
-      setEasyboxes(merged);
-    } catch (error: any) {
-      const message = error?.response?.data || 'Search failed:';
-      toast.error(message);
-    }
-
-  };
-
   const handleConfirm = () => {
-    const selected = easyboxes.find(b => b.id === selectedBoxId);
+    const selected = boxes.find(b => b.id === selectedBoxId);
     if (selected) {
       onSelect(selected);
+    } else {
+      toast.error("Please select a box first.");
     }
   };
 
   return (
-    <DialogContainer>
-      <h2>Select Easybox</h2>
-      <SearchInput
-        type="text"
-        placeholder="Enter address"
-        value={address}
-        onChange={e => setAddress(e.target.value)}
-      />
-      <Button onClick={handleSearch}>Check Availability</Button>
+      <DialogContainer>
+        <h2>Select Easybox</h2>
+        <BoxList>
+          {boxes.map(box => (
+              <BoxItem
+                  key={box.id}
+                  selected={box.id === selectedBoxId}
+                  onClick={() => setSelectedBoxId(box.id)}
+              >
+                <b>{box.address}</b>
+                <br />
+                Status: {box.status}
+                {box.distance !== undefined && <div>Distance: {box.distance.toFixed(1)} km</div>}
+                {box.recommended && <div>(Recommended)</div>}
+              </BoxItem>
+          ))}
+        </BoxList>
 
-      <BoxList>
-        {easyboxes.map(box => (
-          <BoxItem
-            key={box.id}
-            selected={box.id === selectedBoxId}
-            onClick={() => setSelectedBoxId(box.id)}
-          >
-            <b>{box.address}</b>
-            <br />
-            Status: {box.status}
-            {box.recommended && <div>(Recommended)</div>}
-          </BoxItem>
-        ))}
-      </BoxList>
-
-      <div style={{ marginTop: 15 }}>
-        <Button onClick={handleConfirm} disabled={!selectedBoxId}>Confirm</Button>
-        <Button onClick={onClose}>Cancel</Button>
-      </div>
-    </DialogContainer>
+        <div style={{ marginTop: 15 }}>
+          <Button onClick={handleConfirm} disabled={!selectedBoxId}>Confirm</Button>
+          <Button onClick={onClose}>Cancel</Button>
+        </div>
+      </DialogContainer>
   );
 };
 

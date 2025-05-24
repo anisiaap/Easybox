@@ -1,6 +1,7 @@
 package com.example.network.controller;
 
 import com.example.network.entity.Bakery;
+import com.example.network.exception.InvalidRequestException;
 import com.example.network.repository.BakeryRepository;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -44,7 +45,7 @@ public class BakeryAdminController {
     @PutMapping("/{id}")
     public Mono<Bakery> updateBakery(@PathVariable Long id, @RequestBody Bakery bakery) {
         return bakeryRepository.findById(id)
-                .switchIfEmpty(Mono.error(new RuntimeException("Bakery not found")))
+                .switchIfEmpty(Mono.error(new InvalidRequestException("Bakery not found")))
                 .flatMap(existing -> {
                     existing.setName(bakery.getName());
                     existing.setPhone(bakery.getPhone());

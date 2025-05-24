@@ -2,6 +2,7 @@ package com.example.network.controller;
 
 import com.example.network.entity.Easybox;
 import com.example.network.entity.Reservation;
+import com.example.network.exception.InvalidRequestException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
@@ -31,7 +32,7 @@ public class CompartmentIssueController {
                         comp.setCondition(issue.toLowerCase());
                         return compartmentRepository.save(comp).then();
                     } else {
-                        return Mono.error(new IllegalArgumentException("Invalid issue type"));
+                        return Mono.error(new InvalidRequestException("Invalid issue type"));
                     }
                 });
     }

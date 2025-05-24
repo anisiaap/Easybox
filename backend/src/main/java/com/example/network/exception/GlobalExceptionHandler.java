@@ -59,7 +59,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(message, HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST);
     }
     @ExceptionHandler(SecurityException.class)
-    public ResponseEntity<String> handleSecurity(SecurityException e) {
-        return ResponseEntity.status(403).body("Forbidden: " + e.getMessage());
+    public ResponseEntity<ErrorResponse> handleSecurity(SecurityException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse("Forbidden: " + e.getMessage(), HttpStatus.FORBIDDEN),
+                HttpStatus.FORBIDDEN
+        );
     }
 }

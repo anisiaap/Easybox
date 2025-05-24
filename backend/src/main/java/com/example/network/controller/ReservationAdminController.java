@@ -3,6 +3,7 @@ package com.example.network.controller;
 import com.example.network.dto.ReservationUpdateRequest;
 import com.example.network.entity.Reservation;
 import com.example.network.entity.User;
+import com.example.network.exception.NotFoundException;
 import com.example.network.repository.ReservationRepository;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.EasyboxRepository;
@@ -81,7 +82,7 @@ public class ReservationAdminController {
     @PutMapping("/{id}")
     public Mono<Reservation> updateReservation(@PathVariable Long id, @RequestBody ReservationUpdateRequest update) {
         return reservationRepository.findById(id)
-                .switchIfEmpty(Mono.error(new RuntimeException("Reservation not found")))
+                .switchIfEmpty(Mono.error(new NotFoundException("Reservation not found")))
                 .flatMap(reservation -> {
                     if (update.getStatus() != null) {
                         reservation.setStatus(update.getStatus());

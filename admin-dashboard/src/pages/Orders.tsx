@@ -1,294 +1,259 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
-import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog'; // adjust path!
-import toast from 'react-hot-toast';
+import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { useCallback } from 'react';// Adjust path if needed
-const OrdersContainer = styled.div`
-    padding: 20px;
-    background: #f4f6f5;
-    min-height: 100vh;
-`;
+import toast from 'react-hot-toast';
+import type { EasyboxDto } from '../types/easybox'; // adjust path as needed
+/* ───────────────────────────────────  styled helpers  ─────────────────────────────────── */
+const OrdersContainer = styled.div`padding:20px;background:#f4f6f5;min-height:100vh;`;
+const Table           = styled.table`width:100%;border-collapse:separate;border-spacing:0;background:#fff;
+    border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden;`;
+const Th              = styled.th`text-align:left;padding:16px;background:#5e5e5e;color:#fff;
+    border-bottom:1px solid #ddd;font-weight:600;`;
+const Td              = styled.td`padding:16px;border-bottom:1px solid #eee;vertical-align:top;`;
+const TableRow        = styled.tr`&:hover{background:#f0f8f0;}`;
+const Button          = styled.button`margin:4px;background:#28a745;color:#fff;border:none;padding:6px 12px;
+    border-radius:6px;font-size:.9rem;cursor:pointer;transition:.2s;
+    &:hover{background:#28a745;} &:disabled{background:#aaa;cursor:not-allowed;}`;
+const Input           = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
 
-
-const Table = styled.table`
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-`;
-
-const Th = styled.th`
-    text-align: left;
-    padding: 16px;
-    background-color: #5e5e5e;
-    color: white;
-    border-bottom: 1px solid #ddd;
-    font-weight: 600;
-`;
-
-const Td = styled.td`
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-`;
-
-const TableRow = styled.tr`
-    &:hover {
-        background-color: #f0f8f0;
-    }
-`;
-
-const Button = styled.button`
-    margin: 4px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    &:hover {
-        background-color: #28a745;
-    }
-    &:disabled {
-        background-color: #aaa;
-        cursor: not-allowed;
-    }
-`;
-
-const Input = styled.input`
-    padding: 6px 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    width: 100%;
-    max-width: 200px;
-`;
-
-
-// Interfaces
+/* ───────────────────────────────────────  types  ─────────────────────────────────────── */
 interface Order {
     id: number;
     userPhone: string;
     bakeryName: string;
     easyboxAddress: string;
+    easyboxId?: number;
     status: string;
-    easyboxId?: number; // ADD THIS
 }
+
+
+
 const statusOptions = [
-    { label: 'Pending', value: 'pending' },
-    { label: 'Confirmed', value: 'confirmed' },
-    { label: 'Waiting for Bakery Dropoff', value: 'waiting_bakery_drop_off' },
-    { label: 'Pickup Order', value: 'waiting_client_pick_up' },
-    { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
-    { label: 'Expired', value: 'expired' },
-    { label: 'Completed', value: 'completed' },
+    { label: 'Pending',                     value: 'pending' },
+    { label: 'Confirmed',                   value: 'confirmed' },
+    { label: 'Waiting for Bakery Dropoff',  value: 'waiting_bakery_drop_off' },
+    { label: 'Pickup Order',               value: 'waiting_client_pick_up' },
+    { label: 'Waiting Cleaning',            value: 'waiting_cleaning' },
+    { label: 'Expired',                     value: 'expired' },
+    { label: 'Completed',                   value: 'completed' },
 ];
 
-const Orders: React.FC = () => {
+/* ───────────────────────────────────── component  ────────────────────────────────────── */
+export default function Orders() {
+    /* ------------ data/state ------------ */
     const [orders, setOrders] = useState<Order[]>([]);
-    const [editingId, setEditingId] = useState<number | null>(null);
-    const [editStatus, setEditStatus] = useState<string>('');
-    const [editEasybox, setEditEasybox] = useState<{ id: number; address: string } | null>(null);
-    const [showEasyboxPicker, setShowEasyboxPicker] = useState(false);
-    const [filterDate, setFilterDate] = useState('');
-    const [filterBakeryId, setFilterBakeryId] = useState('');
-    const [filterUserId, setFilterUserId] = useState('');
-
-    type ConfirmAction = null | {
-        message: string;
-        onConfirm: () => void;
-    };
     const [page, setPage] = useState(0);
-    const pageSize = 10;
     const [totalOrders, setTotalOrders] = useState(0);
+    const pageSize = 10;
 
-    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
+    /* filters */
+    const [filterDate, setFilterDate] = useState('');
+    const [filterBakeryName, setFilterBakeryName] = useState('');
+    const [filterUserPhone, setFilterUserPhone] = useState('');
+
+    /* row-edit state */
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editStatus, setEditStatus] = useState('');
+    const [editEasybox, setEditEasybox] = useState<{ id: number; address: string } | null>(null);
+
+    /* picker/dialog state */
+    const [pickerBoxes, setPickerBoxes] = useState<EasyboxDto[]>([]);
+    const [pickerOrderId, setPickerOrderId] = useState<number | null>(null);
+    const [showEasyboxPicker, setShowEasyboxPicker] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState<{
+        message: string; onConfirm: () => void
+    } | null>(null);
+
+    /* ------------ fetch orders ------------ */
     const fetchOrders = useCallback(async () => {
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
-                ...(filterDate && { deliveryDate: filterDate }),
-                ...(filterBakeryId && { bakeryId: filterBakeryId }),
-                ...(filterUserId && { userId: filterUserId }),
+                ...(filterDate && {deliveryDate: filterDate}),
+                ...(filterBakeryName && {bakeryName: filterBakeryName}),
+                ...(filterUserPhone && {userPhone: filterUserPhone}),
             }).toString();
 
-            const [ordersRes, countRes] = await Promise.all([
+            const [list, count] = await Promise.all([
                 api.get(`/admin/reservations?${query}`),
-                api.get(`/admin/reservations/count`)
+                api.get(`/admin/reservations/count?${query}`),
             ]);
-            setOrders(ordersRes.data);
-            setTotalOrders(countRes.data);
-        } catch (error: any) {
-            const message = error?.response?.data || 'Failed to fetch orders';
-            toast.error(message);
-            console.error('Failed to fetch orders', error);
+            setOrders(list.data);
+            setTotalOrders(count.data);
+        } catch (err: any) {
+            toast.error(err?.response?.data || 'Failed to fetch orders');
         }
-    }, [page, filterDate, filterBakeryId, filterUserId]);
+    }, [page, filterDate, filterBakeryName, filterUserPhone]);
 
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
 
-
-    const handleDeleteOrder = (id: number) => {
+    /* ------------ CRUD helpers ------------ */
+    const handleDeleteOrder = (id: number) =>
         setConfirmDialog({
-            message: 'Are you sure you want to delete this order? This action cannot be undone.',
+            message: 'Are you sure you want to delete this order?',
             onConfirm: async () => {
                 try {
                     await api.delete(`/admin/reservations/${id}`);
                     fetchOrders();
-                    toast.success('Order deleted');
-                } catch (error) {
-                    toast.error('Error deleting order');
+                } catch {
+                    toast.error('Delete failed');
                 }
                 setConfirmDialog(null);
             }
         });
+
+    const handleStartEdit = (o: Order) => {
+        setEditingId(o.id);
+        setEditStatus(o.status);
+        setEditEasybox(o.easyboxId ? {id: o.easyboxId, address: o.easyboxAddress} : null);
     };
 
-    const handleStartEdit = (order: Order) => {
-        setEditingId(order.id);
-        setEditStatus(order.status); // much cleaner and accurate
-         if (order.easyboxId && order.easyboxAddress) {
-            setEditEasybox({ id: order.easyboxId, address: order.easyboxAddress });
-        } else {
-            setEditEasybox(null);
-        }
-    };
-
-
-    const handleChangeEasybox = () => {
-        setShowEasyboxPicker(true);
-    };
-    const handleEasyboxSelected = (box: { id: number; address: string }) => {
-        setEditEasybox({ id: box.id, address: box.address });
-        setShowEasyboxPicker(false);
-    };
-    const handleSaveEdit = (id: number) => {
+    const handleSaveEdit = async (id: number) => {
         setConfirmDialog({
-            message: 'Are you sure you want to save the changes to this order?',
+            message: 'Save changes?',
             onConfirm: async () => {
                 try {
                     await api.put(`/admin/reservations/${id}`, {
                         status: editStatus,
-                        easyboxId: editEasybox?.id
+                        easyboxId: editEasybox?.id          // undefined if unchanged
                     });
+                    toast.success('Order updated');
                     setEditingId(null);
                     setEditEasybox(null);
                     fetchOrders();
-                    toast.success('Order updated');
-                } catch (error) {
-                    toast.error('Error updating order');
+                } catch {
+                    toast.error('Update failed');
                 }
                 setConfirmDialog(null);
             }
         });
     };
 
+    /* ------------ easybox picker flow ------------ */
+    const openPickerForOrder = async (order: Order) => {
+        try {
+            const {data} = await api.get(`/admin/reservations/${order.id}/available-easyboxes`);
+            const list: EasyboxDto[] = [
+                ...(data.exact ? [data.exact] : []),
+                ...(data.others ? data.others : []),
+            ];
+            setPickerBoxes(list);
+            setPickerOrderId(order.id);
+            setShowEasyboxPicker(true);
+        } catch {
+            toast.error('Failed to load alternative easyboxes');
+        }
+    };
+
+    const handleEasyboxSelected = async (box: EasyboxDto) => {
+        if (!pickerOrderId) return;
+        try {
+            await api.put(`/admin/reservations/${pickerOrderId}/reassign-easybox`,
+                null, {params: {newEasyboxId: box.id}});
+            toast.success('Easybox reassigned ✅');
+            setShowEasyboxPicker(false);
+            if (editingId === pickerOrderId) {
+                setEditingId(null);
+                setEditEasybox(null);
+            }
+            fetchOrders();
+        } catch {
+            toast.error('Reassign failed');
+        }
+    };
+
+    /* ───────────────────────────── render ───────────────────────────── */
     return (
         <OrdersContainer>
             <h1>Orders</h1>
+
+            {/* ------------ table ------------ */}
             <Table>
                 <thead>
                 <tr>
-                    <Th>Order ID</Th>
-                    <Th>User Phone</Th>
-                    <Th>Bakery</Th>
-                    <Th>Easybox</Th>
-                    <Th>Status</Th>
-                    <Th>Actions</Th>
+                    <Th>Order ID</Th><Th>User Phone</Th><Th>Bakery</Th><Th>Easybox</Th>
+                    <Th>Status / Edit</Th><Th>Actions</Th>
                 </tr>
                 </thead>
                 <tbody>
-                {orders.map(order => (
-                    <TableRow key={order.id}>
-                        <Td>{order.id}</Td>
-                        <Td>{order.userPhone}</Td>
-                        <Td>{order.bakeryName}</Td>
-                        <Td>{order.easyboxAddress}</Td>
+                {orders.map(o => (
+                    <TableRow key={o.id}>
+                        <Td>{o.id}</Td>
+                        <Td>{o.userPhone}</Td>
+                        <Td>{o.bakeryName}</Td>
+                        <Td>{o.easyboxAddress}</Td>
+
+                        {/* status + easybox edit cell */}
                         <Td>
-                            {editingId === order.id ? (
+                            {editingId === o.id ? (
                                 <>
-                                    <select
-                                        value={editStatus}
-                                        onChange={(e) => setEditStatus(e.target.value)}
-                                        style={{
-                                            padding: '8px',
-                                            borderRadius: '6px',
-                                            border: '1px solid #ccc',
-                                            width: '100%',
-                                            maxWidth: '200px'
-                                        }}
-                                    >
-                                        {statusOptions.map(({ label, value }) => (
-                                            <option key={value} value={value}>
-                                                {label}
-                                            </option>
+                                    <select value={editStatus}
+                                            onChange={e => setEditStatus(e.target.value)}
+                                            style={{padding: '8px', border: '1px solid #ccc'}}>
+                                        {statusOptions.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                                         ))}
                                     </select>
-                                    {/*<div style={{ marginTop: 8 }}>*/}
-                                    {/*    <b>Easybox:</b> {editEasybox?.address || 'None selected'}*/}
-                                    {/*    <br />*/}
-                                    {/*    <Button onClick={handleChangeEasybox}>Change Easybox</Button>*/}
-                                    {/*</div>*/}
+                                    <div style={{marginTop: 6}}>
+                                        <b>Easybox:</b> {editEasybox?.address || 'None'}
+                                        <br/>
+                                        <Button onClick={() => openPickerForOrder(o)}>Change</Button>
+                                    </div>
                                 </>
-                            ) : (
-                                order.status
-                            )}
+                            ) : (<>{o.status}</>)}
                         </Td>
+
+                        {/* action buttons */}
                         <Td>
-                            {editingId === order.id ? (
-                                <>
-                                    <Button onClick={() => handleSaveEdit(order.id)}>Save</Button>
-                                    <Button onClick={() => { setEditingId(null); setEditEasybox(null); }}>Cancel</Button>
+                            {editingId === o.id
+                                ? <>
+                                    <Button onClick={() => handleSaveEdit(o.id)}>Save</Button>
+                                    <Button onClick={() => {
+                                        setEditingId(null);
+                                        setEditEasybox(null);
+                                    }}>Cancel</Button>
                                 </>
-                            ) : (
-                                <>
-                                    <Button onClick={() => handleStartEdit(order)}>Edit</Button>
-                                    <Button onClick={() => handleDeleteOrder(order.id)}>Delete</Button>
+                                : <>
+                                    <Button onClick={() => handleStartEdit(o)}>Edit</Button>
+                                    <Button onClick={() => handleDeleteOrder(o.id)}>Delete</Button>
                                 </>
-                            )}
+                            }
                         </Td>
                     </TableRow>
                 ))}
                 </tbody>
             </Table>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+
+            {/* ------------ pagination ------------ */}
+            <div style={{display: 'flex', justifyContent: 'center', gap: 12, margin: 20}}>
                 <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
-                <span>Page {page + 1} of {Math.ceil(totalOrders / pageSize)}</span>
-                <Button onClick={() => setPage(p => (p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p))}
-                        disabled={(page + 1) >= Math.ceil(totalOrders / pageSize)}>Next</Button>
+                <span>Page {page + 1} / {Math.ceil(totalOrders / pageSize)}</span>
+                <Button onClick={() => setPage(p => p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p)}
+                        disabled={page + 1 >= Math.ceil(totalOrders / pageSize)}>Next</Button>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-                <Input
-                    type="date"
-                    value={filterDate}
-                    onChange={e => setFilterDate(e.target.value)}
-                    placeholder="Filter by date"
-                />
-                <Input
-                    type="number"
-                    value={filterBakeryId}
-                    onChange={e => setFilterBakeryId(e.target.value)}
-                    placeholder="Bakery ID"
-                />
-                <Input
-                    type="number"
-                    value={filterUserId}
-                    onChange={e => setFilterUserId(e.target.value)}
-                    placeholder="Client/User ID"
-                />
-                <Button onClick={() => fetchOrders()}>Apply Filters</Button>
+
+            {/* ------------ filters ------------ */}
+            <div style={{display: 'flex', gap: 12, marginBottom: 20}}>
+                <div>
+                    <label style={{fontWeight: 500}}>Delivery Date</label>
+                    <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}/>
+                </div>
+                <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)}
+                       placeholder="Bakery Name"/>
+                <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)}
+                       placeholder="User Phone"/>
+                <Button onClick={fetchOrders}>Apply</Button>
             </div>
-            {showEasyboxPicker && (
+
+            {/* ------------ dialogs ------------ */}
+            {showEasyboxPicker && pickerOrderId && (
                 <AdminEasyboxPickerDialog
+                    boxes={pickerBoxes}
                     onSelect={handleEasyboxSelected}
                     onClose={() => setShowEasyboxPicker(false)}
                 />
@@ -297,11 +262,9 @@ const Orders: React.FC = () => {
                 <ConfirmDialog
                     message={confirmDialog.message}
                     onConfirm={confirmDialog.onConfirm}
-                    onCancel={() => setConfirmDialog(null)}
+                    onCancel={() => setConfirmDialog(null)}   // fallback
                 />
             )}
         </OrdersContainer>
     );
-};
-
-export default Orders;
+}

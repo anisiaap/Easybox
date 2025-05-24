@@ -145,10 +145,10 @@ public class AuthController {
             return bakeryRepo.findByPhone(phone)
                     .flatMap(bakery -> {
                         if (!Boolean.TRUE.equals(bakery.getPluginInstalled())) {
-                            return Mono.just(ResponseEntity.status(403).body("Not approved yet"));
+                            return Mono.error(new SecurityException("Not approved yet"));
                         }
                         if (!passwordEncoder.matches(password, bakery.getPassword())) {
-                            return Mono.just(ResponseEntity.status(401).body("Invalid password"));
+                            return Mono.error(new SecurityException("Invalid password"));
                         }
                         return bakeryService.refreshTokenIfExpired(bakery)
                                 .flatMap(updated -> {
@@ -160,19 +160,19 @@ public class AuthController {
                                     return Mono.just(ResponseEntity.ok(shortToken));
                                 });
                     })
-                    .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("Bakery not found")));
+                    .switchIfEmpty(Mono.error(new SecurityException("Bakery not found")));
         }
 
         if ("USER".equalsIgnoreCase(role)) {
             return userRepo.findByPhoneNumber(phone)
                     .flatMap(user -> {
                         if (!passwordEncoder.matches(password, user.getPassword())) {
-                            return Mono.just(ResponseEntity.status(401).body("Invalid password"));
+                            return Mono.error(new SecurityException("Invalid password"));
                         }
                         String token = jwtUtil.generateShortToken(user.getId(), user.getPhoneNumber(), List.of("USER"));
                         return Mono.just(ResponseEntity.ok(token)); // Still needed for JWT-based auth
                     })
-                    .switchIfEmpty(Mono.just(ResponseEntity.status(404).body("User not found")));
+                    .switchIfEmpty(Mono.error(new SecurityException("User not found")));
         }
 
         return Mono.error(new ConflictException("Unknown role"));

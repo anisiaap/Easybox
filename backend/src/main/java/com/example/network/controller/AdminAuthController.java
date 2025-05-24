@@ -4,11 +4,13 @@ import com.example.network.config.JwtUtil;
 import com.example.network.dto.LoginRequest;
 import com.example.network.dto.LoginResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -41,7 +43,7 @@ public class AdminAuthController {
             );
             return Mono.just(new LoginResponse(token));
         }
-        return Mono.error(new RuntimeException("Invalid credentials"));
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }
     @GetMapping("/refresh-token")
     public Mono<ResponseEntity<String>> refreshToken(@AuthenticationPrincipal Jwt jwt) {

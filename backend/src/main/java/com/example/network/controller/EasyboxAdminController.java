@@ -6,6 +6,8 @@ import com.example.network.dto.DeviceDetailsDto;
 import com.example.network.dto.PredefinedValuesDto;
 import com.example.network.entity.Compartment;
 import com.example.network.entity.Easybox;
+import com.example.network.exception.ConflictException;
+import com.example.network.exception.NotFoundException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
@@ -48,7 +50,7 @@ public class EasyboxAdminController {
     @GetMapping("/{id}/details")
     public Mono<DeviceDetailsDto> getEasyboxDetails(@PathVariable Long id) {
         return easyboxRepository.findById(id)
-                .switchIfEmpty(Mono.error(new RuntimeException("Easybox not found")))
+                .switchIfEmpty(Mono.error(new NotFoundException("Easybox not found")))
                 .flatMap(easybox ->
                         compartmentRepository.findByEasyboxId(id)
                                 .map(compartment -> mapToDto(compartment))
@@ -76,7 +78,7 @@ public class EasyboxAdminController {
         return easyboxRepository.findById(id)
                 .flatMap(box -> {
                     if (Boolean.TRUE.equals(box.getApproved())) {
-                        return Mono.just(ResponseEntity.status(409).body("Already approved"));
+                        return Mono.error(new ConflictException("Already approved"));
                     }
 
                     box.setStatus("active");

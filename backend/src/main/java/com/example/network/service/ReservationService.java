@@ -2,6 +2,7 @@ package com.example.network.service;
 
 import com.example.network.dto.*;
 import com.example.network.entity.*;
+import com.example.network.exception.ConfigurationException;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
 import org.springframework.dao.DuplicateKeyException;
@@ -114,7 +115,7 @@ public class ReservationService {
 
                                                 return reservationRepository.save(saved);  // update reservation with QR
                                             } catch (Exception e) {
-                                                return Mono.error(new RuntimeException("Failed to generate QR code", e));
+                                                return Mono.error(new ConfigurationException("Failed to generate QR code"));
                                             }
                                         });
 
@@ -278,6 +279,25 @@ public class ReservationService {
                                     return new RecommendedBoxesResponse(rec, others);
                                 }));
     }
+    @Transactional
+    public Mono<Reservation> reassignEasybox(Long reservationId, Long newEasyboxId) {
+        return reservationRepository.findById(reservationId)
+                .switchIfEmpty(Mono.error(new ConflictException("Reservation not found")))
+                .flatMap(r -> {
+                    LocalDateTime start = r.getReservationStart();
+                    LocalDateTime end = r.getReservationEnd();
 
+                    return easyboxRepository.findById(newEasyboxId)
+                            .switchIfEmpty(Mono.error(new ConflictException("Easybox not found")))
+                            .flatMap(box ->
+                                    findAndLockAvailableCompartment(box, null, null, start, end)
+                                            .flatMap(newCompartmentId -> {
+                                                r.setEasyboxId(newEasyboxId);
+                                                r.setCompartmentId(newCompartmentId);
+                                                return reservationRepository.save(r);
+                                            })
+                            );
+                });
+    }
 
 }
