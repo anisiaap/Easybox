@@ -1,5 +1,7 @@
 package com.example.network.dto;
 
+import java.time.LocalDateTime;
+
 public class ReservationDto {
     private Long id;
     private String userPhone;
@@ -7,12 +9,46 @@ public class ReservationDto {
     private String easyboxAddress;
     private String status;
 
-    public ReservationDto(Long id, String userPhone, String bakeryName, String easyboxAddress, String status) {
+    // ReservationDto.java
+    private Long compartmentId;
+    private LocalDateTime reservationStart;
+    private LocalDateTime reservationEnd;
+
+    // Update constructor and getters/setters accordingly:
+    public ReservationDto(Long id, String userPhone, String bakeryName, String easyboxAddress,
+                          String status, Long compartmentId, LocalDateTime reservationStart, LocalDateTime reservationEnd) {
         this.id = id;
         this.userPhone = userPhone;
         this.bakeryName = bakeryName;
         this.easyboxAddress = easyboxAddress;
         this.status = status;
+        this.compartmentId = compartmentId;
+        this.reservationStart = reservationStart;
+        this.reservationEnd = reservationEnd;
+    }
+
+    public Long getCompartmentId() {
+        return compartmentId;
+    }
+
+    public void setCompartmentId(Long compartmentId) {
+        this.compartmentId = compartmentId;
+    }
+
+    public LocalDateTime getReservationStart() {
+        return reservationStart;
+    }
+
+    public void setReservationStart(LocalDateTime reservationStart) {
+        this.reservationStart = reservationStart;
+    }
+
+    public LocalDateTime getReservationEnd() {
+        return reservationEnd;
+    }
+
+    public void setReservationEnd(LocalDateTime reservationEnd) {
+        this.reservationEnd = reservationEnd;
     }
 
     // Getters and Setters

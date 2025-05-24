@@ -284,6 +284,9 @@ public class ReservationService {
         return reservationRepository.findById(reservationId)
                 .switchIfEmpty(Mono.error(new ConflictException("Reservation not found")))
                 .flatMap(r -> {
+                    if ("completed".equalsIgnoreCase(r.getStatus()) || "expired".equalsIgnoreCase(r.getStatus())) {
+                        return Mono.error(new ConflictException("Cannot reassign a completed or expired reservation"));
+                    }
                     LocalDateTime start = r.getReservationStart();
                     LocalDateTime end = r.getReservationEnd();
 

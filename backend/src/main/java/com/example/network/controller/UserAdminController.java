@@ -21,7 +21,7 @@ public class UserAdminController {
     @GetMapping
     public Flux<User> getAllUsers(@RequestParam(defaultValue = "0") int page,
                                   @RequestParam(defaultValue = "10") int size) {
-        return userRepository.findAll()
+        return userRepository.findAllByOrderByIdDesc()
                 .skip((long) page * size)
                 .take(size);
     }

@@ -26,6 +26,9 @@ interface Order {
     easyboxAddress: string;
     easyboxId?: number;
     status: string;
+    compartmentId: number;
+    reservationStart: string; // ISO string
+    reservationEnd: string;   // ISO string
 }
 
 
@@ -178,6 +181,9 @@ export default function Orders() {
                 <tr>
                     <Th>Order ID</Th><Th>User Phone</Th><Th>Bakery</Th><Th>Easybox</Th>
                     <Th>Status / Edit</Th><Th>Actions</Th>
+                    <Th>Compartment</Th>
+                    <Th>Start</Th>
+                    <Th>End</Th>
                 </tr>
                 </thead>
                 <tbody>
@@ -187,7 +193,11 @@ export default function Orders() {
                         <Td>{o.userPhone}</Td>
                         <Td>{o.bakeryName}</Td>
                         <Td>{o.easyboxAddress}</Td>
+                        <Td>{o.compartmentId}</Td>
+                        <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
+                        <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
 
+                        {/* status + easybox edit cell */}
                         {/* status + easybox edit cell */}
                         <Td>
                             {editingId === o.id ? (
@@ -205,7 +215,14 @@ export default function Orders() {
                                         <Button onClick={() => openPickerForOrder(o)}>Change</Button>
                                     </div>
                                 </>
-                            ) : (<>{o.status}</>)}
+                            ) : (
+                                <>
+                                    {
+                                        statusOptions.find(opt => opt.value === o.status)?.label
+                                        || o.status
+                                    }
+                                </>
+                            )}
                         </Td>
 
                         {/* action buttons */}

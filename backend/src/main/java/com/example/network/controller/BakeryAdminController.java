@@ -21,7 +21,7 @@ public class BakeryAdminController {
     @GetMapping
     public Flux<Bakery> getAllBakeries(@RequestParam(defaultValue = "0") int page,
                                        @RequestParam(defaultValue = "10") int size) {
-        return bakeryRepository.findAll()
+        return bakeryRepository.findAllByOrderByIdDesc()
                 .skip((long) page * size)
                 .take(size);
     }

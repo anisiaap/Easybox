@@ -11,6 +11,7 @@ import com.example.network.entity.Bakery;
 import com.example.network.entity.Easybox;
 import com.example.network.dto.ReservationDto;
 import com.example.network.repository.UserRepository;
+import com.example.network.service.ReservationService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -26,14 +27,15 @@ public class ReservationAdminController {
     private final BakeryRepository bakeryRepository;
     private final EasyboxRepository easyboxRepository;
     private final UserRepository userRepository;
-
+    private final ReservationService reservationService;
     public ReservationAdminController(ReservationRepository reservationRepository,
                                       BakeryRepository bakeryRepository,
-                                      EasyboxRepository easyboxRepository, UserRepository userRepository) {
+                                      EasyboxRepository easyboxRepository, UserRepository userRepository, ReservationService reservationService) {
         this.reservationRepository = reservationRepository;
         this.bakeryRepository = bakeryRepository;
         this.easyboxRepository = easyboxRepository;
         this.userRepository = userRepository;
+        this.reservationService = reservationService;
     }
 
     // GET all reservations
@@ -116,8 +118,15 @@ public class ReservationAdminController {
                             user != null ? user.getPhoneNumber() : "Unknown",
                             bakery != null ? bakery.getName() : "Unknown Bakery",
                             easybox != null ? easybox.getAddress() : "Unknown Easybox",
-                            reservation.getStatus()
+                            reservation.getStatus(),
+                            reservation.getCompartmentId(),
+                            reservation.getReservationStart(),
+                            reservation.getReservationEnd()
                     );
                 });
+    }
+    @PutMapping("/{id}/reassign-easybox")
+    public Mono<Reservation> reassignEasybox(@PathVariable Long id, @RequestParam Long newEasyboxId) {
+        return reservationService.reassignEasybox(id, newEasyboxId);
     }
 }
