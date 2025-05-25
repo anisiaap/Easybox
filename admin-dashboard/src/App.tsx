@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MainLayout from './components/layout/MainLayout'
 import Dashboard from './pages/Dashboard'
@@ -10,34 +10,38 @@ import { Toaster } from 'react-hot-toast';
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
 import { jwtDecode } from 'jwt-decode';
-import { api } from './api'; // axios instance
+import React, { useEffect } from 'react';
+import { decodeJwt, api } from './api';
 
-function scheduleTokenRefresh(token: string) {
-    const decoded: any = jwtDecode(token);
-    const expiry = decoded.exp * 1000;
-    const refreshTime = expiry - Date.now() - 60_000; // 1 min before
-
-    if (refreshTime > 0) {
-        setTimeout(async () => {
-            try {
-                const res = await api.get('/auth/refresh-token');
-                const newToken = res.data;
-                localStorage.setItem('token', newToken);
-                scheduleTokenRefresh(newToken); // chain it
-            } catch (err) {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-        }, refreshTime);
-    }
-}
-
-// Call this on login
-const token = localStorage.getItem('token');
-if (token) {
-    scheduleTokenRefresh(token);
-}
 const App: React.FC = () => {
+    useEffect(() => {
+        const checkAndRefreshToken = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const payload = decodeJwt(token);
+            if (!payload?.exp) return;
+
+            const now = Math.floor(Date.now() / 1000);
+            const secondsLeft = payload.exp - now;
+
+            if (secondsLeft < 120) {
+                try {
+                    const res = await api.get('/auth/refresh-token');
+                    const newToken = res.data;
+                    localStorage.setItem('token', newToken);
+                    console.log('🔄 Token refreshed');
+                } catch (err) {
+                    console.warn('⚠️ Failed to refresh token', err);
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                }
+            }
+        };
+
+        const interval = setInterval(checkAndRefreshToken, 30_000);
+        return () => clearInterval(interval);
+    }, []);
     return (
         <Router>
             <Toaster position="top-right" toastOptions={{ duration: 3000 }} />

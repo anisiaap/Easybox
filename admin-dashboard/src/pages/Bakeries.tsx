@@ -272,7 +272,7 @@ const Bakeries: React.FC = () => {
                                 setCopiedTokenId(b.id);
                                 setTimeout(() => setCopiedTokenId(null), 2000);
                             }}>
-                                Copy token.
+                                Copy token
                             </Button>
                             {copiedTokenId === b.id && <span style={{ marginLeft: 8, color: 'green' }}>Copied!</span>}
                         </Td>

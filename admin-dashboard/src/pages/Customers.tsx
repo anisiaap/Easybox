@@ -187,7 +187,7 @@ const Customers: React.FC = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {customers.map((c) => (
+                {customers.filter(c => c.name !== null).map((c)  => (
                     <TableRow key={c.id}>
                         <Td>
                             {editingId === c.id ? (

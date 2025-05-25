@@ -15,6 +15,15 @@ api.interceptors.request.use(config => {
     }
     return config;
 });
+export function decodeJwt(token: string): { exp: number } | null {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload;
+    } catch (err) {
+        console.error("Invalid JWT format:", err);
+        return null;
+    }
+}
 
 // 🧯 Global error handler
 api.interceptors.response.use(
