@@ -35,7 +35,7 @@ public class GeocodingService {
         System.out.println("error2");
         String encoded = URLEncoder.encode(address, StandardCharsets.UTF_8);
         String url = NOMINATIM_URL + encoded;
-
+        System.out.println(address);
         return webClient.get()
                 .uri(url)
                 .header("User-Agent", "MyApp/1.0 (contact: your-email@example.com)")
