@@ -136,7 +136,7 @@ public class ReservationService {
         return easyboxRepository.findByAddressIgnoreCase(address)
                 .filter(box -> "active".equalsIgnoreCase(box.getStatus()))
                 .flatMap(exactBox ->
-                        boxIfAvailable(exactBox, start, end, minTemp, totalDim, null, null)
+                        boxIfAvailable(exactBox, start, end, minTemp, totalDim, exactBox.getLatitude(), exactBox.getLongitude())
                                 .defaultIfEmpty(null)
                                 .flatMap(exactDto -> {
                                     if (exactDto != null) {
