@@ -2,6 +2,7 @@ package com.example.network.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
@@ -64,5 +65,12 @@ public class GlobalExceptionHandler {
                 new ErrorResponse("Forbidden: " + e.getMessage(), HttpStatus.FORBIDDEN),
                 HttpStatus.FORBIDDEN
         );
+    }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleBadJson(HttpMessageNotReadableException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponse("Malformed JSON: " + ex.getMostSpecificCause().getMessage(),
+                        HttpStatus.BAD_REQUEST),
+                HttpStatus.BAD_REQUEST);
     }
 }
