@@ -3,6 +3,7 @@ package com.example.network.controller;
 import com.example.network.dto.RecommendedBoxesResponse;
 import com.example.network.dto.ReservationUpdateRequest;
 import com.example.network.entity.*;
+import com.example.network.exception.ConflictException;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.*;
 import com.example.network.dto.ReservationDto;
@@ -15,6 +16,8 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/reservations")
@@ -80,7 +83,17 @@ public class ReservationAdminController {
         return reservationRepository.findById(id)
                 .flatMap(this::toDto);
     }
-
+    private Mono<Reservation> ensureEditable(Reservation r) {
+        if (r.getReservationEnd().isBefore(LocalDateTime.now())) {
+            return Mono.error(new ConflictException("Reservation has already ended"));
+        }
+        if (List.of("completed", "expired")
+                .contains(r.getStatus().toLowerCase())) {
+            return Mono.error(new ConflictException(
+                    "Cannot modify a " + r.getStatus() + " reservation"));
+        }
+        return Mono.just(r);
+    }
     // UPDATE reservation
     @PutMapping("/{id}")
     public Mono<Reservation> updateReservation(@PathVariable Long id,
@@ -88,6 +101,7 @@ public class ReservationAdminController {
 
         return reservationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Reservation not found")))
+                .flatMap(this::ensureEditable)
                 .flatMap(existing -> {
 
                     // ---------- (A) easyboxId changed ----------
@@ -156,6 +170,7 @@ public class ReservationAdminController {
     public Mono<RecommendedBoxesResponse> getAvailableBoxesForReservation(@PathVariable Long id) {
         return reservationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Reservation not found")))
+                .flatMap(this::ensureEditable)
                 .flatMap(reservation -> {
                     Long easyboxId = reservation.getEasyboxId();
                     Long compartmentId = reservation.getCompartmentId();
