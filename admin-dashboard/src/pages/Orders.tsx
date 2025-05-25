@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
-import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
 import type { EasyboxDto } from '../types/easybox'; // adjust path as needed
@@ -121,10 +120,21 @@ export default function Orders() {
             message: 'Save changes?',
             onConfirm: async () => {
                 try {
-                    await api.put(`/admin/reservations/${id}`, {
-                        status: editStatus,
-                        easyboxId: editEasybox?.id          // undefined if unchanged
-                    });
+                    /* build payload dynamically */
+                    const original = orders.find(o => o.id === id);
+                    const payload: Record<string, any> = {};
+
+                    if (editStatus && editStatus !== original?.status) {
+                        payload.status = editStatus;
+                    }
+                    if (editEasybox?.id && editEasybox.id !== original?.easyboxId) {
+                        payload.easyboxId = editEasybox.id;
+                    }
+
+                    if (Object.keys(payload).length) {
+                        await api.put(`/admin/reservations/${id}`, payload);
+                    }
+
                     toast.success('Order updated');
                     setEditingId(null);
                     setEditEasybox(null);
@@ -153,21 +163,18 @@ export default function Orders() {
         }
     };
 
-    const handleEasyboxSelected = async (box: EasyboxDto) => {
+    // AFTER  (no backend call – just update local edit state)
+    const handleEasyboxSelected = (box: EasyboxDto) => {
         if (!pickerOrderId) return;
-        try {
-            await api.put(`/admin/reservations/${pickerOrderId}/reassign-easybox`,
-                null, {params: {newEasyboxId: box.id}});
-            toast.success('Easybox reassigned ✅');
-            setShowEasyboxPicker(false);
-            if (editingId === pickerOrderId) {
-                setEditingId(null);
-                setEditEasybox(null);
-            }
-            fetchOrders();
-        } catch {
-            toast.error('Reassign failed');
-        }
+
+        // ① put row into edit mode (if it wasn’t already)
+        setEditingId(pickerOrderId);
+
+        // ② update the easybox shown in the edit row
+        setEditEasybox({ id: box.id, address: box.address });
+
+        // ③ close the picker
+        setShowEasyboxPicker(false);
     };
 
     /* ───────────────────────────── render ───────────────────────────── */
@@ -179,11 +186,16 @@ export default function Orders() {
             <Table>
                 <thead>
                 <tr>
-                    <Th>Order ID</Th><Th>User Phone</Th><Th>Bakery</Th><Th>Easybox</Th>
-                    <Th>Status / Edit</Th><Th>Actions</Th>
+                    <Th>Order ID</Th>
+                    <Th>User Phone</Th>
+                    <Th>Bakery</Th>
+                    <Th>Easybox</Th>
                     <Th>Compartment</Th>
                     <Th>Start</Th>
                     <Th>End</Th>
+                    <Th>Status</Th>
+                    <Th>Actions</Th>
+
                 </tr>
                 </thead>
                 <tbody>
@@ -197,7 +209,6 @@ export default function Orders() {
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
 
-                        {/* status + easybox edit cell */}
                         {/* status + easybox edit cell */}
                         <Td>
                             {editingId === o.id ? (
