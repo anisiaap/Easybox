@@ -235,21 +235,41 @@ public class ReservationService {
 
     /* ---------------- distance-fallback helpers (unchanged logic) -------- */
 
-    private Mono<RecommendedBoxesResponse> collectOtherBoxes(String address, EasyboxDto exact,
+    private Mono<RecommendedBoxesResponse> collectOtherBoxes(String address,
+                                                             EasyboxDto exact,
                                                              LocalDateTime st, LocalDateTime ed,
                                                              Integer minTemp, Integer totalDim) {
 
+        /* ── 1) Have we got coordinates? (admin path) ─────────────── */
+        if (exact.getLatitude() != null && exact.getLongitude() != null) {
+
+            double lat = exact.getLatitude();
+            double lon = exact.getLongitude();
+
+            return easyboxRepository.findAll()
+                    .filter(b -> !b.getId().equals(exact.getId()))
+                    .filter(b -> "active".equalsIgnoreCase(b.getStatus()))
+                    .sort(Comparator.comparingDouble(
+                            b -> geocodingService.distance(
+                                    b.getLatitude(), b.getLongitude(),
+                                    lat,              lon)))
+                    .concatMap(b -> boxIfAvailable(b, st, ed, minTemp, totalDim, lat, lon))
+                    .collectList()
+                    .map(others -> new RecommendedBoxesResponse(exact, others));
+        }
+
+        /* ── 2) No coords → free-typed address (widget path) ───────── */
         return geocodingService.geocodeAddress(address)
                 .flatMap(coords ->
                         easyboxRepository.findAll()
-                                .filter(e -> !e.getId().equals(exact.getId()))
-                                .collectList()
-                                .flatMapMany(list -> Flux.fromIterable(list)
-                                        .sort(Comparator.comparingDouble(
-                                                e -> geocodingService.distance(e.getLatitude(), e.getLongitude(),
-                                                        coords[0],        coords[1])))
-                                        .concatMap(e -> boxIfAvailable(e, st, ed, minTemp, totalDim,
-                                                coords[0], coords[1])))
+                                .filter(b -> !b.getId().equals(exact.getId()))
+                                .filter(b -> "active".equalsIgnoreCase(b.getStatus()))
+                                .sort(Comparator.comparingDouble(
+                                        b -> geocodingService.distance(
+                                                b.getLatitude(), b.getLongitude(),
+                                                coords[0],        coords[1])))
+                                .concatMap(b -> boxIfAvailable(
+                                        b, st, ed, minTemp, totalDim, coords[0], coords[1]))
                                 .collectList()
                                 .map(others -> new RecommendedBoxesResponse(exact, others)));
     }
