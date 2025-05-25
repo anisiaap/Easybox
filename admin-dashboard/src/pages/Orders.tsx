@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
+import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
 import type { EasyboxDto } from '../types/easybox'; // adjust path as needed
