@@ -165,15 +165,22 @@ public class ReservationService {
                                                        LocalDateTime start,
                                                        LocalDateTime end) {
 
+        LocalDateTime now = LocalDateTime.now();
         return compartmentRepository.findByEasyboxId(box.getId())
-                .filter(c -> c.getCondition() != null &&
-                        ( "good".equalsIgnoreCase(c.getCondition())))
-                .filter(c -> minTemp  == null || c.getTemperature() == minTemp)
+                .filter(c -> c.getCondition() != null &&("good".equalsIgnoreCase(c.getCondition()) ||
+                        "clean".equalsIgnoreCase(c.getCondition())))
+                .filter(c -> minTemp  == null || c.getTemperature() >= minTemp)
                 .filter(c -> totalDim == null || c.getSize()        >= totalDim)
                 /* ---- per-compartment overlap check ------------------------ */
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()))
+                                .filter(r -> {
+                                    boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
+                                    boolean pending   = "pending".equalsIgnoreCase(r.getStatus())
+                                            && r.getExpiresAt() != null
+                                            && r.getExpiresAt().isAfter(now);
+                                    return confirmed || pending;
+                                })
                                 .filter(r -> r.getReservationStart().isBefore(end) &&
                                         r.getReservationEnd()  .isAfter(start))
                                 .hasElements()
@@ -197,8 +204,8 @@ public class ReservationService {
         return compartmentRepository.findByEasyboxId(box.getId())
                 .filter(c -> "free".equalsIgnoreCase(c.getStatus()))
                 .filter(c -> c.getCondition() != null &&
-                        ( "good".equalsIgnoreCase(c.getCondition())
-                                || "clean".equalsIgnoreCase(c.getCondition())))
+                        ("good".equalsIgnoreCase(c.getCondition()) ||
+                                "clean".equalsIgnoreCase(c.getCondition())))
                 .filter(c -> minTemp  == null || c.getTemperature() >= minTemp)
                 .filter(c -> totalDim == null || c.getSize()        >= totalDim)
                 .concatMap(c ->

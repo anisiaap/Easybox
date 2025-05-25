@@ -4,8 +4,8 @@ public class EasyboxDto {
     private Long id;
     private String address;
     private String status;
-    private Double latitude;
-    private Double longitude;
+    private double latitude;
+    private double longitude;
     private int capacity; // or compartments, or whatever detail you need
     // THESE are the three new fields:
     private boolean available;
@@ -14,7 +14,7 @@ public class EasyboxDto {
 
     public EasyboxDto() {}
 
-    public EasyboxDto(Long id, String address, String status, Double latitude, Double longitude, int capacity) {
+    public EasyboxDto(Long id, String address, String status, double latitude, double longitude, int capacity) {
         this.id = id;
         this.address = address;
         this.status = status;
@@ -33,11 +33,11 @@ public class EasyboxDto {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public Double getLatitude() { return latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
 
-    public Double getLongitude() { return longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
 
     public int getCapacity() { return capacity; }
     public void setCapacity(int capacity) { this.capacity = capacity; }
