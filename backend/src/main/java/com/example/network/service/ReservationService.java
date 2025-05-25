@@ -5,6 +5,8 @@ import com.example.network.entity.*;
 import com.example.network.exception.ConfigurationException;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -25,6 +27,7 @@ public class ReservationService {
     private final CompartmentRepository  compartmentRepository;
     private final GeocodingService       geocodingService;
     private final UserService userService;
+    private static final Logger log = LoggerFactory.getLogger(ReservationService.class);
     public ReservationService(
             ReservationRepository reservationRepository,
             EasyboxRepository easyboxRepository,
@@ -167,14 +170,17 @@ public class ReservationService {
 
         LocalDateTime now = LocalDateTime.now();
         return compartmentRepository.findByEasyboxId(box.getId())
+                .doOnNext(c -> log.info("➡️ Checking comp={} | size={} | temp={} | condition={} | status={}",
+                        c.getId(), c.getSize(), c.getTemperature(), c.getCondition(), c.getStatus()))
                 .filter(c -> c.getCondition() != null &&("good".equalsIgnoreCase(c.getCondition()) ||
                         "clean".equalsIgnoreCase(c.getCondition())))
-                .filter(c -> minTemp  == null || c.getTemperature() >= minTemp)
+                .filter(c -> minTemp  == null || c.getTemperature() == minTemp)
                 .filter(c -> totalDim == null || c.getSize()        >= totalDim)
                 /* ---- per-compartment overlap check ------------------------ */
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
                                 .filter(r -> {
+
                                     boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
                                     boolean pending   = "pending".equalsIgnoreCase(r.getStatus())
                                             && r.getExpiresAt() != null
