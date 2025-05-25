@@ -1,24 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
-import AdminEasyboxPickerDialog from './AdminEasyboxPickerDialog';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
-import type { EasyboxDto } from '../types/easybox'; // adjust path as needed
-/* ───────────────────────────────────  styled helpers  ─────────────────────────────────── */
+
 const OrdersContainer = styled.div`padding:20px;background:#f4f6f5;min-height:100vh;`;
-const Table           = styled.table`width:100%;border-collapse:separate;border-spacing:0;background:#fff;
+const Table = styled.table`width:100%;border-collapse:separate;border-spacing:0;background:#fff;
     border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden;`;
-const Th              = styled.th`text-align:left;padding:16px;background:#5e5e5e;color:#fff;
+const Th = styled.th`text-align:left;padding:16px;background:#5e5e5e;color:#fff;
     border-bottom:1px solid #ddd;font-weight:600;`;
-const Td              = styled.td`padding:16px;border-bottom:1px solid #eee;vertical-align:top;`;
-const TableRow        = styled.tr`&:hover{background:#f0f8f0;}`;
-const Button          = styled.button`margin:4px;background:#28a745;color:#fff;border:none;padding:6px 12px;
+const Td = styled.td`padding:16px;border-bottom:1px solid #eee;vertical-align:top;`;
+const TableRow = styled.tr`&:hover{background:#f0f8f0;}`;
+const Button = styled.button`margin:4px;background:#28a745;color:#fff;border:none;padding:6px 12px;
     border-radius:6px;font-size:.9rem;cursor:pointer;transition:.2s;
     &:hover{background:#28a745;} &:disabled{background:#aaa;cursor:not-allowed;}`;
-const Input           = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
+const Input = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
 
-/* ───────────────────────────────────────  types  ─────────────────────────────────────── */
 interface Order {
     id: number;
     userPhone: string;
@@ -27,57 +24,45 @@ interface Order {
     easyboxId?: number;
     status: string;
     compartmentId: number;
-    reservationStart: string; // ISO string
-    reservationEnd: string;   // ISO string
+    reservationStart: string;
+    reservationEnd: string;
 }
 
-
-
 const statusOptions = [
-    { label: 'Pending',                     value: 'pending' },
-    { label: 'Confirmed',                   value: 'confirmed' },
-    { label: 'Waiting for Bakery Dropoff',  value: 'waiting_bakery_drop_off' },
-    { label: 'Pickup Order',               value: 'waiting_client_pick_up' },
-    { label: 'Waiting Cleaning',            value: 'waiting_cleaning' },
-    { label: 'Expired',                     value: 'expired' },
-    { label: 'Completed',                   value: 'completed' },
+    { label: 'Pending', value: 'pending' },
+    { label: 'Confirmed', value: 'confirmed' },
+    { label: 'Waiting for Bakery Dropoff', value: 'waiting_bakery_drop_off' },
+    { label: 'Pickup Order', value: 'waiting_client_pick_up' },
+    { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Completed', value: 'completed' },
 ];
 
-/* ───────────────────────────────────── component  ────────────────────────────────────── */
 export default function Orders() {
-    /* ------------ data/state ------------ */
     const [orders, setOrders] = useState<Order[]>([]);
     const [page, setPage] = useState(0);
     const [totalOrders, setTotalOrders] = useState(0);
     const pageSize = 10;
 
-    /* filters */
     const [filterDate, setFilterDate] = useState('');
     const [filterBakeryName, setFilterBakeryName] = useState('');
     const [filterUserPhone, setFilterUserPhone] = useState('');
 
-    /* row-edit state */
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editStatus, setEditStatus] = useState('');
-    const [editEasybox, setEditEasybox] = useState<{ id: number; address: string } | null>(null);
-
-    /* picker/dialog state */
-    const [pickerBoxes, setPickerBoxes] = useState<EasyboxDto[]>([]);
-    const [pickerOrderId, setPickerOrderId] = useState<number | null>(null);
-    const [showEasyboxPicker, setShowEasyboxPicker] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState<{
-        message: string; onConfirm: () => void
+        message: string;
+        onConfirm: () => void;
     } | null>(null);
 
-    /* ------------ fetch orders ------------ */
     const fetchOrders = useCallback(async () => {
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
-                ...(filterDate && {deliveryDate: filterDate}),
-                ...(filterBakeryName && {bakeryName: filterBakeryName}),
-                ...(filterUserPhone && {userPhone: filterUserPhone}),
+                ...(filterDate && { deliveryDate: filterDate }),
+                ...(filterBakeryName && { bakeryName: filterBakeryName }),
+                ...(filterUserPhone && { userPhone: filterUserPhone }),
             }).toString();
 
             const [list, count] = await Promise.all([
@@ -95,7 +80,6 @@ export default function Orders() {
         fetchOrders();
     }, [fetchOrders]);
 
-    /* ------------ CRUD helpers ------------ */
     const handleDeleteOrder = (id: number) =>
         setConfirmDialog({
             message: 'Are you sure you want to delete this order?',
@@ -113,7 +97,6 @@ export default function Orders() {
     const handleStartEdit = (o: Order) => {
         setEditingId(o.id);
         setEditStatus(o.status);
-        setEditEasybox(o.easyboxId ? {id: o.easyboxId, address: o.easyboxAddress} : null);
     };
 
     const handleSaveEdit = async (id: number) => {
@@ -121,15 +104,11 @@ export default function Orders() {
             message: 'Save changes?',
             onConfirm: async () => {
                 try {
-                    /* build payload dynamically */
                     const original = orders.find(o => o.id === id);
                     const payload: Record<string, any> = {};
 
                     if (editStatus && editStatus !== original?.status) {
                         payload.status = editStatus;
-                    }
-                    if (editEasybox?.id && editEasybox.id !== original?.easyboxId) {
-                        payload.easyboxId = editEasybox.id;
                     }
 
                     if (Object.keys(payload).length) {
@@ -138,7 +117,6 @@ export default function Orders() {
 
                     toast.success('Order updated');
                     setEditingId(null);
-                    setEditEasybox(null);
                     fetchOrders();
                 } catch {
                     toast.error('Update failed');
@@ -148,42 +126,10 @@ export default function Orders() {
         });
     };
 
-    /* ------------ easybox picker flow ------------ */
-    const openPickerForOrder = async (order: Order) => {
-        try {
-            const {data} = await api.get(`/admin/reservations/${order.id}/available-easyboxes`);
-            const list: EasyboxDto[] = [
-                ...(data.exact ? [data.exact] : []),
-                ...(data.others ? data.others : []),
-            ];
-            setPickerBoxes(list);
-            setPickerOrderId(order.id);
-            setShowEasyboxPicker(true);
-        } catch {
-            toast.error('Failed to load alternative easyboxes');
-        }
-    };
-
-    // AFTER  (no backend call – just update local edit state)
-    const handleEasyboxSelected = (box: EasyboxDto) => {
-        if (!pickerOrderId) return;
-
-        // ① put row into edit mode (if it wasn’t already)
-        setEditingId(pickerOrderId);
-
-        // ② update the easybox shown in the edit row
-        setEditEasybox({ id: box.id, address: box.address });
-
-        // ③ close the picker
-        setShowEasyboxPicker(false);
-    };
-
-    /* ───────────────────────────── render ───────────────────────────── */
     return (
         <OrdersContainer>
             <h1>Orders</h1>
 
-            {/* ------------ table ------------ */}
             <Table>
                 <thead>
                 <tr>
@@ -196,7 +142,6 @@ export default function Orders() {
                     <Th>End</Th>
                     <Th>Status</Th>
                     <Th>Actions</Th>
-
                 </tr>
                 </thead>
                 <tbody>
@@ -209,43 +154,24 @@ export default function Orders() {
                         <Td>{o.compartmentId}</Td>
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
-
-                        {/* status + easybox edit cell */}
                         <Td>
                             {editingId === o.id ? (
-                                <>
-                                    <select value={editStatus}
-                                            onChange={e => setEditStatus(e.target.value)}
-                                            style={{padding: '8px', border: '1px solid #ccc'}}>
-                                        {statusOptions.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </select>
-                                    <div style={{marginTop: 6}}>
-                                        <b>Easybox:</b> {editEasybox?.address || 'None'}
-                                        <br/>
-                                        <Button onClick={() => openPickerForOrder(o)}>Change</Button>
-                                    </div>
-                                </>
+                                <select value={editStatus}
+                                        onChange={e => setEditStatus(e.target.value)}
+                                        style={{ padding: '8px', border: '1px solid #ccc' }}>
+                                    {statusOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
                             ) : (
-                                <>
-                                    {
-                                        statusOptions.find(opt => opt.value === o.status)?.label
-                                        || o.status
-                                    }
-                                </>
+                                statusOptions.find(opt => opt.value === o.status)?.label || o.status
                             )}
                         </Td>
-
-                        {/* action buttons */}
                         <Td>
                             {editingId === o.id
                                 ? <>
                                     <Button onClick={() => handleSaveEdit(o.id)}>Save</Button>
-                                    <Button onClick={() => {
-                                        setEditingId(null);
-                                        setEditEasybox(null);
-                                    }}>Cancel</Button>
+                                    <Button onClick={() => setEditingId(null)}>Cancel</Button>
                                 </>
                                 : <>
                                     <Button onClick={() => handleStartEdit(o)}>Edit</Button>
@@ -258,40 +184,28 @@ export default function Orders() {
                 </tbody>
             </Table>
 
-            {/* ------------ pagination ------------ */}
-            <div style={{display: 'flex', justifyContent: 'center', gap: 12, margin: 20}}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, margin: 20 }}>
                 <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
                 <span>Page {page + 1} / {Math.ceil(totalOrders / pageSize)}</span>
                 <Button onClick={() => setPage(p => p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p)}
                         disabled={page + 1 >= Math.ceil(totalOrders / pageSize)}>Next</Button>
             </div>
 
-            {/* ------------ filters ------------ */}
-            <div style={{display: 'flex', gap: 12, marginBottom: 20}}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
                 <div>
-                    <label style={{fontWeight: 500}}>Delivery Date</label>
-                    <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}/>
+                    <label style={{ fontWeight: 500 }}>Delivery Date</label>
+                    <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
                 </div>
-                <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)}
-                       placeholder="Bakery Name"/>
-                <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)}
-                       placeholder="User Phone"/>
+                <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)} placeholder="Bakery Name" />
+                <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)} placeholder="User Phone" />
                 <Button onClick={fetchOrders}>Apply</Button>
             </div>
 
-            {/* ------------ dialogs ------------ */}
-            {showEasyboxPicker && pickerOrderId && (
-                <AdminEasyboxPickerDialog
-                    boxes={pickerBoxes}
-                    onSelect={handleEasyboxSelected}
-                    onClose={() => setShowEasyboxPicker(false)}
-                />
-            )}
             {confirmDialog && (
                 <ConfirmDialog
                     message={confirmDialog.message}
                     onConfirm={confirmDialog.onConfirm}
-                    onCancel={() => setConfirmDialog(null)}   // fallback
+                    onCancel={() => setConfirmDialog(null)}
                 />
             )}
         </OrdersContainer>

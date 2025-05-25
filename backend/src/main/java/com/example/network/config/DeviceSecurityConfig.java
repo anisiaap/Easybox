@@ -23,9 +23,7 @@ public class DeviceSecurityConfig {
 
     @Bean
     public SecurityWebFilterChain deviceWebFilterChain(
-            ServerHttpSecurity http,
-            ReactiveJwtDecoder deviceJwtDecoder,
-            ReactiveJwtAuthenticationConverter authConverter
+            ServerHttpSecurity http
     ) {
         return http
                 .securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/device/**"))
