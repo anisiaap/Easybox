@@ -35,6 +35,7 @@ const statusOptions = [
     { label: 'Pickup Order', value: 'waiting_client_pick_up' },
     { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
     { label: 'Expired', value: 'expired' },
+    { label: 'Canceled', value: 'canceled' },
     { label: 'Completed', value: 'completed' },
 ];
 

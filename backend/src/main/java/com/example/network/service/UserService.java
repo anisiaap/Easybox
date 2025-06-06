@@ -1,6 +1,6 @@
 package com.example.network.service;
 
-import com.example.network.entity.User;
+import com.example.network.model.User;
 import com.example.network.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;

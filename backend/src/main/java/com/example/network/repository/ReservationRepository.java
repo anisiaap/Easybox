@@ -1,13 +1,11 @@
 package com.example.network.repository;
 
-import com.example.network.entity.Reservation;
+import com.example.network.model.Reservation;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 public interface ReservationRepository extends ReactiveCrudRepository<Reservation, Long> {
     // e.g. find all reservations for a given easybox
@@ -24,4 +22,5 @@ public interface ReservationRepository extends ReactiveCrudRepository<Reservatio
     Mono<Reservation> findByIdAndBakeryId(Long id, Long bakeryId);
     Mono<Reservation> findByIdAndUserId(Long id, Long userId);
 
+    Mono<Reservation> findByCompartmentIdAndStatus(Long compartmentId, String waitingBakeryDropOff);
 }

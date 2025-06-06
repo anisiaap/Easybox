@@ -1,6 +1,6 @@
 package com.example.easyboxdevice.service;
 
-import com.example.easyboxdevice.entity.Compartment;
+import com.example.easyboxdevice.model.Compartment;
 import com.example.easyboxdevice.config.DeviceConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;

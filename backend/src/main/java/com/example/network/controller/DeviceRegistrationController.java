@@ -3,21 +3,15 @@ package com.example.network.controller;
 
 import com.example.network.config.JwtVerifier;
 import com.example.network.dto.RegistrationRequest;
-import com.example.network.entity.Easybox;
+import com.example.network.model.Easybox;
 import com.example.network.exception.ConflictException;
-import com.example.network.exception.GeocodingException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
 import com.example.network.service.GeocodingService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/device")

@@ -1,6 +1,6 @@
 package com.example.network.controller;
 
-import com.example.network.entity.Bakery;
+import com.example.network.model.Bakery;
 import com.example.network.exception.InvalidRequestException;
 import com.example.network.repository.BakeryRepository;
 import org.springframework.web.bind.annotation.*;

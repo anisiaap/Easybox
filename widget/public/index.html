@@ -30,32 +30,6 @@
         }
     });
 
-//listen to when the bakery place order button was pressed
-//     window.addEventListener("message", async (event) => {
-//         if (event.data?.type === "bakery-order-confirmed") {
-//             const { reservationId } = event.data;
-//             try {
-//                 const res = await fetch(`${API_URL}${reservationId}/confirm`, {
-//                     method: "PATCH"
-//                 });
-//
-//                 if (!res.ok) {
-//                     alert("Could not confirm reservation – it may have expired or failed!");
-//                 } else {
-//                     alert("Reservation confirmed!");
-//                 }
-//
-//                 window.parent.postMessage({ type: "easybox-confirmed", id: reservationId }, "*");
-//
-//             } catch (err) {
-//                 console.error("Confirmation error:", err);
-//                 alert("Something went wrong while confirming the reservation.");
-//             }
-//         }
-//     });
-
-
-
 </script>
 </body>
 </html>

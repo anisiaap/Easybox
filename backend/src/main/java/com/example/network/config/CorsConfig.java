@@ -22,21 +22,23 @@ public class CorsConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "https://widget.easybox-food.xyz",
                 "https://admin.easybox-food.xyz",
-                "http://192.168.1.133:3000",
-                "http://192.168.1.133:3001",
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://localhost:3030",
-                "http://localhost:5500",
-                "http://192.168.1.133:8081"
+                "http://localhost:3001"
         ));
-        config.setAllowedMethods(Arrays.asList("GET","POST","PATCH","PUT","DELETE","OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization","Content-Type"));//"*"
-        config.setAllowCredentials(true);
+    config.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+    config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+    // Allow all origins for /api/device/**
+    CorsConfiguration deviceConfig = new CorsConfiguration();
+    deviceConfig.setAllowedOrigins(Arrays.asList("*")); // Allow all origins
+    deviceConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
+    deviceConfig.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+    deviceConfig.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/api/device/**", deviceConfig); // Apply to /api/device/**
+    source.registerCorsConfiguration("/**", config); // Apply to all other endpoints
+    return source;
+}
 }
 

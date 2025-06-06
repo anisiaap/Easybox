@@ -1,6 +1,6 @@
 package com.example.easyboxdevice.controller;
 
-import com.example.easyboxdevice.entity.Compartment;
+import com.example.easyboxdevice.model.Compartment;
 import com.example.easyboxdevice.config.DeviceConfig;
 import com.example.easyboxdevice.service.CompartmentService;
 import org.springframework.beans.factory.annotation.Autowired;

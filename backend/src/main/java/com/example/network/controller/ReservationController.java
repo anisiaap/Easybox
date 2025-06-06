@@ -4,7 +4,7 @@ package com.example.network.controller;
 import com.example.network.dto.CreateReservationRequest;
 import com.example.network.dto.RecommendedBoxesResponse;
 import com.example.network.dto.ReservationQueryRequest;
-import com.example.network.entity.Reservation;
+import com.example.network.model.Reservation;
 import com.example.network.service.ReservationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;

@@ -1,8 +1,8 @@
 package com.example.network.controller;
 
 import com.example.network.dto.*;
-import com.example.network.entity.Reservation;
-import com.example.network.entity.Compartment;
+import com.example.network.model.Reservation;
+import com.example.network.model.Compartment;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
 import com.example.network.repository.CompartmentRepository;
@@ -13,7 +13,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;

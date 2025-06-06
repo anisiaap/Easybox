@@ -8,10 +8,12 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Base64;
 import java.awt.image.BufferedImage;
 
-import com.example.network.entity.Reservation;
+import com.example.network.model.Reservation;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,10 @@ public class QrCodeService {
                          CompartmentRepository compartmentRepository) {
         this.reservationRepository = reservationRepository;
         this.compartmentRepository = compartmentRepository;
+    }
+    private boolean isExpired(Reservation reservation) {
+        return reservation.getExpiresAt() != null &&
+                reservation.getExpiresAt().isBefore(LocalDateTime.now(ZoneOffset.UTC));
     }
 
     public Mono<QrCodeResult> handleQrScan(String qrContent) {
@@ -44,15 +50,36 @@ public class QrCodeService {
         return reservationRepository.findById(reservationId)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Reservation not found")))
                 .flatMap(reservation -> {
-                    String currentStatus = reservation.getStatus();
-                    if ("waiting_bakery_drop_off".equalsIgnoreCase(currentStatus)) {
-                        reservation.setStatus("pickup_order");
-                        return updateReservationAndCompartment(reservation, "busy");
-                    } else if ("pickup_order".equalsIgnoreCase(currentStatus)) {
+                    String status = reservation.getStatus();
+                    if (isExpired(reservation) ||
+                            "canceled".equals(reservation.getStatus()) ||
+                            "expired".equals(reservation.getStatus())) {
+                        return Mono.error(new InvalidRequestException("Reservation expired or canceled"));
+                    }
+                    if ("waiting_bakery_drop_off".equals(status) || "waiting_client_pick_up".equals(status)) {
+                        return Mono.just(new QrCodeResult(
+                                reservation.getCompartmentId(),
+                                status // just echo the current valid status
+                        ));
+                    }
+                    return Mono.error(new InvalidRequestException(
+                            "Reservation in unexpected state: " + status));
+                });
+    }
+
+    public Mono<Void> handleConfirmation(Long compartmentId) {
+        return reservationRepository.findByCompartmentIdAndStatus(compartmentId, "waiting_bakery_drop_off")
+                .switchIfEmpty(reservationRepository.findByCompartmentIdAndStatus(compartmentId, "waiting_client_pick_up"))
+                .flatMap(reservation -> {
+                    String status = reservation.getStatus();
+                    if ("waiting_bakery_drop_off".equals(status)) {
+                        reservation.setStatus("waiting_client_pick_up");
+                        return updateReservationAndCompartment(reservation, "busy").then();
+                    } else if ("waiting_client_pick_up".equals(status)) {
                         reservation.setStatus("completed");
-                        return updateReservationAndCompartment(reservation, "free");
+                        return updateReservationAndCompartment(reservation, "free").then();
                     } else {
-                        return Mono.error(new InvalidRequestException("Reservation in unexpected state: " + currentStatus));
+                        return Mono.error(new InvalidRequestException("Invalid confirmation state"));
                     }
                 });
     }

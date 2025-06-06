@@ -1,7 +1,7 @@
 package com.example.network.controller;
 
-import com.example.network.entity.Easybox;
-import com.example.network.entity.Reservation;
+import com.example.network.model.Easybox;
+import com.example.network.model.Reservation;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
 import org.springframework.web.bind.annotation.*;

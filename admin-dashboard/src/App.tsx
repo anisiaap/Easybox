@@ -15,32 +15,15 @@ import { decodeJwt, api } from './api';
 
 const App: React.FC = () => {
     useEffect(() => {
-        const checkAndRefreshToken = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
+        const token = sessionStorage.getItem('token');
+        if (token) {
             const payload = decodeJwt(token);
-            if (!payload?.exp) return;
-
-            const now = Math.floor(Date.now() / 1000);
-            const secondsLeft = payload.exp - now;
-
-            if (secondsLeft < 120) {
-                try {
-                    const res = await api.get('/auth/refresh-token');
-                    const newToken = res.data;
-                    localStorage.setItem('token', newToken);
-                    console.log('🔄 Token refreshed');
-                } catch (err) {
-                    console.warn('⚠️ Failed to refresh token', err);
-                    localStorage.removeItem('token');
-                    window.location.href = '/login';
-                }
+            if (payload?.exp && payload.exp * 1000 > Date.now()) {
+                scheduleTokenRefresh(); // Schedule token refresh
+            } else {
+                sessionStorage.removeItem('token'); // Remove expired token
             }
-        };
-
-        const interval = setInterval(checkAndRefreshToken, 30_000);
-        return () => clearInterval(interval);
+        }
     }, []);
     return (
         <Router>

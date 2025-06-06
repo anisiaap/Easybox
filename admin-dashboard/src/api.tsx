@@ -8,7 +8,7 @@ export const api = axios.create({
 
 // ✅ Attach JWT from localStorage before every request
 api.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -44,13 +44,13 @@ api.interceptors.response.use(
                 const refreshRes = await api.get('/auth/refresh-token');
                 const newToken = refreshRes.data;
 
-                localStorage.setItem('token', newToken);
+                sessionStorage.setItem('token', newToken);
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
                 return api(originalRequest); // Retry original request
             } catch (refreshErr) {
                 // 🔐 Auto logout
-                localStorage.removeItem('token');
+                sessionStorage.removeItem('token');
                 toast.error('Session expired. Please log in again.');
                 if (typeof window !== 'undefined') {
                     window.location.href = '/login';
@@ -68,3 +68,28 @@ api.interceptors.response.use(
         return Promise.reject(err);
     }
 );
+// Schedule token refresh
+export const scheduleTokenRefresh = () => {
+    const token = sessionStorage.getItem('token');
+    if (!token) return;
+
+    const payload = decodeJwt(token);
+    if (!payload?.exp) return;
+
+    const refreshInMs = payload.exp * 1000 - Date.now() - 60_000; // Refresh 1 minute before expiration
+
+    if (refreshInMs > 0) {
+        setTimeout(async () => {
+            try {
+                const res = await api.get('/auth/refresh-token');
+                const newToken = res.data;
+                sessionStorage.setItem('token', newToken);
+                scheduleTokenRefresh(); // Schedule the next refresh
+            } catch (err) {
+                console.warn('Failed to refresh token:', err);
+                sessionStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        }, refreshInMs);
+    }
+};

@@ -1,4 +1,4 @@
-package com.example.easyboxdevice.entity;
+package com.example.easyboxdevice.model;
 
 public class Compartment {
     private Long id;

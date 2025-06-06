@@ -1,5 +1,5 @@
 // src/main/java/com/example/network/entity/User.java
-package com.example.network.entity;
+package com.example.network.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;

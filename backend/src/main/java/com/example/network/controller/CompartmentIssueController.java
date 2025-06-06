@@ -1,7 +1,7 @@
 package com.example.network.controller;
 
-import com.example.network.entity.Easybox;
-import com.example.network.entity.Reservation;
+import com.example.network.model.Easybox;
+import com.example.network.model.Reservation;
 import com.example.network.exception.InvalidRequestException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
@@ -86,7 +86,7 @@ public class CompartmentIssueController {
                 .filter(c -> !c.getId().equals(excludeCompartmentId))
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> !"canceled".equalsIgnoreCase(r.getStatus()))
+                                .filter(r -> !"canceled".equalsIgnoreCase(r.getStatus()) && !"expired".equalsIgnoreCase(r.getStatus()))
                                 .filter(r -> r.getReservationStart().isBefore(end) && r.getReservationEnd().isAfter(start))
                                 .hasElements()
                                 .map(hasConflict -> !hasConflict)

@@ -1,6 +1,6 @@
 package com.example.easyboxdevice.config;
 
-import com.example.easyboxdevice.entity.Compartment;
+import com.example.easyboxdevice.model.Compartment;
 
 import java.util.List;
 

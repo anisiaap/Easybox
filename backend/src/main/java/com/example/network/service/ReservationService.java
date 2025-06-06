@@ -1,7 +1,7 @@
 package com.example.network.service;
 
 import com.example.network.dto.*;
-import com.example.network.entity.*;
+import com.example.network.model.*;
 import com.example.network.exception.ConfigurationException;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.*;
@@ -45,7 +45,31 @@ public class ReservationService {
     /* -------------------------------------------------------------------- */
     /* -----------------------  H O L D   P H A S E  ---------------------- */
     /* -------------------------------------------------------------------- */
+    private Flux<Compartment> filterCompartments(Easybox box, Integer minTemp, Integer totalDim, LocalDateTime start, LocalDateTime end) {
+        LocalDateTime now = LocalDateTime.now();
 
+        return compartmentRepository.findByEasyboxId(box.getId())
+                .filter(c -> c.getCondition() != null && ("good".equalsIgnoreCase(c.getCondition()) ||
+                        "clean".equalsIgnoreCase(c.getCondition())))
+                .filter(c -> minTemp == null || c.getTemperature() == minTemp)
+                .filter(c -> totalDim == null || c.getSize() >= totalDim)
+                .concatMap(c ->
+                        reservationRepository.findByCompartmentId(c.getId())
+                                .filter(r -> {
+                                    boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
+                                    boolean pending = "pending".equalsIgnoreCase(r.getStatus())
+                                            && r.getExpiresAt() != null
+                                            && r.getExpiresAt().isAfter(now);
+                                    return confirmed || pending;
+                                })
+                                .filter(r -> r.getReservationStart().isBefore(end) &&
+                                        r.getReservationEnd().isAfter(start))
+                                .hasElements()
+                                .map(hasOverlap -> !hasOverlap)
+                                .filter(canUse -> canUse)
+                                .map(canUse -> c)
+                );
+    }
     @Transactional
     public Mono<Reservation> holdReservation(CreateReservationRequest req, Authentication auth) {
         Long bakeryId = extractUserIdFromJwt(auth);
@@ -169,31 +193,8 @@ public class ReservationService {
                                                        LocalDateTime end) {
 
         LocalDateTime now = LocalDateTime.now();
-        return compartmentRepository.findByEasyboxId(box.getId())
-                .doOnNext(c -> log.info("➡️ Checking comp={} | size={} | temp={} | condition={} | status={}",
-                        c.getId(), c.getSize(), c.getTemperature(), c.getCondition(), c.getStatus()))
-                .filter(c -> c.getCondition() != null &&("good".equalsIgnoreCase(c.getCondition()) ||
-                        "clean".equalsIgnoreCase(c.getCondition())))
-                .filter(c -> minTemp  == null || c.getTemperature() == minTemp)
-                .filter(c -> totalDim == null || c.getSize()        >= totalDim)
-                /* ---- per-compartment overlap check ------------------------ */
-                .concatMap(c ->
-                        reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> {
-
-                                    boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
-                                    boolean pending   = "pending".equalsIgnoreCase(r.getStatus())
-                                            && r.getExpiresAt() != null
-                                            && r.getExpiresAt().isAfter(now);
-                                    return confirmed || pending;
-                                })
-                                .filter(r -> r.getReservationStart().isBefore(end) &&
-                                        r.getReservationEnd()  .isAfter(start))
-                                .hasElements()
-                                .map(hasOverlap -> !hasOverlap)
-                                .filter(canUse -> canUse)
-                                .map(canUse -> c.getId())
-                )
+        return filterCompartments(box, minTemp, totalDim, start, end)
+                .map(Compartment::getId)
                 .next()   // first compartment that we successfully locked
                 .switchIfEmpty(Mono.error(new ConflictException("No compartments available in that window")));
     }
@@ -207,24 +208,7 @@ public class ReservationService {
                                             Double userLat,
                                             Double userLon) {
 
-        return compartmentRepository.findByEasyboxId(box.getId())
-                .filter(c -> "free".equalsIgnoreCase(c.getStatus()))
-                .filter(c -> c.getCondition() != null &&
-                        ("good".equalsIgnoreCase(c.getCondition()) ||
-                                "clean".equalsIgnoreCase(c.getCondition())))
-                .filter(c -> minTemp  == null || c.getTemperature() >= minTemp)
-                .filter(c -> totalDim == null || c.getSize()        >= totalDim)
-                .concatMap(c ->
-                        // confirmed-overlap test
-                        reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> "confirmed".equalsIgnoreCase(r.getStatus()))
-                                .filter(r -> st != null && ed != null &&
-                                        r.getReservationStart().isBefore(ed) &&
-                                        r.getReservationEnd()  .isAfter(st))
-                                .hasElements()
-                                .map(hasOverlap -> !hasOverlap)
-                                .filter(ok -> ok)
-                )
+      return filterCompartments(box, minTemp, totalDim, st, ed)
                 .hasElements()
                 .filter(Boolean::booleanValue)
                 .map(ok -> {

@@ -1,8 +1,8 @@
 package com.example.network.service;
 
 import com.example.network.dto.CompartmentDto;
-import com.example.network.entity.Compartment;
-import com.example.network.entity.Easybox;
+import com.example.network.model.Compartment;
+import com.example.network.model.Easybox;
 import com.example.network.exception.ConfigurationException;
 import com.example.network.exception.InvalidRequestException;
 import com.example.network.mqtt.MqttClientManager;

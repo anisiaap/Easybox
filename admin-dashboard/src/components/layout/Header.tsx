@@ -35,7 +35,7 @@ const Header: React.FC = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         navigate('/login');
     };
 

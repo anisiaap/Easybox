@@ -1,10 +1,9 @@
 package com.example.network.controller;
 
-import com.example.network.config.PasswordConfig;
 import com.example.network.dto.BakeryRegistrationRequest;
 import com.example.network.dto.UserRegistrationRequest;
-import com.example.network.entity.Bakery;
-import com.example.network.entity.User;
+import com.example.network.model.Bakery;
+import com.example.network.model.User;
 import com.example.network.exception.ConflictException;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.UserRepository;

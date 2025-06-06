@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
         setLoading(true);
         try {
             const token = await login({ username, password });
-            localStorage.setItem('token', token);  // 👈 store JWT here
+            sessionStorage.setItem('token', token);  // 👈 store JWT here
             toast.success('Login successful');
             navigate('/');  // Redirect to dashboard or main route
         } catch (err: any) {

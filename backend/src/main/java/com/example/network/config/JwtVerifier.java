@@ -1,6 +1,5 @@
 package com.example.network.config;
 
-import com.example.network.entity.Easybox;
 import com.example.network.repository.EasyboxRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
@@ -89,6 +88,47 @@ public class JwtVerifier {
                     }
                 }));
     }
+    public Mono<String> verifyWithPerDeviceSecretOnly(String token) {
+        String clientId;
+
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return Mono.error(new SecurityException("Invalid JWT format"));
+            }
+
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+            ObjectMapper mapper = new ObjectMapper();
+            clientId = mapper.readTree(payloadJson).get("sub").asText();
+        } catch (Exception e) {
+            return Mono.error(new SecurityException("Unable to extract clientId from token", e));
+        }
+
+        return easyboxRepository.findByClientId(clientId)
+                .flatMap(box -> {
+                    if (box == null || !Boolean.TRUE.equals(box.getApproved()) || box.getSecretKey() == null) {
+                        return Mono.error(new SecurityException("Device not approved or missing secret"));
+                    }
+
+                    try {
+                        Claims claims = Jwts.parser()
+                                .setSigningKey(box.getSecretKey().getBytes())
+                                .parseClaimsJws(token)
+                                .getBody();
+
+                        Date issuedAt = claims.getIssuedAt();
+                        if (issuedAt == null || issuedAt.toInstant().isBefore(
+                                box.getLastSecretRotation().atZone(ZoneId.systemDefault()).toInstant())) {
+                            return Mono.error(new SecurityException("Token is too old (rotated)"));
+                        }
+
+                        return Mono.just(claims.getSubject());
+                    } catch (JwtException e) {
+                        return Mono.error(new SecurityException("Invalid token (per-device key check only)", e));
+                    }
+                });
+    }
+
     public Mono<String> verifyAndExtractClientId_GetSecret(String token) {
         try {
             Claims claims = Jwts.parser()

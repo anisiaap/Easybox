@@ -22,9 +22,14 @@ public class ReservationCleanupTask {
         reservationRepository
                 .findAllByStatusAndExpiresAtBefore("pending", now)
                 .flatMap(reservation ->
-                        compartmentRepository.findById(reservation.getCompartmentId())
-                                .then(reservationRepository.delete(reservation))
+                                compartmentRepository.findById(reservation.getCompartmentId())
+                                        .then(reservationRepository.delete(reservation)),
+                        10 // concurrency level
                 )
-                .subscribe(); // fire-and-forget
+
+                .collectList() // Collect all results into a list
+                .doOnSuccess(deleted -> System.out.println("Cleanup completed. Deleted {} reservations." + deleted.size()))
+                .doOnError(error -> System.out.println("Error during cleanup task: " + error))
+                .subscribe();
     }
 }

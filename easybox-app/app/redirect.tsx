@@ -10,11 +10,7 @@ export default function Redirect() {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            if (role === 'maintenance') {
-                router.replace({ pathname: '/maintenance' });
-            } else {
-                router.replace({ pathname: '/home', params: { role } });
-            }
+            router.replace({ pathname: '/home', params: { role } });
         }, 1000); // delay for animation/smoothness
 
         return () => clearTimeout(timeout);

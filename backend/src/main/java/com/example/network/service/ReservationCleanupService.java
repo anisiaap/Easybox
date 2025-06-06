@@ -1,13 +1,11 @@
 package com.example.network.service;
 
-import com.example.network.entity.Reservation;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -42,18 +40,18 @@ public class ReservationCleanupService {
                         return easyboxRepository.findById(reservation.getEasyboxId())
                                 .flatMap(easybox -> {
                                     if (!"active".equals(easybox.getStatus())) {
-                                        reservation.setStatus("expired");
+                                        if("waiting_client_pick_up".equals(reservation.getStatus() )&& "waiting_cleaning".equals(reservation.getStatus())){
+                                            reservation.setStatus("waiting_cleaning");
+                                            return Mono.just(reservation);
+                                        }
+                                        reservation.setStatus("canceled");
                                         return Mono.just(reservation);
                                     }
                                     return compartmentRepository.findById(reservation.getCompartmentId())
                                             .flatMap(compartment -> {
                                                 String status = compartment.getStatus();
                                                 if ("dirty".equalsIgnoreCase(status) || "broken".equalsIgnoreCase(status)) {
-                                                    reservation.setStatus("expired");
-                                                    return Mono.just(reservation);
-                                                }
-                                                if ("waiting_cleaning".equalsIgnoreCase(reservation.getStatus())) {
-                                                    reservation.setStatus("expired");
+                                                    reservation.setStatus("waiting_cleaning");
                                                     return Mono.just(reservation);
                                                 }
                                                 return Mono.empty(); // no update needed
@@ -62,16 +60,9 @@ public class ReservationCleanupService {
                     }
 
                     // Case 1: Expired reservation
-                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now) && !"expired".equalsIgnoreCase(reservation.getStatus()))  {
+                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now) && !"waiting_bakery_drop_off".equalsIgnoreCase(reservation.getStatus()))  {
                         return easyboxRepository.findById(reservation.getEasyboxId())
                                 .flatMap(box -> compartmentRepository.findById(reservation.getCompartmentId())
-                                        .flatMap(comp -> {
-                                            comp.setStatus("free");
-                                            return compartmentRepository.save(comp)
-                                                    .retryWhen(Retry.max(3)
-                                                            .filter(ex -> ex instanceof OptimisticLockingFailureException)
-                                                    );
-                                        })
                                         .then(Mono.fromCallable(() -> {
                                             reservation.setStatus("expired");
                                             return reservation;
@@ -88,7 +79,7 @@ public class ReservationCleanupService {
                     }
 
                     // Case 3: Within 3 hours before reservationEnd → waiting_cleaning
-                    if ("pickup_order".equalsIgnoreCase(reservation.getStatus()) &&
+                    if ("waiting_client_pick_up".equalsIgnoreCase(reservation.getStatus()) &&
                             reservation.getReservationEnd() != null &&
                             reservation.getReservationEnd().minusHours(3).isBefore(now)) {
                         reservation.setStatus("waiting_cleaning");

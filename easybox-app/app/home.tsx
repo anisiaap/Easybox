@@ -27,9 +27,9 @@ type Order = {
 function getStatusChipStyle(status: string) {
     return {
         backgroundColor:
-            status === 'place order'
+            status === 'waiting_bakery_drop_off'
                 ? '#ff9800'
-                : status === 'pickup order'
+                : status === 'waiting_client_pick_up'
                     ? '#4caf50'
                     : '#ccc',
         marginRight: 8,
@@ -156,17 +156,6 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
                 >
                     View Details
                 </Button>
-                {(role === 'bakery' && item.status === 'place order') ||
-                (role === 'client' && item.status === 'pickup order') ? (
-                    <Button
-                        mode="contained"
-                        onPress={() =>
-                            router.push({ pathname: '/report-problem', params: { orderId: item.id } })
-                        }
-                    >
-                        Report
-                    </Button>
-                ) : null}
             </View>
         </Surface>
     );

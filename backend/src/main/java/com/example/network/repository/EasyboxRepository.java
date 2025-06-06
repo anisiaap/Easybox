@@ -1,8 +1,7 @@
 package com.example.network.repository;
 
-import com.example.network.entity.Easybox;
+import com.example.network.model.Easybox;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface EasyboxRepository extends ReactiveCrudRepository<Easybox, Long> {

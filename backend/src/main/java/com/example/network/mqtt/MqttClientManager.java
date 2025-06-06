@@ -4,7 +4,7 @@ import com.example.network.config.JwtUtil;
 import com.example.network.config.JwtVerifier;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.dto.MqttProperties;
-import com.example.network.entity.Easybox;
+import com.example.network.model.Easybox;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.QrCodeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,8 +15,6 @@ import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-import reactor.netty.http.server.HttpServer;
-import reactor.util.retry.Retry;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -144,77 +142,94 @@ public class MqttClientManager {
             @Override
             public void messageArrived(String topic, MqttMessage message) {
                 System.out.println("📥 MQTT message arrived on topic: " + topic);
+
+                // One decode, visible everywhere
+                String raw = new String(message.getPayload(), StandardCharsets.UTF_8);
+
+                /* ─────────────────────────────  A.  QR-SCAN PATH  ───────────────────────────── */
                 String qrPrefix = properties.getTopicPrefix() + "/qrcode/";
                 if (topic.startsWith(qrPrefix)) {
                     String clientId = topic.substring(qrPrefix.length());
 
-                    String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
-                    String[] parts = receivedMessage.split("::", 2);
+                    String[] parts = raw.split("::", 2);
                     if (parts.length != 2) {
-                        System.err.println("Invalid signed message format.");
+                        System.err.println("Invalid signed message format");
                         return;
                     }
-                    String token = parts[0];
+                    String token     = parts[0];
                     String qrContent = parts[1];
 
-                    jwtVerifier.verifyAndExtractClientId(token)
-                            .flatMap(tokenClientId -> {
-                                System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
-                                if (!tokenClientId.equals(clientId)) {
-                                    System.err.println("Token clientId does not match expected clientId.");
+                    jwtVerifier.verifyWithPerDeviceSecretOnly(token)
+                            .flatMap(cid -> {
+                                if (!cid.equals(clientId)) {
+                                    System.err.println("Token clientId mismatch");
                                     return Mono.empty();
                                 }
                                 return qrCodeService.handleQrScan(qrContent)
-                                        .flatMap(result -> sendQrCodeResponse(clientId, true, result.getCompartmentId(), result.getNewReservationStatus(), null))
-                                        .onErrorResume(ex -> sendQrCodeResponse(clientId, false, null, null, ex.getMessage()));
+                                        .flatMap(r -> sendQrCodeResponse(clientId, true,
+                                                r.getCompartmentId(),
+                                                r.getNewReservationStatus(),
+                                                null))
+                                        .onErrorResume(ex ->
+                                                sendQrCodeResponse(clientId, false, null, null, ex.getMessage()));
                             })
-                            .doOnError(ex -> System.err.println("JWT verification failed: " + ex.getMessage()))
                             .subscribe();
 
-                    return;
+                    return;                 // done with /qrcode/**
                 }
 
-                String prefix = properties.getTopicPrefix() + "/response/";
-                if (topic.startsWith(prefix) && currentRequestSink != null) {
-                    String clientId = topic.substring(prefix.length());
-                    System.out.println("📥 Matched expected clientId: " + clientId);
+                /* ─────────────────────────────  B.  RESPONSE PATH  ───────────────────────────── */
+                String respPrefix = properties.getTopicPrefix() + "/response/";
+                if (topic.startsWith(respPrefix)) {
+                    String clientId = topic.substring(respPrefix.length());
 
-                    if (clientId.equals(currentExpectedClientId)) {
-                        String receivedMessage = new String(message.getPayload(), StandardCharsets.UTF_8);
-                        System.out.println("📝 Raw message received, length = " + receivedMessage.length());
+                    String[] parts = raw.split("::", 2);
+                    if (parts.length != 2) {
+                        System.err.println("Invalid signed message format");
+                        return;
+                    }
+                    String token   = parts[0];
+                    String payload = parts[1];
 
-                        String[] parts = receivedMessage.split("::", 2);
-                        if (parts.length != 2) {
-                            System.err.println("Invalid signed message format.");
-                            return;
-                        }
-                        String token = parts[0];
-                        String payload = parts[1];
+                    jwtVerifier.verifyWithPerDeviceSecretOnly(token)
+                            .flatMap(cid -> {
+                                if (!cid.equals(clientId)) {
+                                    System.err.println("Token clientId mismatch");
+                                    return Mono.empty();
+                                }
 
-                        jwtVerifier.verifyAndExtractClientId(token)
-                                .flatMap(tokenClientId -> {
-                                    System.out.println("🔑 Token verified, extracted clientId: " + tokenClientId);
-                                    if (!tokenClientId.equals(clientId)) {
-                                        System.err.println("Token clientId does not match expected clientId.");
-                                        return Mono.empty();
-                                    }
+                                /* ---- 1. confirmations (placed / picked) ---- */
+                                if (payload.startsWith("confirm:placed:") ||
+                                        payload.startsWith("confirm:picked:")) {
+
+                                    Long id = Long.parseLong(payload.split(":")[2]);
+                                    return qrCodeService.handleConfirmation(id);
+                                }
+
+                                /* ---- 2. compartment list response ---- */
+                                if (currentRequestSink != null && clientId.equals(currentExpectedClientId)) {
                                     try {
                                         List<CompartmentDto> list = Arrays.asList(
                                                 mapper.readValue(payload, CompartmentDto[].class)
                                         );
                                         currentRequestSink.success(list);
-                                        currentRequestSink = null;
+                                        currentRequestSink      = null;
                                         currentExpectedClientId = null;
-                                    } catch (Exception e) {
-                                        System.err.println("❌ Failed to parse compartments: " + e.getMessage());
+                                    } catch (Exception ex) {
+                                        System.err.println("❌ Failed to parse compartments: " + ex.getMessage());
                                     }
-                                    return Mono.empty();
-                                })
-                                .doOnError(ex -> System.err.println("JWT verification failed: " + ex.getMessage()))
-                                .subscribe();
-                    }
+                                }
+                                return Mono.empty();
+                            })
+                            .subscribe();
+
+                    return;                 // done with /response/**
                 }
+
+                /* ─────────────────────────────  C.  OTHER TOPICS (ignored)  ─────────────────── */
+                System.out.println("ℹ️  Unhandled topic: " + topic);
             }
+
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
@@ -250,7 +265,8 @@ public class MqttClientManager {
                 throw new IllegalStateException("Device not found or secret missing");
             }
             String token = jwtUtil.generateToken(clientId, box.getSecretKey());
-            String signedPayload = token + "::" + payload;MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
+            String signedPayload = token + "::" + payload;
+            MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
             message.setQos(1);
             client.publish(responseTopic, message);
 

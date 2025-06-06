@@ -1,7 +1,7 @@
 package com.example.network.service;
 
 import com.example.network.config.JwtUtil;
-import com.example.network.entity.Bakery;
+import com.example.network.model.Bakery;
 import com.example.network.repository.BakeryRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtParser;

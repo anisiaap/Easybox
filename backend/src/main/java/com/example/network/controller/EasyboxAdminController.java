@@ -4,26 +4,20 @@ package com.example.network.controller;
 import com.example.network.dto.CompartmentDto;
 import com.example.network.dto.DeviceDetailsDto;
 import com.example.network.dto.PredefinedValuesDto;
-import com.example.network.entity.Compartment;
-import com.example.network.entity.Easybox;
+import com.example.network.model.Compartment;
+import com.example.network.model.Easybox;
 import com.example.network.exception.ConflictException;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @RestController

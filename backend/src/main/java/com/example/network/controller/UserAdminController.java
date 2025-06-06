@@ -1,7 +1,7 @@
 // src/main/java/com/example/network/controller/UserAdminController.java
 package com.example.network.controller;
 
-import com.example.network.entity.User;
+import com.example.network.model.User;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.UserRepository;
 import org.springframework.web.bind.annotation.*;

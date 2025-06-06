@@ -1,6 +1,6 @@
 package com.example.network.repository;
 
-import com.example.network.entity.Compartment;
+import com.example.network.model.Compartment;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 

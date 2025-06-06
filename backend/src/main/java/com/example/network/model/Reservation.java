@@ -1,11 +1,10 @@
 // src/main/java/com/example/network/entity/Reservation.java
 
-package com.example.network.entity;
+package com.example.network.model;
 
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;

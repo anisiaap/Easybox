@@ -3,9 +3,11 @@ package com.example.easyboxdevice.service;
 import com.example.easyboxdevice.config.JwtVerifier;
 import com.example.easyboxdevice.config.JwtUtil;
 import com.example.easyboxdevice.config.SecretStorageUtil;
+import com.example.easyboxdevice.controller.DeviceDisplayController;
+import com.example.easyboxdevice.controller.LockController;
 import com.example.easyboxdevice.dto.MqttProperties;
 import com.example.easyboxdevice.dto.QrResponse;
-import com.example.easyboxdevice.entity.Compartment;
+import com.example.easyboxdevice.model.Compartment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.paho.client.mqttv3.*;
@@ -24,15 +26,17 @@ public class MqttService {
 
     private MqttClient client;
     private boolean started = false;
+    private final DeviceDisplayController display;
 
     public MqttService(MqttProperties properties,
                        CompartmentService compartmentService,
                        JwtUtil jwtUtil,
-                       JwtVerifier jwtVerifier) {
+                       JwtVerifier jwtVerifier, DeviceDisplayController display) {
         this.properties = properties;
         this.compartmentService = compartmentService;
         this.jwtUtil = jwtUtil;
         this.jwtVerifier = jwtVerifier;
+        this.display = display;
     }
 
     /** ✅ Call this only after device has been approved. Safe to call multiple times. */
@@ -129,6 +133,7 @@ public class MqttService {
     }
 
     private void handleQrResponse(String topic, MqttMessage message) {
+        display.showLoading();
         try {
             String raw = new String(message.getPayload(), StandardCharsets.UTF_8);
             System.out.println("📥 Received QR-response: " + raw);
@@ -152,17 +157,41 @@ public class MqttService {
             QrResponse resp = mapper.readValue(payload, QrResponse.class);
 
             if ("ok".equalsIgnoreCase(resp.getResult())) {
-                System.out.println("✅ QR handled: compartment="
-                        + resp.getCompartmentId()
-                        + ", newStatus="
-                        + resp.getNewReservationStatus());
-                // → trigger hardware here
+                LockController.openLock(resp.getCompartmentId());
+
+                String prompt;
+                String confirmCode;
+
+                switch (resp.getNewReservationStatus()) {
+                    case "waiting_bakery_drop_off" -> {
+                        prompt      = "Did you place the order?";
+                        confirmCode = "placed";
+                    }
+                    case "waiting_client_pick_up" -> {
+                        prompt      = "Did you pick up your order?";
+                        confirmCode = "picked";
+                    }
+                    default -> {
+                        display.showMessage("⚠️ Reservation in unexpected state");
+                        Thread.sleep(3_000);
+                        return;
+                    }
+                }
+
+                if (display.showConfirmationPrompt(prompt)) {
+                    sendSimpleResponse("confirm:" + confirmCode + ":" + resp.getCompartmentId());
+                }
             } else {
-                System.err.println("⚠️ QR error: " + resp.getReason());
+                display.showMessage("❌ Invalid QR: " + resp.getReason());
+                Thread.sleep(3_000);
             }
+
 
         } catch (Exception e) {
             e.printStackTrace();
+            display.showMessage("❌ Error");
+        } finally {
+            display.showIdle(); // Return to idle state
         }
     }
 

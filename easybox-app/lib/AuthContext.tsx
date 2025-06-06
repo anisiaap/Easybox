@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const refreshTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     /** Clears any pending timeout before scheduling the next one. */
     const scheduleTokenRefresh = (token: string) => {
-        if (refreshTimeout.current) clearTimeout(refreshTimeout.current as number); // ✱ CHANGE: prevent leaks
+        if (refreshTimeout.current) clearTimeout(refreshTimeout.current); // ✱ CHANGE: prevent leaks
 
         try {
             const { exp } = jwtDecode<JwtPayload>(token); // ✱ CHANGE: typed decode

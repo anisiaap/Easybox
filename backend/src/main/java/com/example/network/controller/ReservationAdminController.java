@@ -1,17 +1,16 @@
 package com.example.network.controller;
 
 import com.example.network.dto.ReservationUpdateRequest;
-import com.example.network.entity.Reservation;
-import com.example.network.entity.User;
+import com.example.network.model.Reservation;
+import com.example.network.model.User;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.ReservationRepository;
 import com.example.network.repository.BakeryRepository;
 import com.example.network.repository.EasyboxRepository;
-import com.example.network.entity.Bakery;
-import com.example.network.entity.Easybox;
+import com.example.network.model.Bakery;
+import com.example.network.model.Easybox;
 import com.example.network.dto.ReservationDto;
 import com.example.network.repository.UserRepository;
-import com.example.network.service.ReservationService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
