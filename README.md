@@ -122,6 +122,7 @@ A cloud-hosted, secure, and scalable smart locker system designed for bakery ord
 ![image](https://github.com/user-attachments/assets/ff1cd619-cb06-45d7-accc-1f896f3b46df)
 
 - QR Scan Flow
+  
 ![image](https://github.com/user-attachments/assets/c7d03400-950a-4b54-9317-a1247c180ea9)
 
 
