@@ -9,9 +9,8 @@ import Bakeries from './pages/Bakeries'
 import { Toaster } from 'react-hot-toast';
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
-import { jwtDecode } from 'jwt-decode';
 import React, { useEffect } from 'react';
-import {decodeJwt, api, scheduleTokenRefresh} from './api';
+import {decodeJwt, scheduleTokenRefresh} from './api';
 
 
 const App: React.FC = () => {
