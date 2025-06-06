@@ -11,7 +11,8 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
 import { jwtDecode } from 'jwt-decode';
 import React, { useEffect } from 'react';
-import { decodeJwt, api } from './api';
+import {decodeJwt, api, scheduleTokenRefresh} from './api';
+
 
 const App: React.FC = () => {
     useEffect(() => {
