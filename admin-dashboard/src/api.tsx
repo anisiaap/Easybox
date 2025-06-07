@@ -1,7 +1,6 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError , InternalAxiosRequestConfig} from 'axios';
 import { toast } from 'react-hot-toast';
 
-// Axios instance
 export const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
     timeout: 10000,
@@ -26,7 +25,10 @@ export function forceLogout(): void {
 }
 
 // 🔐 Attach token before requests
-api.interceptors.request.use((config: AxiosRequestConfig) => {
+
+
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+
     const token = sessionStorage.getItem('token');
     if (token) {
         config.headers = config.headers || {};
