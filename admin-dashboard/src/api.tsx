@@ -68,10 +68,11 @@ api.interceptors.response.use(
         }
 
         toast.error(
-            err.response?.data?.message ||
+            (err.response?.data as { message?: string })?.message ||
             err.response?.statusText ||
             'Network/server error'
         );
+
         return Promise.reject(err);
     }
 );
