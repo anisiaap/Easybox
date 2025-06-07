@@ -1,0 +1,7 @@
+{
+  "mappings": [
+    { "compartmentId": 1, "pin": 17 },
+    { "compartmentId": 2, "pin": 27 },
+    { "compartmentId": 3, "pin": 22 }
+  ]
+}

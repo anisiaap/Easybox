@@ -71,6 +71,8 @@ public class MqttService {
                     String qrRespTopic = properties.getTopicPrefix() + "/qrcode-response/" + properties.getClientId();
                     client.subscribe(qrRespTopic, 1, MqttService.this::handleQrResponse);
                     System.out.println("📡 Subscribed to QR-response topic: " + qrRespTopic);
+                    display.showStatus("MQTT connected — ready to scan QR");
+
 
                 } catch (Exception e) {
                     System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());
@@ -157,6 +159,8 @@ public class MqttService {
             QrResponse resp = mapper.readValue(payload, QrResponse.class);
 
             if ("ok".equalsIgnoreCase(resp.getResult())) {
+                display.showStatus("Opening locker.");
+
                 LockController.openLock(resp.getCompartmentId());
 
                 String prompt;

@@ -2,6 +2,7 @@ package com.example.easyboxdevice.service;
 
 import com.example.easyboxdevice.config.JwtUtil;
 import com.example.easyboxdevice.config.SecretStorageUtil;
+import com.example.easyboxdevice.controller.DeviceDisplayController;
 import com.example.easyboxdevice.dto.RegistrationRequest;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -38,17 +39,19 @@ public class DeviceRegistrationService {
     private final JwtUtil jwtUtil;
     private final MqttService mqttService;  // 👈 injected
     private final WebClient webClient;
+    private final DeviceDisplayController display;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public DeviceRegistrationService(
             JwtUtil jwtUtil,
             MqttService mqttService,
-            WebClient.Builder webClientBuilder
+            WebClient.Builder webClientBuilder, DeviceDisplayController display
     ) {
         this.jwtUtil = jwtUtil;
         this.mqttService = mqttService;
         this.webClient = webClientBuilder.build();
+        this.display = display;
     }
 
     @PostConstruct
@@ -79,6 +82,9 @@ public class DeviceRegistrationService {
         req.setStatus(SecretStorageUtil.exists() ? "active" : "in_approval");
 
         String token = createToken();
+        display.showStatus("Connecting to server..."); // before webClient.post
+        display.showStatus("Awaiting approval...");
+        display.showStatus("Device approved — connecting to MQTT...");
 
         return webClient.post()
                 .uri(centralBackendUrl + "device/register")
@@ -193,6 +199,10 @@ public class DeviceRegistrationService {
         req.setStatus("inactive");
 
         try {
+            display.showStatus("Connecting to server..."); // before webClient.post
+            display.showStatus("Awaiting approval...");
+            display.showStatus("Device approved — connecting to MQTT...");
+
             String response = webClient.post()
                     .uri(centralBackendUrl + "device/register")
                     .header("Authorization", "Bearer " + token)

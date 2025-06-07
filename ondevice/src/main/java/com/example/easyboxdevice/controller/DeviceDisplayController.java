@@ -61,4 +61,8 @@ public class DeviceDisplayController {
     private void updateText(String text) {
         SwingUtilities.invokeLater(() -> label.setText("<html><div style='text-align: center;'>" + text.replace("\n", "<br>") + "</div></html>"));
     }
+    public void showStatus(String status) {
+        updateText("📋 Status: " + status);
+    }
+
 }
