@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { api } from '../api';  // adjust the path if needed
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+
 // Styled Components
 const DashboardContainer = styled.div`
     display: flex;
@@ -191,6 +193,8 @@ const Dashboard: React.FC = () => {
         attribution: '&copy; OpenStreetMap contributors',
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
     };
+    const navigate = useNavigate();     // v6  (useHistory() in v5)
+
 
     // Fetch easyboxes from the backend
     useEffect(() => {
@@ -286,6 +290,7 @@ return (
                                          await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
                                         toast.success("Device approved!");
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
+                                        navigate('/dashboard', { replace: true });
                                     } catch (err: any) {
                                         const isNetworkError = !err?.response;
                                         const msg = isNetworkError
@@ -293,7 +298,7 @@ return (
                                             : err?.response?.data || "Failed to approve device.";
 
                                         if (err?.response?.status && err.response.status >= 400) {
-                                            toast.error(msg);
+                                            // toast.error(msg);
                                         } else {
                                             console.warn("Unexpected (non-error) caught:", err);
                                         }
