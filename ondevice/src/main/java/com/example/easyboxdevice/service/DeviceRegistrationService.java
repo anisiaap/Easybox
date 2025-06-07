@@ -62,7 +62,7 @@ public class DeviceRegistrationService {
         attemptRegistration()
                 .flatMap(approved -> {
                     if (approved) {
-                        System.out.println("✅ Registration response received: approved=" + approved);
+                        System.out.println(" Registration response received: approved=" + approved);
                         return Mono.delay(Duration.ofMinutes(30)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     } else {
                         return Mono.delay(Duration.ofMinutes(1)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
@@ -83,8 +83,7 @@ public class DeviceRegistrationService {
 
         String token = createToken();
         display.showStatus("Connecting to server..."); // before webClient.post
-        display.showStatus("Awaiting approval...");
-        display.showStatus("Device approved — connecting to MQTT...");
+
 
         return webClient.post()
                 .uri(centralBackendUrl + "device/register")
@@ -135,9 +134,10 @@ public class DeviceRegistrationService {
                             throw new RuntimeException(e);
                         }
                         System.out.println("✅ Device approved — MQTT started");
+                        display.showStatus("Device approved — connecting to MQTT...");
                     } else {
                         System.out.println("⏳ Still waiting for admin approval…");
-
+                        display.showStatus("Awaiting approval...");
                         // 🧹 If we somehow have a stored secret, delete it to force fallback usage
 //                        if (SecretStorageUtil.exists()) {
 //                            try {
@@ -199,9 +199,6 @@ public class DeviceRegistrationService {
         req.setStatus("inactive");
 
         try {
-            display.showStatus("Connecting to server..."); // before webClient.post
-            display.showStatus("Awaiting approval...");
-            display.showStatus("Device approved — connecting to MQTT...");
 
             String response = webClient.post()
                     .uri(centralBackendUrl + "device/register")

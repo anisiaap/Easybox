@@ -35,11 +35,11 @@ public class DeviceDisplayController {
     }
 
     public void showIdle() {
-        updateText("📷 Please scan your QR code...");
+        updateText("Please scan your QR code...");
     }
 
     public void showLoading() {
-        updateText("⏳ Verifying QR...");
+        updateText(" Verifying QR...");
     }
 
     public void showMessage(String message) {
@@ -62,7 +62,7 @@ public class DeviceDisplayController {
         SwingUtilities.invokeLater(() -> label.setText("<html><div style='text-align: center;'>" + text.replace("\n", "<br>") + "</div></html>"));
     }
     public void showStatus(String status) {
-        updateText("📋 Status: " + status);
+        updateText(" Status: " + status);
     }
 
 }

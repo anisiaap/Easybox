@@ -78,7 +78,7 @@ public class QrScannerService {
             long   now = System.currentTimeMillis();
 
             if (!qr.equals(lastQr) || now - lastAt > 5_000) {
-                System.out.println("✅ QR Found: " + qr);
+                System.out.println("QR Found: " + qr);
                 mqttService.publishQr(qr);
                 display.showLoading();
                 lastQr = qr;

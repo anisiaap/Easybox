@@ -186,14 +186,14 @@ public class MqttService {
                     sendSimpleResponse("confirm:" + confirmCode + ":" + resp.getCompartmentId());
                 }
             } else {
-                display.showMessage("❌ Invalid QR: " + resp.getReason());
+                display.showMessage("Invalid QR: " + resp.getReason());
                 Thread.sleep(3_000);
             }
 
 
         } catch (Exception e) {
             e.printStackTrace();
-            display.showMessage("❌ Error");
+            display.showMessage(" Error");
         } finally {
             display.showIdle(); // Return to idle state
         }
