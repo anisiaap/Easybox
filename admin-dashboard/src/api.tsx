@@ -13,11 +13,7 @@ export const api = axios.create({
 api.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
     const token = sessionStorage.getItem('token');
     if (token) {
-        // InternalAxiosRequestConfig already guarantees headers is defined
-        cfg.headers = {
-            ...cfg.headers,
-            Authorization: `Bearer ${token}`
-        };
+        cfg.headers.set('Authorization', `Bearer ${token}`);
     }
     return cfg;
 });
