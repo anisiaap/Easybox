@@ -52,6 +52,11 @@
   <artifactId>javase</artifactId>
   <version>3.5.2</version>   <!-- latest stable -->
 </dependency>
+		<dependency>
+			<groupId>com.pi4j</groupId>
+			<artifactId>pi4j-core</artifactId>
+			<version>2.4.0</version> <!-- or the latest stable version -->
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.zxing</groupId>
