@@ -292,9 +292,7 @@ return (
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
                                         navigate('/dashboard', { replace: true });
                                     } catch (err: any) {
-                                        } else {
-                                            console.warn("Unexpected (non-error) caught:", err);
-                                        }
+                                        
                                     }
                                 }}
                                 style={{
