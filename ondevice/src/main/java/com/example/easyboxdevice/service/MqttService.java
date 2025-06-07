@@ -72,7 +72,7 @@ public class MqttService {
                     client.subscribe(qrRespTopic, 1, MqttService.this::handleQrResponse);
                     System.out.println("📡 Subscribed to QR-response topic: " + qrRespTopic);
                     display.showStatus("MQTT connected — ready to scan QR");
-
+                    display.showStatus("Please scan your QR code...");
 
                 } catch (Exception e) {
                     System.err.println("❌ Failed to subscribe after connect: " + e.getMessage());

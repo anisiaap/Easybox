@@ -55,7 +55,6 @@ public class QrScannerService {
     /** Grab frame every second, look for QR */
     @Scheduled(fixedDelay = 1000)
     public void scanLoop() {
-        display.showStatus("Scanning for QR codes...");
         Mat frame = new Mat();
         if (!camera.read(frame)) return;
 
