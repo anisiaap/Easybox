@@ -292,13 +292,6 @@ return (
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
                                         navigate('/dashboard', { replace: true });
                                     } catch (err: any) {
-                                        const isNetworkError = !err?.response;
-                                        const msg = isNetworkError
-                                            ? "Network error: Check your internet connection."
-                                            : err?.response?.data || "Failed to approve device.";
-
-                                        if (err?.response?.status && err.response.status >= 400) {
-                                            // toast.error(msg);
                                         } else {
                                             console.warn("Unexpected (non-error) caught:", err);
                                         }
