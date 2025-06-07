@@ -16,15 +16,9 @@ import {decodeJwt, scheduleTokenRefresh} from './api';
 const App: React.FC = () => {
     useEffect(() => {
         const token = sessionStorage.getItem('token');
-        if (token) {
-            const payload = decodeJwt(token);
-            if (payload?.exp && payload.exp * 1000 > Date.now()) {
-                scheduleTokenRefresh(); // Schedule token refresh
-            } else {
-                sessionStorage.removeItem('token'); // Remove expired token
-            }
-        }
+        if (token) scheduleTokenRefresh();   // helper now self-guards
     }, []);
+
     return (
         <Router>
             <Toaster position="top-right" toastOptions={{ duration: 3000 }} />

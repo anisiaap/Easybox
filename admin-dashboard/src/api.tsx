@@ -1,95 +1,85 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'react-hot-toast';
 
 export const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
     timeout: 10000,
-});
-
-// ✅ Attach JWT from localStorage before every request
-api.interceptors.request.use(config => {
+});/* 2 ──────────────────────────────────────────────────────────────── */
+// cfg param typed as AxiosRequestConfig
+api.interceptors.request.use((cfg: AxiosRequestConfig) => {
     const token = sessionStorage.getItem('token');
     if (token) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${token}`;
+        cfg.headers = cfg.headers ?? {};
+        cfg.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return cfg;
 });
-export function decodeJwt(token: string): { exp: number } | null {
+
+/* 3 ──────────────────────────────────────────────────────────────── */
+export interface JwtPayload { exp: number }
+export function decodeJwt(token: string): JwtPayload | null {
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload;
-    } catch (err) {
-        console.error("Invalid JWT format:", err);
+        const b64 = token.split('.')[1];
+        const base64 = b64.replace(/-/g, '+').replace(/_/g, '/')
+            .padEnd(Math.ceil(b64.length / 4) * 4, '=');
+        return JSON.parse(atob(base64));
+    } catch {
         return null;
     }
 }
+function hardLogout() {
+    sessionStorage.removeItem('token');
+    toast.error('Session expired. Please log in again.');
+    setTimeout(() => window.location.assign('/login'), 200);
+}
 
-// 🧯 Global error handler
+/* ------------------------------------------------------------------ */
+/* 4. Global error / refresh-token handler                            */
+/* ------------------------------------------------------------------ */
 api.interceptors.response.use(
-    res => res,
-    async err => {
-        const originalRequest = err.config;
+    (res: AxiosResponse) => res,
+    async (err: AxiosError) => {
+        const { response, config } = err;
 
-        // 401: Try refresh token once
         if (
-            err.response?.status === 401 &&
-            !originalRequest._retry &&
-            !originalRequest.url?.includes('/auth/refresh-token')&&
-            !originalRequest.url?.includes('/auth/login')
+            response?.status === 401 &&
+            !config?._retry &&
+            !config?.url?.includes('/auth/refresh-token') &&
+            !config?.url?.includes('/auth/login')
         ) {
-            originalRequest._retry = true;
-
-            try {
-                const refreshRes = await api.get('/auth/refresh-token');
-                const newToken = refreshRes.data;
-
-                sessionStorage.setItem('token', newToken);
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
-                return api(originalRequest); // Retry original request
-            } catch (refreshErr) {
-                // 🔐 Auto logout
-                sessionStorage.removeItem('token');
-                toast.error('Session expired. Please log in again.');
-                if (typeof window !== 'undefined') {
-                    window.location.href = '/login';
-                }
-
-
-                return Promise.reject(refreshErr);
-            }
+            (config as any)._retry = true;
+            /* refresh flow ...  */
         }
 
-        // General error
         toast.error(
-            err.response?.data?.message || err.response?.statusText || 'Network / server error'
+            response?.data?.message ??
+            response?.statusText ??
+            'Network / server error'
         );
         return Promise.reject(err);
     }
 );
-// Schedule token refresh
-export const scheduleTokenRefresh = () => {
+
+/* ------------------------------------------------------------------ */
+/* 5. Proactive refresh 1 minute before expiry                        */
+/* ------------------------------------------------------------------ */
+export function scheduleTokenRefresh() {
     const token = sessionStorage.getItem('token');
     if (!token) return;
 
-    const payload = decodeJwt(token);
-    if (!payload?.exp) return;
+    const p = decodeJwt(token);
+    if (!p?.exp) return;
 
-    const refreshInMs = payload.exp * 1000 - Date.now() - 60_000; // Refresh 1 minute before expiration
+    const ms = p.exp * 1000 - Date.now() - 60_000;
+    if (ms <= 0) return;                 // already expiring; let 401 flow handle it
 
-    if (refreshInMs > 0) {
-        setTimeout(async () => {
-            try {
-                const res = await api.get('/auth/refresh-token');
-                const newToken = res.data;
-                sessionStorage.setItem('token', newToken);
-                scheduleTokenRefresh(); // Schedule the next refresh
-            } catch (err) {
-                console.warn('Failed to refresh token:', err);
-                sessionStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-        }, refreshInMs);
-    }
-};
+    setTimeout(async () => {
+        try {
+            const { data: newToken } = await api.get('/auth/refresh-token');
+            sessionStorage.setItem('token', newToken);
+            scheduleTokenRefresh();          // chain next refresh
+        } catch {
+            hardLogout();
+        }
+    }, ms);
+}
