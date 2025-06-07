@@ -6,75 +6,92 @@ import com.example.easyboxdevice.service.MqttService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.core.MatOfByte;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
 import com.google.zxing.*;
 import com.google.zxing.common.HybridBinarizer;
+
+import org.bytedeco.javacpp.Loader;                 // <-- correct Loader
+import org.bytedeco.javacpp.BytePointer;           // buffer for imencode
+import org.bytedeco.opencv.global.opencv_core;     // CV_VERSION
+import org.bytedeco.opencv.global.opencv_imgcodecs;
+import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_videoio.VideoCapture;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.Hashtable;
-import jakarta.annotation.PreDestroy;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 
 
 @Service
 @RequiredArgsConstructor
 public class QrScannerService {
-    private final DeviceDisplayController display;
-    static {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME); // Load native OpenCV
-    }
 
+    private final DeviceDisplayController display;
     private final MqttService mqttService;
-    private final VideoCapture camera = new VideoCapture(0); // Pi Camera
+
+    /** Pi camera or USB cam at /dev/video0 */
+    private final VideoCapture camera = new VideoCapture(0);
+
     private String lastQr = "";
     private long   lastAt = 0;
+
+    /* Load native OpenCV libs once */
+    static { Loader.load(opencv_core.class); }
 
     @PostConstruct
     public void init() {
         if (!camera.isOpened()) {
             System.err.println("❌ Cannot open camera!");
         } else {
-            System.out.println("✅ Camera initialized");
+            System.out.println("✅ Camera initialised (OpenCV "
+                    + opencv_core.CV_VERSION() + ")");
         }
     }
 
+    /** Grab frame every second, look for QR */
     @Scheduled(fixedDelay = 1000)
     public void scanLoop() {
         Mat frame = new Mat();
         if (!camera.read(frame)) return;
 
-        try {
-            MatOfByte buffer = new MatOfByte();
-            Imgcodecs.imencode(".jpg", frame, buffer);
-            BufferedImage img = ImageIO.read(new ByteArrayInputStream(buffer.toArray()));
+        // Encode Mat -> JPEG -> byte[]
+        try (BytePointer buf = new BytePointer()) {
+            opencv_imgcodecs.imencode(".jpg", frame, buf);
+            byte[] bytes = new byte[(int) buf.limit()];
+            buf.get(bytes);
 
-            LuminanceSource source = new BufferedImageLuminanceSource(img);
-            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-            Result result = new MultiFormatReader().decode(bitmap, new Hashtable<>());
+            BufferedImage img = ImageIO.read(new ByteArrayInputStream(bytes));
+            if (img == null) return;
 
-            String qr = result.getText();
+            BinaryBitmap bitmap = new BinaryBitmap(
+                    new HybridBinarizer(new BufferedImageLuminanceSource(img)));
+
+            Result qrRes = new MultiFormatReader().decode(
+                    bitmap, new Hashtable<>());
+
+            String qr  = qrRes.getText();
             long   now = System.currentTimeMillis();
 
-            if (!qr.equals(lastQr) || now - lastAt > 5_000) {   // 5-sec debounce
+            if (!qr.equals(lastQr) || now - lastAt > 5_000) {
                 System.out.println("✅ QR Found: " + qr);
                 mqttService.publishQr(qr);
                 display.showLoading();
                 lastQr = qr;
                 lastAt = now;
-           }
+            }
+        } catch (NotFoundException ignore) {
+            // No QR this frame
         } catch (ProductNotFoundException ignore) {
-            // no QR in frame
+            // Domain-specific
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
     @PreDestroy
     public void shutdown() {
         if (camera.isOpened()) camera.release();

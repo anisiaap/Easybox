@@ -46,6 +46,13 @@
 			<artifactId>jjwt-api</artifactId>
 			<version>0.11.5</version>
 		</dependency>
+		<!-- ZXing helper classes for Java SE (BufferedImageLuminanceSource, MatrixToImageWriter, …) -->
+<dependency>
+  <groupId>com.google.zxing</groupId>
+  <artifactId>javase</artifactId>
+  <version>3.5.2</version>   <!-- latest stable -->
+</dependency>
+
 		<dependency>
 			<groupId>com.google.zxing</groupId>
 			<artifactId>core</artifactId>
@@ -67,6 +74,13 @@
 			<artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson -->
 			<version>0.11.5</version>
 			<scope>runtime</scope>
+		</dependency>
+		<!-- pom.xml -->
+		<dependency>
+		<groupId>org.bytedeco</groupId>
+		<artifactId>opencv-platform</artifactId>
+		  <version>4.10.0-1.5.11</version>
+		<type>pom</type>               <!-- safe; resolves the native sub-jars -->
 		</dependency>
 
 		<dependency>
