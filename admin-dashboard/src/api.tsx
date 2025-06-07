@@ -1,88 +1,105 @@
-import axios, {
-    AxiosError,
-    AxiosResponse,
-    InternalAxiosRequestConfig   // ← NEW
-} from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { toast } from 'react-hot-toast';
 
+// Axios instance
 export const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
     timeout: 10000,
-});/* 2 ──────────────────────────────────────────────────────────────── */
-// cfg param typed as AxiosRequestConfig
-api.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-        cfg.headers.set('Authorization', `Bearer ${token}`);
-    }
-    return cfg;
 });
 
-/* 3 ──────────────────────────────────────────────────────────────── */
-export interface JwtPayload { exp: number }
-export function decodeJwt(token: string): JwtPayload | null {
+// 🔑 Decode JWT
+export function decodeJwt(token: string): { exp: number } | null {
     try {
-        const b64 = token.split('.')[1];
-        const base64 = b64.replace(/-/g, '+').replace(/_/g, '/')
-            .padEnd(Math.ceil(b64.length / 4) * 4, '=');
-        return JSON.parse(atob(base64));
-    } catch {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload;
+    } catch (err) {
+        console.error("Invalid JWT format:", err);
         return null;
     }
 }
-function hardLogout() {
+
+// ❌ Force logout
+export function forceLogout(): void {
     sessionStorage.removeItem('token');
     toast.error('Session expired. Please log in again.');
-    setTimeout(() => window.location.assign('/login'), 200);
+    window.location.href = '/login';
 }
 
-/* ------------------------------------------------------------------ */
-/* 4. Global error / refresh-token handler                            */
-/* ------------------------------------------------------------------ */
+// 🔐 Attach token before requests
+api.interceptors.request.use((config: AxiosRequestConfig) => {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// 🧯 Global response error handler
 api.interceptors.response.use(
     (res: AxiosResponse) => res,
-    async (err: AxiosError) => {
-        const { response, config } = err;
+    async (err: AxiosError): Promise<any> => {
+        const originalRequest = err.config as AxiosRequestConfig & { _retry?: boolean };
 
         if (
-            response?.status === 401 &&
-            !config?._retry &&
-            !config?.url?.includes('/auth/refresh-token') &&
-            !config?.url?.includes('/auth/login')
+            err.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes('/auth/refresh-token') &&
+            !originalRequest.url?.includes('/auth/login')
         ) {
-            (config as any)._retry = true;
-            /* refresh flow ...  */
+            originalRequest._retry = true;
+
+            try {
+                const res = await api.get('/auth/refresh-token');
+                const newToken =
+                    typeof res.data === 'string' ? res.data : res.data.token;
+                sessionStorage.setItem('token', newToken);
+                originalRequest.headers = {
+                    ...originalRequest.headers,
+                    Authorization: `Bearer ${newToken}`,
+                };
+                return api(originalRequest);
+            } catch (refreshErr) {
+                forceLogout();
+                return Promise.reject(refreshErr);
+            }
         }
 
         toast.error(
-            response?.data?.message ??
-            response?.statusText ??
-            'Network / server error'
+            err.response?.data?.message ||
+            err.response?.statusText ||
+            'Network/server error'
         );
         return Promise.reject(err);
     }
 );
 
-/* ------------------------------------------------------------------ */
-/* 5. Proactive refresh 1 minute before expiry                        */
-/* ------------------------------------------------------------------ */
-export function scheduleTokenRefresh() {
+// ⏰ Token refresh scheduler
+export const scheduleTokenRefresh = (): void => {
     const token = sessionStorage.getItem('token');
     if (!token) return;
 
-    const p = decodeJwt(token);
-    if (!p?.exp) return;
+    const payload = decodeJwt(token);
+    if (!payload?.exp) return;
 
-    const ms = p.exp * 1000 - Date.now() - 60_000;
-    if (ms <= 0) return;                 // already expiring; let 401 flow handle it
+    const refreshInMs = payload.exp * 1000 - Date.now() - 60_000;
 
-    setTimeout(async () => {
+    const refresh = async () => {
         try {
-            const { data: newToken } = await api.get('/auth/refresh-token');
+            const res = await api.get('/auth/refresh-token');
+            const newToken =
+                typeof res.data === 'string' ? res.data : res.data.token;
             sessionStorage.setItem('token', newToken);
-            scheduleTokenRefresh();          // chain next refresh
-        } catch {
-            hardLogout();
+            scheduleTokenRefresh(); // Reschedule
+        } catch (err) {
+            console.warn('Token refresh failed:', err);
+            forceLogout();
         }
-    }, ms);
-}
+    };
+
+    if (refreshInMs <= 0) {
+        refresh(); // Refresh immediately
+    } else {
+        setTimeout(refresh, refreshInMs);
+    }
+};
