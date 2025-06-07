@@ -1,4 +1,8 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, {
+    AxiosError,
+    AxiosResponse,
+    InternalAxiosRequestConfig   // ← NEW
+} from 'axios';
 import { toast } from 'react-hot-toast';
 
 export const api = axios.create({
@@ -6,11 +10,14 @@ export const api = axios.create({
     timeout: 10000,
 });/* 2 ──────────────────────────────────────────────────────────────── */
 // cfg param typed as AxiosRequestConfig
-api.interceptors.request.use((cfg: AxiosRequestConfig) => {
+api.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
     const token = sessionStorage.getItem('token');
     if (token) {
-        cfg.headers = cfg.headers ?? {};
-        cfg.headers.Authorization = `Bearer ${token}`;
+        // InternalAxiosRequestConfig already guarantees headers is defined
+        cfg.headers = {
+            ...cfg.headers,
+            Authorization: `Bearer ${token}`
+        };
     }
     return cfg;
 });
