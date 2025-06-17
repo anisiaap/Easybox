@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.*;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-
+import org.springframework.http.HttpStatus;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -61,7 +61,7 @@ public class GeocodingService {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, rsp ->
                         rsp.bodyToMono(String.class)
-                                .defaultIfEmpty(rsp.statusCode().getReasonPhrase())
+                                .defaultIfEmpty(reasonPhrase(rsp.statusCode()))
                                 .flatMap(body -> Mono.error(new GeocodingException(
                                         "Nominatim " + rsp.statusCode() + " – " + body))))
                 .bodyToMono(NominatimResponse[].class)
@@ -76,7 +76,9 @@ public class GeocodingService {
     }
 
     /* ------------ helpers ------------------------------------------------ */
-
+    private static String reasonPhrase(HttpStatusCode code) {
+        return (code instanceof HttpStatus hs) ? hs.getReasonPhrase() : code.toString();
+    }
     /** Retry only on transient network/HTTP 5xx/429 errors. */
     private Retry retryStrategy() {
         return Retry.backoff(2, Duration.ofSeconds(2))
