@@ -62,10 +62,12 @@
 		<dependency>
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-ratelimiter</artifactId>
+			<version>2.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-reactor</artifactId>
+			<version>2.2.0</version>
 		</dependency>
 		<!-- Flyway (database migrations) -->
 		<dependency>
@@ -114,12 +116,6 @@
 			<version>2.2.0</version>
 		</dependency>
 
-		<!-- JJWT (token utilities if you need to generate/verify custom JWTs) -->
-		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt-api</artifactId>
-			<version>0.11.5</version>
-		</dependency>
 
 		<!-- MQTT client -->
 		<dependency>
@@ -128,11 +124,6 @@
 			<version>1.2.5</version>
 		</dependency>
 
-		<!-- Validation annotations -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
 
 		<!-- AOP (optional, if you use @Transactional or similar) -->
 		<dependency>
