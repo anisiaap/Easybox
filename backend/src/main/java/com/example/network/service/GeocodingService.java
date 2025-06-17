@@ -44,24 +44,23 @@ public class GeocodingService {
         String url = NOMINATIM_URL + URLEncoder.encode(address, StandardCharsets.UTF_8);
 
         /* 2️⃣  one outbound call, rate-limited */
-        return RateLimiterOperator
-                .<NominatimResponse[]>mono(rateLimiter)          //  ←  ARRAY type
-                .apply(webClient.get()
-                        .uri(url)
-                        .header("User-Agent", USER_AGENT)
-                        .retrieve()
-                        .bodyToMono(NominatimResponse[].class)  //  ←  ARRAY
-                        .retryWhen(Retry.backoff(2, Duration.ofSeconds(2))
-                                .jitter(0.5)))
+        /* 2️⃣  one outbound call, rate-limited */
+        return webClient.get()
+                .uri(url)
+                .header("User-Agent", USER_AGENT)
+                .retrieve()
+                .bodyToMono(NominatimResponse[].class)
+                .transformDeferred(RateLimiterOperator.<NominatimResponse[]>of(rateLimiter))
+                .retryWhen(Retry.backoff(2, Duration.ofSeconds(2)).jitter(0.5))
                 .flatMap(this::toCoordinates)
                 .doOnSuccess(coords -> cache.put(address, coords))
-                .onErrorResume(Throwable.class, ex ->
+                .onErrorResume(ex ->
                         Mono.error(new GeocodingException(
-                                "Error calling geocoding service for address '"
-                                        + address + "': " + ex.getMessage())));
-    }
+                                "Error calling geocoding service for address '" + address +
+                                        "': " + ex.getMessage())));
 
-    /* ---------- helpers -------------------------------------------------- */
+
+        /* ---------- helpers -------------------------------------------------- */
 
     private Mono<double[]> toCoordinates(NominatimResponse[] rsp) {
         if (rsp == null || rsp.length == 0)
