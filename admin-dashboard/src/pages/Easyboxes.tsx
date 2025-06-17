@@ -292,7 +292,7 @@ return (
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
                                         navigate('/dashboard', { replace: true });
                                     } catch (err: any) {
-                                        
+
                                     }
                                 }}
                                 style={{
