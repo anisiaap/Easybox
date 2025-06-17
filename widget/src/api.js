@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 
 export const api = axios.create({
     baseURL: __REACT_APP_API_URL__,//"https://api.easybox-food.xyz/api/", //process.env.REACT_APP_API_URL, // <-- matches your back-end prefix
-    timeout: 10000
+    timeout: 60000
 });
 let widgetJwt = null;
 export function setWidgetJwt(token) {
