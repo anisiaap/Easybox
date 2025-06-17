@@ -35,7 +35,7 @@ public class DeviceDisplayController {
     }
 
     public void showIdle() {
-        updateText("Please scan your QR code...");
+        //updateText("Please scan your QR code...");
     }
 
     public void showLoading() {

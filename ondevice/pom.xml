@@ -57,6 +57,18 @@
 			<artifactId>pi4j-core</artifactId>
 			<version>2.4.0</version> <!-- or the latest stable version -->
 		</dependency>
+<!-- Pi4J provider for pigpio daemon -->
+<dependency>
+    <groupId>com.pi4j</groupId>
+    <artifactId>pi4j-plugin-pigpio</artifactId>
+    <version>2.4.0</version>
+</dependency>
+<!-- Pi4J direct-access provider -->
+<dependency>
+  <groupId>com.pi4j</groupId>
+  <artifactId>pi4j-plugin-raspberrypi</artifactId>
+  <version>2.4.0</version>
+</dependency>
 
 		<dependency>
 			<groupId>com.google.zxing</groupId>

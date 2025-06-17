@@ -41,8 +41,8 @@ public class GpioService {
                         .address(pin)
                         .shutdown(DigitalState.LOW)
                         .initial(DigitalState.LOW)
-                        .provider("pigpio-digital-output"); // or "raspberrypi-digital-output"
-
+                        //.provider("pigpio-digital-output"); // or "raspberrypi-digital-output"
+                        .provider("raspberrypi-digital-output");
                 DigitalOutput output = pi4j.create(configBuilder);
                 gpioMap.put((long) mapping.getCompartmentId(), output);
 
