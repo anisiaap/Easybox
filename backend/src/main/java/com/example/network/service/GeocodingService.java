@@ -45,12 +45,14 @@ public class GeocodingService {
 
         /* 2️⃣  one outbound call, rate-limited */
         /* 2️⃣  one outbound call, rate-limited */
+        /* 2️⃣ one outbound call, rate-limited */
         return webClient.get()
                 .uri(url)
                 .header("User-Agent", USER_AGENT)
                 .retrieve()
                 .bodyToMono(NominatimResponse[].class)
                 .transformDeferred(RateLimiterOperator.<NominatimResponse[]>of(rateLimiter))
+                // If your reactor-core is < 3.5, replace transformDeferred(...) with transform(...)
                 .retryWhen(Retry.backoff(2, Duration.ofSeconds(2)).jitter(0.5))
                 .flatMap(this::toCoordinates)
                 .doOnSuccess(coords -> cache.put(address, coords))
@@ -58,9 +60,9 @@ public class GeocodingService {
                         Mono.error(new GeocodingException(
                                 "Error calling geocoding service for address '" + address +
                                         "': " + ex.getMessage())));
+    }   // ← closes geocodeAddress
 
-
-        /* ---------- helpers -------------------------------------------------- */
+    /* ---------- helpers -------------------------------------------------- */
 
     private Mono<double[]> toCoordinates(NominatimResponse[] rsp) {
         if (rsp == null || rsp.length == 0)
@@ -74,6 +76,7 @@ public class GeocodingService {
             return Mono.error(new GeocodingException("Invalid lat/lon in Nominatim response."));
         }
     }
+
 
     public double distance(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371000;
