@@ -286,14 +286,10 @@ return (
                         ) : (
                             <button
                                 onClick={async () => {
-                                    try {
                                          await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
                                         toast.success("Device approved!");
                                         setSelectedEasybox({ ...selectedEasybox, approved: true });
                                         navigate('/dashboard', { replace: true });
-                                    } catch (err: any) {
-
-                                    }
                                 }}
                                 style={{
                                     marginLeft: "10px",

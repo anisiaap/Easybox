@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
             toast.success('Login successful');
             navigate('/');  // Redirect to dashboard or main route
         } catch (err: any) {
-            toast.error(err.message || 'Invalid credentials');
+            toast.error('Invalid credentials');
         } finally {
             setLoading(false);
         }
