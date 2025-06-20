@@ -188,6 +188,8 @@ const Dashboard: React.FC = () => {
     const [showApproved, setShowApproved] = useState(true);
     const [showPending, setShowPending] = useState(true);
     const center: [number, number] = [45.9432, 24.9668]; // Center in Romania
+    const [isApproving, setIsApproving] = useState(false);
+
     const zoom = 6;
     const tileLayerProps = {
         attribution: '&copy; OpenStreetMap contributors',
@@ -282,25 +284,29 @@ return (
                         &larr; Back to List
                     </BackButton>
                     <h2>
+                        {isApproving && <p style={{ color: '#666' }}>Approving device, please wait...</p>}
                         {selectedEasybox.address}
                         {selectedEasybox.approved ? (
                             <ApprovedBadge>Approved</ApprovedBadge>
                         ) : (
                             <button
                                 onClick={async () => {
+                                    setIsApproving(true);
                                     await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`)
                                         .then(() => {
                                             toast.success("Device approved!");
                                             setSelectedEasybox({ ...selectedEasybox, approved: true });
-                                            navigate('/dashboard', { replace: true });
+                                            navigate('/', { replace: true });
                                         })
                                         .catch((err) => {
                                             toast.error("Approved, but sync may have failed.");
                                             console.error("Non-blocking sync failure:", err);
                                             setSelectedEasybox({ ...selectedEasybox, approved: true });
-                                            navigate('/dashboard', { replace: true });
+                                            navigate('/', { replace: true });
+                                        })
+                                        .finally(() => {
+                                            setIsApproving(false);
                                         });
-
                                 }}
                                 style={{
                                     marginLeft: "10px",
@@ -312,9 +318,11 @@ return (
                                     cursor: "pointer",
                                     fontSize: "0.55em"
                                 }}
+                                disabled={isApproving}
                             >
-                                Approve Device.
+                                {isApproving ? "Approving..." : "Approve Device."}
                             </button>
+
                         )}
                 </h2>
                     <p>Status: {selectedEasybox.status}</p>

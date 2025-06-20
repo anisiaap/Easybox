@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -84,6 +85,7 @@ public class EasyboxAdminController {
                     return easyboxRepository.save(box)
                             .flatMap(saved ->
                                     syncService.syncCompartmentsForEasybox(saved.getId())
+                                            .timeout(Duration.ofSeconds(30)) // optional extra safety
                                             .onErrorResume(e -> {
                                                 System.err.println("❌ Compartment sync failed: " + e.getMessage());
                                                 return Mono.empty();
