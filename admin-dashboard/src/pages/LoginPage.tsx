@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService';
 import toast from 'react-hot-toast';
+import  {scheduleTokenRefresh} from "../api";
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ const LoginPage: React.FC = () => {
         try {
             const token = await login({ username, password });
             sessionStorage.setItem('token', token);  // 👈 store JWT here
+            scheduleTokenRefresh();
             toast.success('Login successful');
             navigate('/');  // Redirect to dashboard or main route
         } catch (err: any) {

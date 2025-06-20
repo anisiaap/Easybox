@@ -300,7 +300,7 @@ return (
                                         })
                                         .catch((err) => {
                                             toast.error("Approved, but sync may have failed.");
-                                            console.error("Non-blocking sync failure:", err);
+                                              console.error("Non-blocking sync failure:", err);
                                             setSelectedEasybox({ ...selectedEasybox, approved: true });
                                             navigate('/', { replace: true });
                                         })

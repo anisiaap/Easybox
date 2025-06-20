@@ -10,7 +10,7 @@ import { Toaster } from 'react-hot-toast';
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
 import React, { useEffect } from 'react';
-import {decodeJwt, scheduleTokenRefresh} from './api';
+import {decodeJwt, forceLogout, scheduleTokenRefresh} from './api';
 
 
 const App: React.FC = () => {
@@ -21,10 +21,11 @@ const App: React.FC = () => {
             if (payload?.exp && payload.exp * 1000 > Date.now()) {
                 scheduleTokenRefresh();
             } else {
-                sessionStorage.removeItem('token'); // expired token
+                forceLogout(); // ✅ explicitly log out on invalid/expired
             }
         }
     }, []);
+
     return (
         <Router>
             <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
