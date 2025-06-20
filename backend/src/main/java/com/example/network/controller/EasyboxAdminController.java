@@ -75,7 +75,7 @@ public class EasyboxAdminController {
                         return Mono.error(new ConflictException("Already approved"));
                     }
 
-                    box.setStatus("inactive");
+//                    box.setStatus("inactive");
                     box.setApproved(true);
                     box.setSecretKey(UUID.randomUUID().toString());
                     box.setLastSecretRotation(LocalDateTime.now());

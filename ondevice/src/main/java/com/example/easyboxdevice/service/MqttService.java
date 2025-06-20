@@ -215,7 +215,11 @@ public class MqttService {
 
             String topic = properties.getTopicPrefix() + "/response/" + properties.getClientId();
             String signedPayload = jwtUtil.generateToken(properties.getClientId());
-            client.publish(topic, new MqttMessage((signedPayload + "::" + json).getBytes(StandardCharsets.UTF_8)));
+
+            MqttMessage responseMsg = new MqttMessage((signedPayload + "::" + json).getBytes(StandardCharsets.UTF_8));
+            responseMsg.setQos(1);
+            responseMsg.setRetained(true);  // ✅ Make response retained
+            client.publish(topic, responseMsg);
 
             System.out.println("📤 Sent compartments response");
 

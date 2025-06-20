@@ -228,7 +228,9 @@ const Dashboard: React.FC = () => {
             const response = await api.get(`/admin/easyboxes/${box.id}/details`);
     // Merge the box with the returned aggregated details.
     const details: DeviceDetails = { ...box, ...response.data };
-setSelectedEasybox(details);
+    details.compartments.sort((a, b) => a.id - b.id);
+
+            setSelectedEasybox(details);
 } catch (error: any) {
             const message = error?.response?.data ||' Failed to fetch compartment details.';
             toast.error(message);
@@ -336,13 +338,13 @@ return (
                     <h3>Compartments</h3>
                     {selectedEasybox.compartments.length > 0 ? (
                         <CompartmentsGrid>
-                            {selectedEasybox.compartments.map(comp => (
+                            {selectedEasybox.compartments.map((comp, index) => (
                                 <CompartmentCard
                                     key={comp.id}
                                     status={comp.status}
                                     condition={comp.condition}
                                 >
-                                    <h4>Compartment {comp.id}</h4>
+                                    <h4>Compartment {index + 1}</h4>
                                     <p><strong>Size:</strong> {getDescription(selectedEasybox.predefinedValues?.size, comp.size)}</p>
                                     <p><strong>Temperature:</strong> {getDescription(selectedEasybox.predefinedValues?.temperature, comp.temperature)}°C</p>
                                     <p><strong>Status:</strong> {getDescription(selectedEasybox.predefinedValues?.status, comp.status)}</p>

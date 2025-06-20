@@ -215,6 +215,16 @@ public class MqttClientManager {
                                         currentRequestSink.success(list);
                                         currentRequestSink      = null;
                                         currentExpectedClientId = null;
+                                        try {
+                                            MqttMessage empty = new MqttMessage(new byte[0]);
+                                            empty.setQos(1);
+                                            empty.setRetained(true);
+                                            client.publish(topic, empty); // topic is the one we just received from
+                                            System.out.println("🧹 Cleared retained response on " + topic);
+                                        } catch (Exception ex) {
+                                            System.err.println("⚠️ Failed to clear retained message: " + ex.getMessage());
+                                        }
+
                                     } catch (Exception ex) {
                                         System.err.println("❌ Failed to parse compartments: " + ex.getMessage());
                                     }
