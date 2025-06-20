@@ -70,27 +70,30 @@ public class EasyboxAdminController {
     @PostMapping("/{id}/approve")
     public Mono<ResponseEntity<String>> approveBox(@PathVariable Long id) {
         return easyboxRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Easybox not found")))
                 .flatMap(box -> {
                     if (Boolean.TRUE.equals(box.getApproved())) {
                         return Mono.error(new ConflictException("Already approved"));
                     }
 
-//                    box.setStatus("inactive");
+                    box.setStatus("inactive");
                     box.setApproved(true);
                     box.setSecretKey(UUID.randomUUID().toString());
                     box.setLastSecretRotation(LocalDateTime.now());
 
                     return easyboxRepository.save(box)
                             .flatMap(saved ->
-                                    // 🟡 Immediately try to sync compartments from device
                                     syncService.syncCompartmentsForEasybox(saved.getId())
                                             .onErrorResume(e -> {
-                                                System.err.println("❌ Failed to sync compartments: " + e.getMessage());
-                                                return Mono.empty();  // Don't block approval on this
+                                                System.err.println("❌ Compartment sync failed: " + e.getMessage());
+                                                return Mono.empty();
                                             })
                                             .thenReturn(ResponseEntity.ok(saved.getSecretKey()))
                             );
+                })
+                .onErrorResume(e -> {
+                    System.err.println("❌ Unexpected error in approval: " + e.getMessage());
+                    return Mono.just(ResponseEntity.status(500).body("Approval failed: " + e.getMessage()));
                 });
     }
-
 }

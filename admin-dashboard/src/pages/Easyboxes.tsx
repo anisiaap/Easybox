@@ -226,15 +226,15 @@ const Dashboard: React.FC = () => {
         try {
             // Call the central server aggregated endpoint.
             const response = await api.get(`/admin/easyboxes/${box.id}/details`);
-    // Merge the box with the returned aggregated details.
-    const details: DeviceDetails = { ...box, ...response.data };
-    details.compartments.sort((a, b) => a.id - b.id);
+            // Merge the box with the returned aggregated details.
+            const details: DeviceDetails = { ...box, ...response.data };
+            details.compartments.sort((a, b) => a.id - b.id);
 
-            setSelectedEasybox(details);
-} catch (error: any) {
-            const message = error?.response?.data ||' Failed to fetch compartment details.';
-            toast.error(message);
-            console.error('Failed to fetch compartment details.', error);
+                    setSelectedEasybox(details);
+        } catch (error: any) {
+                    const message = error?.response?.data ||' Failed to fetch compartment details.';
+                    toast.error(message);
+                    console.error('Failed to fetch compartment details.', error);
         }
 };
 
@@ -288,10 +288,19 @@ return (
                         ) : (
                             <button
                                 onClick={async () => {
-                                         await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`);
-                                        toast.success("Device approved!");
-                                        setSelectedEasybox({ ...selectedEasybox, approved: true });
-                                        navigate('/dashboard', { replace: true });
+                                    await api.post(`/admin/easyboxes/${selectedEasybox.id}/approve`)
+                                        .then(() => {
+                                            toast.success("Device approved!");
+                                            setSelectedEasybox({ ...selectedEasybox, approved: true });
+                                            navigate('/dashboard', { replace: true });
+                                        })
+                                        .catch((err) => {
+                                            toast.error("Approved, but sync may have failed.");
+                                            console.error("Non-blocking sync failure:", err);
+                                            setSelectedEasybox({ ...selectedEasybox, approved: true });
+                                            navigate('/dashboard', { replace: true });
+                                        });
+
                                 }}
                                 style={{
                                     marginLeft: "10px",
