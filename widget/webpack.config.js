@@ -47,6 +47,9 @@ module.exports = {
         new webpack.DefinePlugin({
             __REACT_APP_API_URL__: JSON.stringify(process.env.REACT_APP_API_URL)
         }),
+        new webpack.DefinePlugin({
+            __LOCATIONIQ_API_KEY__: JSON.stringify(process.env.LOCATIONIQ_API_KEY)
+        }),
         new CopyPlugin({
             patterns: [
                 { from: 'public/index.html', to: '.' }

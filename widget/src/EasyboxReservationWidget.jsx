@@ -1,3 +1,4 @@
+/* global __LOCATIONIQ_API_KEY__ */
 import React, {
     useEffect,
     useState,
@@ -110,9 +111,8 @@ const EasyboxReservationWidget = forwardRef(
 
             const geocodeAddress = async (addr) => {
                 try {
-                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-                        addr
-                    )}`;
+                    const apiKey = __LOCATIONIQ_API_KEY__;
+                    const url = `https://us1.locationiq.com/v1/search?format=json&limit=1&key=${apiKey}&q=${encodeURIComponent(addr)}`;
                     const response = await axios.get(url);
                     if (response.data && response.data.length > 0) {
                         // Take the first result
