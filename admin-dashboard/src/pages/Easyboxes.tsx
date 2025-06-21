@@ -299,8 +299,8 @@ return (
                                             navigate('/', { replace: true });
                                         })
                                         .catch((err) => {
-                                            toast.error("Approved, but sync may have failed.");
-                                              console.error("Non-blocking sync failure:", err);
+                                            // toast.error("Approved, but sync may have failed.");
+                                              // console.error("Non-blocking sync failure:", err);
                                             setSelectedEasybox({ ...selectedEasybox, approved: true });
                                             navigate('/', { replace: true });
                                         })
