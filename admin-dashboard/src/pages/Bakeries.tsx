@@ -112,13 +112,13 @@ const Bakeries: React.FC = () => {
     //     token: ''
     // });
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editData, setEditData] = useState<Omit<Bakery, 'id'>>({
+    const [editData, setEditData] = useState<Omit<Bakery, 'id' | 'version'>>({
         name: '',
         phone: '',
         pluginInstalled: false,
-        token: '',
-        version: 0
+        token: ''
     });
+
     const [searchName, setSearchName] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
 
