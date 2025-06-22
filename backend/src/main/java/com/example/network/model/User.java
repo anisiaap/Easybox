@@ -2,7 +2,6 @@
 package com.example.network.model;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("users")
@@ -12,8 +11,6 @@ public class User {
     private String name;
     private String phoneNumber;
     private String password;
-    @Version
-    private Long version;
     public User(Long id, String name, String phoneNumber, String password) {
         this.id = id;
         this.name = name;
@@ -24,8 +21,7 @@ public class User {
     // Additional fields as needed
 
     // Getters & Setters
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
+
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
     public Long getId() { return id; }

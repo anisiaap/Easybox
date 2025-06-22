@@ -1,16 +1,11 @@
 package com.example.network.controller;
 
-import com.example.network.exception.NotFoundException;
 import com.example.network.model.Bakery;
 import com.example.network.exception.InvalidRequestException;
 import com.example.network.repository.BakeryRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/bakeries")
@@ -25,20 +20,15 @@ public class BakeryAdminController {
     // GET all bakeries
     @GetMapping
     public Flux<Bakery> getAllBakeries(@RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "10") int size,
-                                       @RequestParam(required = false) String name,
-                                       @RequestParam(required = false) String phone) {
-        return bakeryRepository.findByFilters(name, phone)
+                                       @RequestParam(defaultValue = "10") int size) {
+        return bakeryRepository.findAllByOrderByIdDesc()
                 .skip((long) page * size)
                 .take(size);
     }
-
     @GetMapping("/count")
-    public Mono<Long> getUserCount(@RequestParam(required = false) String name,
-                                   @RequestParam(required = false) String phone) {
-        return bakeryRepository.countByFilters(name, phone);
+    public Mono<Long> getUserCount() {
+        return bakeryRepository.count();
     }
-
     // GET one bakery by ID
     @GetMapping("/{id}")
     public Mono<Bakery> getOneBakery(@PathVariable Long id) {
@@ -57,10 +47,6 @@ public class BakeryAdminController {
         return bakeryRepository.findById(id)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Bakery not found")))
                 .flatMap(existing -> {
-                    if (!existing.getVersion().equals(bakery.getVersion())) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Entity was modified by someone else."));
-                    }
-
                     existing.setName(bakery.getName());
                     existing.setPhone(bakery.getPhone());
                     existing.setPluginInstalled(bakery.getPluginInstalled());
@@ -69,22 +55,10 @@ public class BakeryAdminController {
                 });
     }
 
+    // DELETE a bakery
     @DeleteMapping("/{id}")
-    public Mono<Void> deleteUser(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Long version = body.get("version") instanceof Number ? ((Number) body.get("version")).longValue() : null;
-        if (version == null) {
-            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Version is required."));
-        }
-
-        return bakeryRepository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Bakery not found")))
-                .flatMap(user -> {
-                    if (!user.getVersion().equals(version)) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Bakery was modified by someone else."));
-                    }
-                    return bakeryRepository.delete(user);
-                });
+    public Mono<Void> deleteBakery(@PathVariable Long id) {
+        return bakeryRepository.deleteById(id);
     }
-
 
 }

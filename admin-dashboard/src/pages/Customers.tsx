@@ -87,16 +87,12 @@ interface Customer {
     id: number;
     name: string;
     phoneNumber: string;
-    version: number; // 🆕
 }
+
 const Customers: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editData, setEditData] = useState<Omit<Customer, 'id' | 'version'>>({
-        name: '',
-        phoneNumber: ''
-    });
-
+    const [editData, setEditData] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
     // const [newCustomer, setNewCustomer] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
     const [page, setPage] = useState(0);
     const pageSize = 10;
@@ -136,20 +132,11 @@ const Customers: React.FC = () => {
             message: 'Are you sure you want to delete this customer? This action cannot be undone.',
             onConfirm: async () => {
                 try {
-                    await api.delete(`/admin/users/${id}`, {
-                        data: { version: customers.find(c => c.id === id)?.version }
-                    });
-
+                    await api.delete(`/admin/users/${id}`);
                     fetchCustomers();
                     toast.success('Customer deleted');
-                } catch (error) {
-                    const status = (error as any)?.response?.status;
-
-                    if (status === 409) {
-                        toast.error("This item was modified by someone else. Please refresh.");
-                    } else {
-                        toast.error("Delete failed.");
-                    }
+                } catch (err) {
+                    toast.error('Failed to delete customer');
                 }
                 setConfirmDialog(null);
             },
@@ -166,21 +153,12 @@ const Customers: React.FC = () => {
             message: 'Are you sure you want to save the changes to this customer?',
             onConfirm: async () => {
                 try {
-                    await api.put(`/admin/users/${id}`, {
-                        ...editData,
-                        version: customers.find(c => c.id === id)?.version,
-                    });
+                    await api.put(`/admin/users/${id}`, editData);
                     setEditingId(null);
                     fetchCustomers();
                     toast.success('Customer updated');
-                } catch (error) {
-                    const status = (error as any)?.response?.status;
-
-                    if (status === 409) {
-                        toast.error("This item was modified by someone else. Please refresh.");
-                    } else {
-                        toast.error("Delete failed.");
-                    }
+                } catch (err) {
+                    toast.error('Failed to update customer');
                 }
                 setConfirmDialog(null);
             },

@@ -34,9 +34,7 @@ interface Order {
     compartmentId: number;
     reservationStart: string;
     reservationEnd: string;
-    version: number; // 🆕 Add this
 }
-
 
 const statusOptions = [
     { label: 'Pending', value: 'pending' },
@@ -140,22 +138,14 @@ export default function Orders() {
             message: 'Are you sure you want to delete this order?',
             onConfirm: async () => {
                 try {
-                    const order = orders.find(o => o.id === id);
-                    await api.delete(`/admin/reservations/${id}`, {
-                        data: { version: order?.version },
-                    });
+                    await api.delete(`/admin/reservations/${id}`);
                     fetchOrders();
-                } catch (err: any) {
-                    if (err?.response?.status === 409) {
-                        toast.error('This order was already modified or deleted.');
-                    } else {
-                        toast.error('Delete failed');
-                    }
+                } catch {
+                    toast.error('Delete failed');
                 }
                 setConfirmDialog(null);
             }
         });
-
 
     const handleStartEdit = (o: Order) => {
         setEditingId(o.id);
@@ -172,9 +162,7 @@ export default function Orders() {
 
                     if (editStatus && editStatus !== original?.status) {
                         payload.status = editStatus;
-                        payload.version = original?.version; // 🆕 include the optimistic version
                     }
-
 
                     if (Object.keys(payload).length) {
                         await api.put(`/admin/reservations/${id}`, payload);
@@ -183,14 +171,9 @@ export default function Orders() {
                     toast.success('Order updated');
                     setEditingId(null);
                     fetchOrders();
-                } catch (err: any) {
-                    if (err?.response?.status === 409) {
-                        toast.error("This order was modified by someone else. Please refresh.");
-                    } else {
-                        toast.error("Update failed");
-                    }
+                } catch {
+                    toast.error('Update failed');
                 }
-
                 setConfirmDialog(null);
             }
         });
