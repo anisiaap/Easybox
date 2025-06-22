@@ -219,9 +219,13 @@ export default function Orders() {
                         <Td>
                             {editingId === o.id ? (
                                 <select value={editStatus} onChange={e => setEditStatus(e.target.value)} style={{ padding: '8px', border: '1px solid #ccc' }}>
-                                    {statusOptions.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
+                                    {statusOptions
+                                        .filter(opt =>
+                                            !['waiting_bakery_drop_off', 'waiting_client_pick_up', 'waiting_cleaning'].includes(opt.value)
+                                        )
+                                        .map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
                                 </select>
                             ) : (
                                 statusOptions.find(opt => opt.value === o.status)?.label || o.status

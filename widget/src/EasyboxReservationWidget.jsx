@@ -167,7 +167,7 @@ const EasyboxReservationWidget = forwardRef(
         // -------------------
         const computeReservationWindow = (deliveryTime) => {
             const deliveryDate = new Date(deliveryTime);
-            const start = new Date(deliveryDate.getTime() - 3 * 60 * 60 * 1000); // 8h before
+            const start = new Date(deliveryDate.getTime() - 3 * 60 * 60 * 1000); // 3h before
             const end = new Date(deliveryDate.getTime() + 27 * 60 * 60 * 1000); // 16h + 3h after
             return { start, end };
         };

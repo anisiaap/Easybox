@@ -10,12 +10,14 @@ import { useNotification } from '../components/NotificationContext';
 type Order = {
     id: string;
     status: string;
-    deliveryTime: string;
+    deliveryTime: string; // could be reservationStart
+    reservationStart?: string; // ✅ optional
     easyboxAddress: string;
     qrCodeData?: string;
     compartmentId: number;
-    actionDeadline: string; //
+    actionDeadline: string;
 };
+
 function calculateTimeLeft(deadline: string): string {
     const now = new Date();
     const end = new Date(deadline);
@@ -33,6 +35,23 @@ function calculateTimeLeft(deadline: string): string {
     parts.push(`${minutes}m`);
 
     return parts.join(' ');
+}
+function formatCountdown(start: string, end: string): { label: string, timeLeft: string } {
+    const now = new Date();
+    const startTime = new Date(start);
+    const endTime = new Date(end);
+
+    if (now < startTime) {
+        return {
+            label: 'Starts in',
+            timeLeft: calculateTimeLeft(start)
+        };
+    } else {
+        return {
+            label: 'Time left to act',
+            timeLeft: calculateTimeLeft(end)
+        };
+    }
 }
 
 
@@ -58,18 +77,23 @@ export default function OrderDetails() {
             .catch(() => notify({type: 'error', message: "Could not load order."}));
 
     }, [id, role]);
+    const [countdownLabel, setCountdownLabel] = useState('');
+
     useEffect(() => {
-        if (!order?.actionDeadline) return;
+        const start = order?.reservationStart || order?.deliveryTime;
+        if (!start || !order?.actionDeadline) return;
 
         const update = () => {
-            setTimeLeft(calculateTimeLeft(order.actionDeadline));
+            const { label, timeLeft } = formatCountdown(start, order.actionDeadline);
+            setCountdownLabel(label);
+            setTimeLeft(timeLeft);
         };
 
-        update(); // run once immediately
-        const interval = setInterval(update, 30000); // update every 30s
+        update();
+        const interval = setInterval(update, 30000);
+        return () => clearInterval(interval);
+    }, [order?.reservationStart, order?.actionDeadline]);
 
-        return () => clearInterval(interval); // cleanup
-    }, [order?.actionDeadline]);
 
 
     if (!order) return <Text style={styles.loading}>Loading...</Text>;
@@ -81,22 +105,29 @@ export default function OrderDetails() {
     const reportIssue = async (type: 'dirty' | 'broken') => {
         const label = type === 'dirty' ? 'dirty' : 'broken';
         try {
-            const apiCall = role === 'bakery'
-                ? api.post(
-                    `/compartments/${order!.compartmentId}/report-and-reevaluate`,
-                    null,
-                    { params: { issue: type, reservationId: order!.id } }
-                )
-                : api.post(
-                    `/compartments/${order!.compartmentId}/report-condition?issue=${type}`
-                );
+            if (role === 'bakery') {
+                const res = await api.post(`/compartments/${order!.compartmentId}/report-and-reevaluate`, null, {
+                    params: { issue: type, reservationId: order!.id }
+                });
+                const updatedOrder = res.data;
+                setOrder(updatedOrder); // ⬅️ update UI state
 
-            await apiCall;
-            notify({ type: 'success', message: `Compartment marked as ${label}.` });
+                if (updatedOrder.status === 'canceled') {
+                    notify({ type: 'error', message: `No alternative found. Reservation was canceled.` });
+                } else if (updatedOrder.compartmentId !== order!.compartmentId) {
+                    notify({ type: 'success', message: `Compartment reassigned successfully.` });
+                } else {
+                    notify({ type: 'info', message: `No change to compartment.` });
+                }
+            } else {
+                await api.post(`/compartments/${order!.compartmentId}/report-condition?issue=${type}`);
+                notify({ type: 'success', message: `Compartment marked as ${label}.` });
+            }
         } catch {
             notify({ type: 'error', message: 'Could not report the issue.' });
         }
     };
+
 
 
     return (
@@ -118,12 +149,9 @@ export default function OrderDetails() {
 
                             <Text style={styles.label}>Easybox Location:</Text>
                             <Text>{order.easyboxAddress}</Text>
-                            <Text style={styles.label}>
-                                Time Left to {role === 'bakery' ? 'place order' : 'pick up'}:
-                            </Text>
-                            <Text style={styles.countdown}>
-                                {timeLeft || '...'}
-                            </Text>
+                            <Text style={styles.label}>{countdownLabel}:</Text>
+                            <Text style={styles.countdown}>{timeLeft || '...'}</Text>
+
                             {showQr && order.qrCodeData && (
                                 <>
                                     <Divider style={styles.divider} />

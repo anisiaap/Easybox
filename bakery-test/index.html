@@ -166,7 +166,7 @@
   //env setup
   window.env = {
     WIDGET_URL: "https://widget.easybox-food.xyz/",
-    JWT_TOKEN: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIwNzEyMTIxMjEyIiwidXNlcklkIjoxNiwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc0Nzc1MTAyMCwiZXhwIjoxNzU1NTI3MDIwfQ.vbCo8_IDDzydrGXFu8804WXXs6nOpHAri0SsVTps1tS2WsTRaXGSf08fB4wCmWslSjuycGULIfbeqQR1VRA_Qq6d6iQr2IChdPtb17t66x5o_vsZxC6e52h9UEgchLkizkPHpOn-WbWKYM7iTTGx05b130EM-IZxAiPWDeuo0ScPXroDDsURgFA7R367FLAFZHiDj7uketrhgcTDrntYTHHPzM2sgHgZ3NnhOvTsVJMXRM2y21TONis2sC8LFPg_FOzjcxR8L46eFtru9EVL1cEAXdbSEmdV6Feudh0ypydoUdv6NukfWu6OUetagVr4S7dVQojahg8uZXk1P-FtFQ"
+    JWT_TOKEN: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIwNzk5OTk5OTk5IiwidXNlcklkIjoyMCwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc1MDYyNzgwOSwiZXhwIjoxNzU4NDAzODA5fQ.p99qgjcRDMkCnVIHJQIs-q09tJq40pyuoCbAB0VqFhx4DDpmgC4bEDVyP7WTzuGIpsS_-TIj6TIYkbJWS1ryWtAXOi2xCfU1H4ZuDCsJhSSPh9-piAzaxozBcywl6MbgxSf37Xzku6WUS5ewApZ_Xy72jHFKort_f-tjfKdLN5XIvR58JQ-l9sjNpgi3nh3l-infSoZKkPInxrimH-ueMfEfg7MTlC7GamBI5Wf4Jq2bNbTlRaTVGNqBZYgDvxge6QuoZUEYwIa5beBZ8xNnrl4AgXkpgkuQsqaB0ZEF9Ue8aEZ7dcCW080S9AuI0rarsoYyjyzPzvsBLUIegbhQJw"
   };
   const API_URL = window.env.WIDGET_URL;
 
@@ -238,7 +238,8 @@
       phone,
       deliveryTime,
       minTemp: minTemperature,
-      totalDimension
+      totalDimension,
+      origin: window.location.origin
     });
 
     const frame = document.getElementById('easybox-frame');
@@ -259,6 +260,18 @@
     return true; // or false if you want to simulate failure
   }
 
+  window.addEventListener('message', function handleConfirmation(event) {
+    if (event.data?.type === 'easybox-reservation-confirmed') {
+      console.log("🎉 Reservation confirmed by widget");
+
+      // Optional: remove listener to prevent duplicate handling
+      window.removeEventListener('message', handleConfirmation);
+      alert("Order placed . Easybox will now be confirmed!");
+      // ✅ Now it is safe to reload or redirect
+      // window.location.href = "index.html";  // Or any final confirmation page
+      window.location.reload();
+    }
+  });
 
   async function placeOrder() {
     const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
@@ -277,10 +290,9 @@
       const frame = document.getElementById("easybox-frame").contentWindow;
       frame.postMessage({ type: "bakery-order-confirmed", reservationId: pendingReservation.id }, "*");
 
-      alert("Order placed . Easybox will now be confirmed!");
 
       // document.getElementById('popup-overlay').style.display = 'none';
-      window.location.reload();
+      // window.location.reload();
 
     } else {
       /* standard delivery branch */
