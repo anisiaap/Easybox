@@ -94,14 +94,14 @@ export default function Orders() {
                 ...(filterDate && { deliveryDate: filterDate }),
                 ...(filterBakeryName && { bakeryName: filterBakeryName }),
                 ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && { orderId: filterOrderId }),
+                ...(filterOrderId && /^\d+$/.test(filterOrderId) && { orderId: filterOrderId })
             }).toString();
 
             const countQuery = new URLSearchParams({
                 ...(filterDate && { deliveryDate: filterDate }),
                 ...(filterBakeryName && { bakeryName: filterBakeryName }),
                 ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && { orderId: filterOrderId }),
+                ...(filterOrderId && /^\d+$/.test(filterOrderId) && { orderId: filterOrderId })
             }).toString();
 
             const [list, count] = await Promise.all([
