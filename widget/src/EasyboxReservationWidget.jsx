@@ -362,20 +362,26 @@ const EasyboxReservationWidget = forwardRef(
 
                     {/* Footer / “Reserve” action */}
                     <div style={styles.footer}>
-                        {selectedBox && (
-                            <div style={styles.selectedInfo}>
-                                <span>Selected Box: {selectedBox.address}</span>
-                                {selectedBox.recommended && <span> (Recommended)</span>}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {selectedBox && (
+                                <div style={styles.selectedInfo}>
+                                    Selected Box: {selectedBox.address}
+                                    {selectedBox.recommended && ' (Recommended)'}
+                                </div>
+                            )}
+                            <div style={styles.memoText}>
+                                Reserved boxes expire in 15 minutes. Complete your order to keep it.
                             </div>
-                        )}
+                        </div>
                         <button
                             onClick={handleReserve}
                             style={styles.reserveBtn}
-                            disabled={loading || !selectedBox}  // ← prevents clicks while data is coming
+                            disabled={loading || !selectedBox}
                         >
                             {loading ? 'Loading…' : 'Reserve Selected Box'}
                         </button>
                     </div>
+
                 </div>
                 <ToastContainer position="bottom-right" newestOnTop />
             </>
@@ -389,7 +395,7 @@ const EasyboxReservationWidget = forwardRef(
 const styles = {
     widgetContainer: {
         width: '100%',
-        height: '100%',
+        height: '100%', // ensures full height usage
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Arial, sans-serif',
@@ -410,7 +416,8 @@ const styles = {
     mainSection: {
         display: 'flex',
         flex: 1,
-        minHeight: '400px'
+        minHeight: 0, // allows inner flex children to scroll
+        height: '100%'
     },
     sidePanel: {
         width: '250px',
@@ -418,38 +425,16 @@ const styles = {
         padding: '10px',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
-    },
-    searchForm: {
-        display: 'flex',
-        marginBottom: '10px'
-    },
-    input: {
-        flex: 1,
-        padding: '6px',
-        marginRight: '5px',
-        border: '1px solid #ccc',
-        borderRadius: '4px'
-    },
-    button: {
-        padding: '6px 12px',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
-        cursor: 'pointer'
-    },
-    checkBtn: {
-        padding: '6px 12px',
-        marginBottom: '10px',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
-        cursor: 'pointer'
+        flexDirection: 'column',
+        overflow: 'hidden'
     },
     easyboxList: {
         flex: 1,
         overflowY: 'auto',
         border: '1px solid #eee',
         borderRadius: '4px',
-        padding: '5px'
+        padding: '5px',
+        minHeight: 0
     },
     boxItem: {
         borderBottom: '1px solid #eee',
@@ -475,7 +460,9 @@ const styles = {
         padding: '10px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '8px'
     },
     selectedInfo: {
         fontWeight: 'bold'
@@ -487,7 +474,13 @@ const styles = {
         backgroundColor: '#4caf50',
         color: '#fff',
         cursor: 'pointer'
+    },
+    memoText: {
+        fontSize: '0.85rem',
+        color: '#666',
+        maxWidth: '400px'
     }
 };
+
 
 export default EasyboxReservationWidget;
