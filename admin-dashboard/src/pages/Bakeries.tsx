@@ -287,7 +287,7 @@ const Bakeries: React.FC = () => {
                         {/*        b.phone*/}
                         {/*    )}*/}
                         {/*</Td>*/}
-                        <Td>{b.phoneNumber}</Td>
+                        <Td>{b.phone}</Td>
                         <Td>{b.pluginInstalled ? '✅' : '❌'}</Td>
                         <Td>
                             <Button onClick={() => {
