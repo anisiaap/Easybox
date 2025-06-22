@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
 import toast from 'react-hot-toast';
@@ -103,27 +103,40 @@ const Customers: React.FC = () => {
     };
     const [searchName, setSearchName] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
-
+    const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     const fetchCustomers = useCallback(async () => {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
-                size: pageSize.toString(),
-                ...(searchName && { name: searchName }),
-                ...(searchPhone && { phone: searchPhone }),
+                size: pageSize.toString()
             });
             const [usersRes, countRes] = await Promise.all([
                 api.get(`/admin/users?${params}`),
                 api.get(`/admin/users/count?${params}`),
             ]);
             setCustomers(usersRes.data);
+            setCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
             toast.error(error?.response?.data || 'Failed to fetch customers');
         }
-    }, [page, searchName, searchPhone]);
+    }, [page ]);
 
+    useEffect(() => {
+        let filtered = allCustomers;
+
+        if (searchName.trim()) {
+            filtered = filtered.filter(b => b.name.toLowerCase().includes(searchName.toLowerCase()));
+        }
+
+        if (searchPhone.trim()) {
+            filtered = filtered.filter(b => b.phone.includes(searchPhone));
+        }
+
+        setCustomers(filtered);
+        setPage(0); // reset pagination
+    }, [searchName, searchPhone, allCustomers]);
 
 
 
