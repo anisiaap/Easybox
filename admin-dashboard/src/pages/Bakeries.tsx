@@ -145,7 +145,7 @@ const Bakeries: React.FC = () => {
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch bakeries');
         }
-    }, [page, searchName, searchPhone]);
+    }, [page]);
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     useEffect(() => {
