@@ -40,89 +40,38 @@ public class ReservationAdminController {
 
     // GET all reservations
     @GetMapping
-    public Flux<ReservationDto> getAllReservations(
-            @RequestParam(required = false) String orderId,
-            @RequestParam(required = false) String bakeryName,
-            @RequestParam(required = false) String userPhone,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Flux<Reservation> base = reservationRepository.findAllByOrderByReservationStartDesc();
+    public Flux<ReservationDto> getAllReservations(@RequestParam(required = false) Long bakeryId,
+                                                   @RequestParam(required = false) Long userId,
+                                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
+        Flux<Reservation> base = (bakeryId != null)
+                ? reservationRepository.findAllByBakeryIdOrderByReservationStartDesc(bakeryId)
+                : reservationRepository.findAllByOrderByReservationStartDesc();
 
-        // resolve IDs reactively
-        Mono<Long> bakeryIdMono = (bakeryName != null && !bakeryName.isEmpty())
-                ? bakeryRepository.findByName(bakeryName).map(Bakery::getId)
-                : Mono.empty();
-
-        Mono<Long> userIdMono = (userPhone != null && !userPhone.isEmpty())
-                ? userRepository.findByPhoneNumber(userPhone).map(User::getId)
-                : Mono.empty();
-
-        Mono<Long> orderIdMono = (orderId != null && !orderId.isEmpty())
-                ? Mono.just(Long.parseLong(orderId))
-                : Mono.empty();
-
-
-        return Mono.zip(bakeryIdMono.defaultIfEmpty(null), userIdMono.defaultIfEmpty(null), orderIdMono.defaultIfEmpty(null))
-
-
-                .flatMapMany(tuple -> {
-                    Long bakeryId = tuple.getT1();
-                    Long userId = tuple.getT2();
-                    Long orderLong = tuple.getT3();
-
-                    return base
-                            .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
-                            .filter(r -> userId == null || userId.equals(r.getUserId()))
-                            .filter(r -> orderLong == null || orderLong.equals(r.getId()))
-                            .filter(r -> deliveryDate == null ||
-                                    (r.getDeliveryTime() != null &&
-                                            r.getDeliveryTime().toLocalDate().isEqual(deliveryDate)))
-                            .skip((long) page * size)
-                            .take(size)
-                            .flatMap(this::toDto);
-                });
+        return base
+                .filter(r -> userId == null || userId.equals(r.getUserId()))
+                .filter(r -> deliveryDate == null ||
+                        r.getDeliveryTime() != null &&
+                                r.getDeliveryTime().toLocalDate().isEqual(deliveryDate))
+                .skip((long) page * size)
+                .take(size)
+                .flatMap(this::toDto);
     }
-
     @GetMapping("/count")
     public Mono<Long> countReservations(
-            @RequestParam(required = false) String orderId,
-            @RequestParam(required = false) String bakeryName,
-            @RequestParam(required = false) String userPhone,
+            @RequestParam(required = false) Long bakeryId,
+            @RequestParam(required = false) Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate
     ) {
-        Flux<Reservation> all = reservationRepository.findAll();
-
-        Mono<Long> bakeryIdMono = (bakeryName != null && !bakeryName.isEmpty())
-                ? bakeryRepository.findByName(bakeryName).map(Bakery::getId)
-                : Mono.just(null);
-
-        Mono<Long> userIdMono = (userPhone != null && !userPhone.isEmpty())
-                ? userRepository.findByPhoneNumber(userPhone).map(User::getId)
-                : Mono.just(null);
-
-        Mono<Long> orderIdMono = (orderId != null && !orderId.isEmpty())
-                ? Mono.just(Long.parseLong(orderId))
-                : Mono.just(null);
-
-        return Mono.zip(bakeryIdMono, userIdMono, orderIdMono)
-                .flatMap(tuple -> {
-                    Long bakeryId = tuple.getT1();
-                    Long userId = tuple.getT2();
-                    Long orderLong = tuple.getT3();
-
-                    return all
-                            .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
-                            .filter(r -> userId == null || userId.equals(r.getUserId()))
-                            .filter(r -> orderLong == null || orderLong.equals(r.getId()))
-                            .filter(r -> deliveryDate == null ||
-                                    (r.getDeliveryTime() != null &&
-                                            r.getDeliveryTime().toLocalDate().isEqual(deliveryDate)))
-                            .count();
-                });
+        return reservationRepository.findAll()
+                .filter(r -> bakeryId == null || bakeryId.equals(r.getBakeryId()))
+                .filter(r -> userId == null || userId.equals(r.getUserId()))
+                .filter(r -> deliveryDate == null ||
+                        (r.getDeliveryTime() != null &&
+                                r.getDeliveryTime().toLocalDate().isEqual(deliveryDate)))
+                .count();
     }
-
 
     // GET one reservation
     @GetMapping("/{id}")

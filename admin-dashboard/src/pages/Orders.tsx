@@ -88,36 +88,23 @@ export default function Orders() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const listQuery = new URLSearchParams({
+            const query = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
                 ...(filterDate && { deliveryDate: filterDate }),
                 ...(filterBakeryName && { bakeryName: filterBakeryName }),
                 ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && /^\d+$/.test(filterOrderId) && { orderId: filterOrderId })
-            }).toString();
-
-            const countQuery = new URLSearchParams({
-                ...(filterDate && { deliveryDate: filterDate }),
-                ...(filterBakeryName && { bakeryName: filterBakeryName }),
-                ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && /^\d+$/.test(filterOrderId) && { orderId: filterOrderId })
+                ...(filterOrderId && { orderId: filterOrderId }),
             }).toString();
 
             const [list, count] = await Promise.all([
-                api.get(`/admin/reservations?${listQuery}`),
-                api.get(`/admin/reservations/count?${countQuery}`),
+                api.get(`/admin/reservations?${query}`),
+                api.get(`/admin/reservations/count?${query}`),
             ]);
-
             setOrders(list.data);
             setTotalOrders(count.data);
         } catch (err: any) {
-            if (err?.response?.data?.message) {
-                toast.error(err.response.data.message);
-            } else {
-                toast.error('Failed to fetch orders');
-            }
-
+            toast.error(err?.response?.data || 'Failed to fetch orders');
         }
     }, [page, filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
 
