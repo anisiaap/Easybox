@@ -416,6 +416,7 @@ const styles = {
     mainSection: {
         display: 'flex',
         flex: 1,
+        overflow: 'hidden',
         minHeight: '400px'
     },
     sidePanel: {
@@ -424,7 +425,8 @@ const styles = {
         padding: '10px',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
     },
     searchForm: {
         display: 'flex',
@@ -455,7 +457,8 @@ const styles = {
         overflowY: 'auto',
         border: '1px solid #eee',
         borderRadius: '4px',
-        padding: '5px'
+        padding: '5px',
+        marginTop: '10px'
     },
     boxItem: {
         borderBottom: '1px solid #eee',
@@ -470,7 +473,8 @@ const styles = {
     },
     mapPanel: {
         flex: 1,
-        position: 'relative'
+        position: 'relative',
+        height: '100%'
     },
     map: {
         width: '100%',
