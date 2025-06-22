@@ -24,16 +24,20 @@ public class UserAdminController {
 
     @GetMapping
     public Flux<User> getAllUsers(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "10") int size) {
-        return userRepository.findAllByOrderByIdDesc()
+                                  @RequestParam(defaultValue = "10") int size,
+                                  @RequestParam(required = false) String name,
+                                  @RequestParam(required = false) String phone) {
+        return userRepository.findByFilters(name, phone)
                 .skip((long) page * size)
                 .take(size);
     }
-    // GET total count of users (for frontend to compute total pages)
+
     @GetMapping("/count")
-    public Mono<Long> getUserCount() {
-        return userRepository.count();
+    public Mono<Long> getUserCount(@RequestParam(required = false) String name,
+                                   @RequestParam(required = false) String phone) {
+        return userRepository.countByFilters(name, phone);
     }
+
     @PostMapping
     public Mono<User> createUser(@RequestBody User user) {
         return userRepository.save(user);

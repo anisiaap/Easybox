@@ -25,15 +25,20 @@ public class BakeryAdminController {
     // GET all bakeries
     @GetMapping
     public Flux<Bakery> getAllBakeries(@RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "10") int size) {
-        return bakeryRepository.findAllByOrderByIdDesc()
+                                       @RequestParam(defaultValue = "10") int size,
+                                       @RequestParam(required = false) String name,
+                                       @RequestParam(required = false) String phone) {
+        return bakeryRepository.findByFilters(name, phone)
                 .skip((long) page * size)
                 .take(size);
     }
+
     @GetMapping("/count")
-    public Mono<Long> getUserCount() {
-        return bakeryRepository.count();
+    public Mono<Long> getUserCount(@RequestParam(required = false) String name,
+                                   @RequestParam(required = false) String phone) {
+        return bakeryRepository.countByFilters(name, phone);
     }
+
     // GET one bakery by ID
     @GetMapping("/{id}")
     public Mono<Bakery> getOneBakery(@PathVariable Long id) {
