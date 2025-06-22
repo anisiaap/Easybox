@@ -11,6 +11,7 @@ public interface BakeryRepository extends ReactiveCrudRepository<Bakery, Long> {
 
     Mono<Bakery> findByPhone(String phone);
     Flux<Bakery> findAllByOrderByIdDesc();
+    Mono<Bakery> findByName(String name);
     @Query("""
         SELECT * FROM bakery
         WHERE (:name IS NULL OR LOWER(name) LIKE LOWER(CONCAT('%', :name, '%')))
