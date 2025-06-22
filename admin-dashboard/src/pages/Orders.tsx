@@ -63,6 +63,9 @@ export default function Orders() {
         onConfirm: () => void;
     } | null>(null);
     const [compartmentMap, setCompartmentMap] = useState<Record<number, Compartment[]>>({});
+    const [compartmentNumbers, setCompartmentNumbers] = useState<Record<number, number>>({});
+
+
     const getCompartmentNumber = async (easyboxId: number, compartmentId: number): Promise<number | null> => {
         // If already fetched, use it
         if (compartmentMap[easyboxId]) {
