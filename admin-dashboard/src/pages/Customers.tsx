@@ -233,7 +233,7 @@ const Customers: React.FC = () => {
                         {/*        c.phoneNumber*/}
                         {/*    )}*/}
                         {/*</Td>*/}
-                        <Td>c.phoneNumber</Td>
+                        <Td>{c.phoneNumber}</Td>
                         <Td>
                             <ButtonGroup>
                                 {editingId === c.id ? (
