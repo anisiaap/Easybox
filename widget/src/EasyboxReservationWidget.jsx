@@ -391,11 +391,115 @@ const EasyboxReservationWidget = forwardRef(
 
 // --------------
 // Some minimal inline styles
-// --------------
+// // --------------
+// const styles = {
+//     widgetContainer: {
+//         width: '100%',
+//         height: '100%',
+//         display: 'flex',
+//         flexDirection: 'column',
+//         fontFamily: 'Arial, sans-serif',
+//         border: '1px solid #ccc',
+//         borderRadius: '8px',
+//         overflow: 'hidden',
+//         backgroundColor: '#fff'
+//     },
+//     header: {
+//         backgroundColor: '#f7f7f7',
+//         padding: '10px 15px',
+//         borderBottom: '1px solid #ccc'
+//     },
+//     title: {
+//         margin: 0,
+//         fontSize: '1.2rem'
+//     },
+//     mainSection: {
+//         display: 'flex',
+//         flex: 1,
+//         minHeight: '400px'
+//     },
+//     sidePanel: {
+//         width: '250px',
+//         borderRight: '1px solid #ccc',
+//         padding: '10px',
+//         boxSizing: 'border-box',
+//         display: 'flex',
+//         flexDirection: 'column'
+//     },
+//     searchForm: {
+//         display: 'flex',
+//         marginBottom: '10px'
+//     },
+//     input: {
+//         flex: 1,
+//         padding: '6px',
+//         marginRight: '5px',
+//         border: '1px solid #ccc',
+//         borderRadius: '4px'
+//     },
+//     button: {
+//         padding: '6px 12px',
+//         borderRadius: '4px',
+//         border: '1px solid #ccc',
+//         cursor: 'pointer'
+//     },
+//     checkBtn: {
+//         padding: '6px 12px',
+//         marginBottom: '10px',
+//         borderRadius: '4px',
+//         border: '1px solid #ccc',
+//         cursor: 'pointer'
+//     },
+//     easyboxList: {
+//         flex: 1,
+//         overflowY: 'auto',
+//         border: '1px solid #eee',
+//         borderRadius: '4px',
+//         padding: '5px'
+//     },
+//     boxItem: {
+//         borderBottom: '1px solid #eee',
+//         padding: '8px',
+//         cursor: 'pointer'
+//     },
+//     noBoxes: {
+//         color: '#777',
+//         fontStyle: 'italic',
+//         textAlign: 'center',
+//         marginTop: '10px'
+//     },
+//     mapPanel: {
+//         flex: 1,
+//         position: 'relative'
+//     },
+//     map: {
+//         width: '100%',
+//         height: '100%'
+//     },
+//     footer: {
+//         borderTop: '1px solid #ccc',
+//         padding: '10px',
+//         display: 'flex',
+//         justifyContent: 'space-between',
+//         alignItems: 'center'
+//     },
+//     selectedInfo: {
+//         fontWeight: 'bold'
+//     },
+//     reserveBtn: {
+//         padding: '8px 16px',
+//         borderRadius: '4px',
+//         border: '1px solid #ccc',
+//         backgroundColor: '#4caf50',
+//         color: '#fff',
+//         cursor: 'pointer'
+//     }
+// };
+
 const styles = {
     widgetContainer: {
         width: '100%',
-        height: '100%',
+        height: '600px', // 👈 fixed height for the whole widget
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Arial, sans-serif',
@@ -407,7 +511,8 @@ const styles = {
     header: {
         backgroundColor: '#f7f7f7',
         padding: '10px 15px',
-        borderBottom: '1px solid #ccc'
+        borderBottom: '1px solid #ccc',
+        flexShrink: 0
     },
     title: {
         margin: 0,
@@ -416,21 +521,21 @@ const styles = {
     mainSection: {
         display: 'flex',
         flex: 1,
-        overflow: 'hidden',
-        minHeight: '400px'
+        overflow: 'hidden', // 👈 ensures no scroll on full widget
+        minHeight: 0
     },
     sidePanel: {
         width: '250px',
         borderRight: '1px solid #ccc',
-        padding: '10px',
-        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden', // 👈 prevents outer scroll
+        flexShrink: 0
     },
     searchForm: {
         display: 'flex',
-        marginBottom: '10px'
+        padding: '10px',
+        flexShrink: 0
     },
     input: {
         flex: 1,
@@ -445,20 +550,11 @@ const styles = {
         border: '1px solid #ccc',
         cursor: 'pointer'
     },
-    checkBtn: {
-        padding: '6px 12px',
-        marginBottom: '10px',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
-        cursor: 'pointer'
-    },
     easyboxList: {
-        flex: 1,
+        flex: 1, // 👈 allow it to grow and scroll
         overflowY: 'auto',
-        border: '1px solid #eee',
-        borderRadius: '4px',
-        padding: '5px',
-        marginTop: '10px'
+        borderTop: '1px solid #eee',
+        padding: '5px'
     },
     boxItem: {
         borderBottom: '1px solid #eee',
@@ -474,7 +570,7 @@ const styles = {
     mapPanel: {
         flex: 1,
         position: 'relative',
-        height: '100%'
+        height: '100%' // 👈 fully fill height next to list
     },
     map: {
         width: '100%',
@@ -485,7 +581,9 @@ const styles = {
         padding: '10px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexShrink: 0,
+        backgroundColor: '#fff'
     },
     selectedInfo: {
         fontWeight: 'bold'
@@ -497,8 +595,12 @@ const styles = {
         backgroundColor: '#4caf50',
         color: '#fff',
         cursor: 'pointer'
+    },
+    memoText: {
+        fontSize: '0.85rem',
+        color: '#555',
+        marginTop: '4px'
     }
 };
-
 
 export default EasyboxReservationWidget;
