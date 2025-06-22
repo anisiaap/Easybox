@@ -146,6 +146,10 @@ const Bakeries: React.FC = () => {
         }
     }, [page, searchName, searchPhone]);
 
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
+    useEffect(() => {
+        fetchBakeries();
+    }, [fetchBakeries]);
 
 
 
