@@ -101,24 +101,29 @@ const Customers: React.FC = () => {
         message: string;
         onConfirm: () => void;
     };
+    const [searchName, setSearchName] = useState('');
+    const [searchPhone, setSearchPhone] = useState('');
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
-    const fetchCustomers = useCallback( async () => {
+    const fetchCustomers = useCallback(async () => {
         try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: pageSize.toString(),
+                ...(searchName && { name: searchName }),
+                ...(searchPhone && { phone: searchPhone }),
+            });
             const [usersRes, countRes] = await Promise.all([
-                api.get(`/admin/users?page=${page}&size=${pageSize}`),
-                api.get(`/admin/users/count`)
+                api.get(`/admin/users?${params}`),
+                api.get(`/admin/users/count?${params}`),
             ]);
             setCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
-            const message = error?.response?.data || 'Failed to fetch customers';
-            toast.error(message);
+            toast.error(error?.response?.data || 'Failed to fetch customers');
         }
-    }, [page]);
-    useEffect(() => {
-        fetchCustomers();
-    }, [fetchCustomers]);
+    }, [page, searchName, searchPhone]);
+
 
 
 
@@ -177,6 +182,19 @@ const Customers: React.FC = () => {
     return (
         <Container>
             <Title>Customers</Title>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                <Input
+                    placeholder="Search Name"
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                />
+                <Input
+                    placeholder="Search Phone"
+                    value={searchPhone}
+                    onChange={(e) => setSearchPhone(e.target.value)}
+                />
+                <Button onClick={() => { setPage(0); fetchCustomers(); }}>Search</Button>
+            </div>
 
             <Table>
                 <thead>

@@ -117,6 +117,9 @@ const Bakeries: React.FC = () => {
         pluginInstalled: false,
         token: ''
     });
+    const [searchName, setSearchName] = useState('');
+    const [searchPhone, setSearchPhone] = useState('');
+
     const [page, setPage] = useState(0);
     const pageSize = 10;
     const [totalBakeries, setTotalBakeries] = useState(0);
@@ -124,24 +127,25 @@ const Bakeries: React.FC = () => {
         message: string;
         onConfirm: () => void;
     };
-    const fetchBakeries = useCallback( async () => {
+    const fetchBakeries = useCallback(async () => {
         try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: pageSize.toString(),
+                ...(searchName && { name: searchName }),
+                ...(searchPhone && { phone: searchPhone }),
+            });
             const [bakeryRes, countRes] = await Promise.all([
-                api.get(`/admin/bakeries?page=${page}&size=${pageSize}`),
-                api.get(`/admin/bakeries/count`)
+                api.get(`/admin/bakeries?${params}`),
+                api.get(`/admin/bakeries/count?${params}`),
             ]);
             setBakeries(bakeryRes.data);
             setTotalBakeries(countRes.data);
-        } catch (err:any) {
-            const message = err?.response?.data || 'Failed to fetch customers';
-            toast.error(message);
-            console.error('Failed to fetch customers', err);
+        } catch (err: any) {
+            toast.error(err?.response?.data || 'Failed to fetch bakeries');
         }
-    }, [page]);
-    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
-    useEffect(() => {
-        fetchBakeries();
-    }, [fetchBakeries]);
+    }, [page, searchName, searchPhone]);
+
 
 
 
@@ -225,6 +229,20 @@ const Bakeries: React.FC = () => {
     return (
         <Container>
             <Title>Bakeries</Title>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                <Input
+                    placeholder="Search Bakery Name"
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                />
+                <Input
+                    placeholder="Search Phone"
+                    value={searchPhone}
+                    onChange={(e) => setSearchPhone(e.target.value)}
+                />
+                <Button onClick={() => { setPage(0); fetchBakeries(); }}>Search</Button>
+            </div>
+
             <TableWrapper>
             <Table>
                 <thead>

@@ -16,6 +16,16 @@ const DashboardContainer = styled.div`
     width: 100%;
     box-sizing: border-box;
 `;
+const statusOptions = [
+    { label: 'Pending', value: 'pending' },
+    { label: 'Confirmed', value: 'confirmed' },
+    { label: 'Waiting for Bakery Dropoff', value: 'waiting_bakery_drop_off' },
+    { label: 'Pickup Order', value: 'waiting_client_pick_up' },
+    { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Canceled', value: 'canceled' },
+    { label: 'Completed', value: 'completed' },
+];
 
 const Header = styled.h1`
     font-size: 32px;
@@ -112,6 +122,13 @@ const Dashboard: React.FC = () => {
             console.error('Error fetching dashboard data', error);
         }
     };
+    const ordersStatusParsed = ordersStatus.map(entry => {
+        const match = statusOptions.find(opt => opt.value === entry.status);
+        return {
+            ...entry,
+            label: match?.label || entry.status,
+        };
+    });
 
     const easyboxOccupancyData = compartmentsStatus
         ? [
@@ -127,7 +144,7 @@ const Dashboard: React.FC = () => {
             <KPIWrapper>
                 <KPICard label="Total Easyboxes" value={stats?.totalEasyboxes ?? '-'} />
                 <KPICard label="Active Compartments" value={stats?.activeCompartments ?? '-'} />
-                <KPICard label="Orders" value={stats?.totalOrders ?? '-'} />
+                <KPICard label="Total Orders" value={stats?.totalOrders ?? '-'} />
                 <KPICard label="Expired Orders" value={stats?.expiredOrders ?? '-'} />
             </KPIWrapper>
 
@@ -156,18 +173,19 @@ const Dashboard: React.FC = () => {
                     <ResponsiveContainer width="100%" height={280}>
                         <PieChart>
                             <Pie
-                                data={ordersStatus}
+                                data={ordersStatusParsed}
                                 dataKey="count"
-                                nameKey="status"
+                                nameKey="label"
                                 cx="50%"
                                 cy="50%"
                                 outerRadius={90}
                                 label
                             >
-                                {ordersStatus.map((entry, index) => (
+                                {ordersStatusParsed.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>
+
                             <Tooltip />
                             <Legend />
                         </PieChart>

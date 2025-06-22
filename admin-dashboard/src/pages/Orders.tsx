@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { api } from '../api';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -15,6 +15,7 @@ const Button = styled.button`margin:4px;background:#28a745;color:#fff;border:non
     border-radius:6px;font-size:.9rem;cursor:pointer;transition:.2s;
     &:hover{background:#28a745;} &:disabled{background:#aaa;cursor:not-allowed;}`;
 const Input = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
+
 interface Compartment {
     id: number;
     size: number;
@@ -55,20 +56,18 @@ export default function Orders() {
     const [filterDate, setFilterDate] = useState('');
     const [filterBakeryName, setFilterBakeryName] = useState('');
     const [filterUserPhone, setFilterUserPhone] = useState('');
+    const [filterOrderId, setFilterOrderId] = useState('');
 
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editStatus, setEditStatus] = useState('');
-    const [confirmDialog, setConfirmDialog] = useState<{
-        message: string;
-        onConfirm: () => void;
-    } | null>(null);
-    const [compartmentMap, setCompartmentMap] = useState<Record<number, Compartment[]>>({});
+    const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
+    const compartmentMapRef = useRef<Record<number, Compartment[]>>({});
     const [compartmentNumbers, setCompartmentNumbers] = useState<Record<number, number>>({});
 
-
     const getCompartmentNumber = useCallback(async (easyboxId: number, compartmentId: number): Promise<number | null> => {
-        if (compartmentMap[easyboxId]) {
-            const sorted = [...compartmentMap[easyboxId]].sort((a, b) => a.id - b.id);
+        if (compartmentMapRef.current[easyboxId]) {
+            const sorted = [...compartmentMapRef.current[easyboxId]].sort((a, b) => a.id - b.id);
             const index = sorted.findIndex(c => c.id === compartmentId);
             return index >= 0 ? index + 1 : null;
         }
@@ -76,16 +75,14 @@ export default function Orders() {
         try {
             const res = await api.get(`/admin/easyboxes/${easyboxId}/details`);
             const sorted = res.data.compartments.sort((a: Compartment, b: Compartment) => a.id - b.id);
-            setCompartmentMap(prev => ({ ...prev, [easyboxId]: sorted }));
+            compartmentMapRef.current[easyboxId] = sorted;
             const index = sorted.findIndex((c: Compartment) => c.id === compartmentId);
             return index >= 0 ? index + 1 : null;
         } catch (err) {
             console.error("Failed to fetch compartments:", err);
             return null;
         }
-    }, [compartmentMap]);
-
-
+    }, []);
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -95,6 +92,7 @@ export default function Orders() {
                 ...(filterDate && { deliveryDate: filterDate }),
                 ...(filterBakeryName && { bakeryName: filterBakeryName }),
                 ...(filterUserPhone && { userPhone: filterUserPhone }),
+                ...(filterOrderId && { orderId: filterOrderId }),
             }).toString();
 
             const [list, count] = await Promise.all([
@@ -106,11 +104,12 @@ export default function Orders() {
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch orders');
         }
-    }, [page, filterDate, filterBakeryName, filterUserPhone]);
+    }, [page, filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
 
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
+
     useEffect(() => {
         const fetchCompartmentNumbers = async () => {
             const promises = orders.map(async (o) => {
@@ -124,9 +123,7 @@ export default function Orders() {
             const results = await Promise.all(promises);
             const newMap: Record<number, number> = {};
             results.forEach(({ orderId, number }) => {
-                if (number != null) {
-                    newMap[orderId] = number;
-                }
+                if (number != null) newMap[orderId] = number;
             });
             setCompartmentNumbers(newMap);
         };
@@ -185,7 +182,16 @@ export default function Orders() {
     return (
         <OrdersContainer>
             <h1>Orders</h1>
-
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+                <div>
+                    <label style={{ fontWeight: 500 }}>Delivery Date</label>
+                    <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+                </div>
+                <Input value={filterOrderId} onChange={e => setFilterOrderId(e.target.value)} placeholder="Order ID" />
+                <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)} placeholder="Bakery Name" />
+                <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)} placeholder="User Phone" />
+                <Button onClick={fetchOrders}>Apply</Button>
+            </div>
             <Table>
                 <thead>
                 <tr>
@@ -207,19 +213,12 @@ export default function Orders() {
                         <Td>{o.userPhone}</Td>
                         <Td>{o.bakeryName}</Td>
                         <Td>{o.easyboxAddress}</Td>
-                        <Td>
-                            {compartmentNumbers[o.id] != null
-                                ? `${compartmentNumbers[o.id]}`
-                                : 'Loading...'}
-                        </Td>
-
+                        <Td>{compartmentNumbers[o.id] ?? 'Loading...'}</Td>
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
                         <Td>
                             {editingId === o.id ? (
-                                <select value={editStatus}
-                                        onChange={e => setEditStatus(e.target.value)}
-                                        style={{ padding: '8px', border: '1px solid #ccc' }}>
+                                <select value={editStatus} onChange={e => setEditStatus(e.target.value)} style={{ padding: '8px', border: '1px solid #ccc' }}>
                                     {statusOptions.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                     ))}
@@ -229,16 +228,17 @@ export default function Orders() {
                             )}
                         </Td>
                         <Td>
-                            {editingId === o.id
-                                ? <>
+                            {editingId === o.id ? (
+                                <>
                                     <Button onClick={() => handleSaveEdit(o.id)}>Save</Button>
                                     <Button onClick={() => setEditingId(null)}>Cancel</Button>
                                 </>
-                                : <>
+                            ) : (
+                                <>
                                     <Button onClick={() => handleStartEdit(o)}>Edit</Button>
                                     <Button onClick={() => handleDeleteOrder(o.id)}>Delete</Button>
                                 </>
-                            }
+                            )}
                         </Td>
                     </TableRow>
                 ))}
@@ -248,19 +248,10 @@ export default function Orders() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, margin: 20 }}>
                 <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
                 <span>Page {page + 1} / {Math.ceil(totalOrders / pageSize)}</span>
-                <Button onClick={() => setPage(p => p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p)}
-                        disabled={page + 1 >= Math.ceil(totalOrders / pageSize)}>Next</Button>
+                <Button onClick={() => setPage(p => p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p)} disabled={page + 1 >= Math.ceil(totalOrders / pageSize)}>Next</Button>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-                <div>
-                    <label style={{ fontWeight: 500 }}>Delivery Date</label>
-                    <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
-                </div>
-                <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)} placeholder="Bakery Name" />
-                <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)} placeholder="User Phone" />
-                <Button onClick={fetchOrders}>Apply</Button>
-            </div>
+
 
             {confirmDialog && (
                 <ConfirmDialog
