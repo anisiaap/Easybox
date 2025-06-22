@@ -116,7 +116,8 @@ const Bakeries: React.FC = () => {
         name: '',
         phone: '',
         pluginInstalled: false,
-        token: ''
+        token: '',
+        version: 0
     });
     const [searchName, setSearchName] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
