@@ -88,7 +88,7 @@ export default function Orders() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const query = new URLSearchParams({
+            const listQuery = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
                 ...(filterDate && { deliveryDate: filterDate }),
@@ -97,14 +97,27 @@ export default function Orders() {
                 ...(filterOrderId && { orderId: filterOrderId }),
             }).toString();
 
+            const countQuery = new URLSearchParams({
+                ...(filterDate && { deliveryDate: filterDate }),
+                ...(filterBakeryName && { bakeryName: filterBakeryName }),
+                ...(filterUserPhone && { userPhone: filterUserPhone }),
+                ...(filterOrderId && { orderId: filterOrderId }),
+            }).toString();
+
             const [list, count] = await Promise.all([
-                api.get(`/admin/reservations?${query}`),
-                api.get(`/admin/reservations/count?${query}`),
+                api.get(`/admin/reservations?${listQuery}`),
+                api.get(`/admin/reservations/count?${countQuery}`),
             ]);
+
             setOrders(list.data);
             setTotalOrders(count.data);
         } catch (err: any) {
-            toast.error(err?.response?.data || 'Failed to fetch orders');
+            if (err?.response?.data?.message) {
+                toast.error(err.response.data.message);
+            } else {
+                toast.error('Failed to fetch orders');
+            }
+
         }
     }, [page, filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
 
