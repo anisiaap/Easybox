@@ -134,7 +134,7 @@ export default function Orders() {
         if (orders.length > 0) {
             fetchCompartmentNumbers();
         }
-    }, [orders]);
+    }, [orders, getCompartmentNumber]);
 
     const handleDeleteOrder = (id: number) =>
         setConfirmDialog({

@@ -74,14 +74,14 @@ const Input = styled.input`
     border-radius: 6px;
     border: 1px solid #ccc;
 `;
-
-const Form = styled.form`
-    margin-top: 40px;
-    background: #f9f9f9;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-`;
+//
+// const Form = styled.form`
+//     margin-top: 40px;
+//     background: #f9f9f9;
+//     padding: 24px;
+//     border-radius: 12px;
+//     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+// `;
 
 interface Customer {
     id: number;
@@ -160,19 +160,19 @@ const Customers: React.FC = () => {
         });
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await api.post('/admin/users', newCustomer);
-            setNewCustomer({ name: '', phoneNumber: '' });
-            toast.success('Customer created successfully!');
-            fetchCustomers();
-        }catch (error: any) {
-            const message = error?.response?.data || 'Failed to create customer';
-            toast.error(message);
-            console.error('Error creating customer', error);
-        }
-    };
+    // const handleCreate = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     try {
+    //         await api.post('/admin/users', newCustomer);
+    //         setNewCustomer({ name: '', phoneNumber: '' });
+    //         toast.success('Customer created successfully!');
+    //         fetchCustomers();
+    //     }catch (error: any) {
+    //         const message = error?.response?.data || 'Failed to create customer';
+    //         toast.error(message);
+    //         console.error('Error creating customer', error);
+    //     }
+    // };
 
     return (
         <Container>

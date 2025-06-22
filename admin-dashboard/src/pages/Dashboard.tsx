@@ -5,7 +5,7 @@ import ChartPlaceholder from '../components/ui/ChartPlaceholder';
 import { api } from '../api';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+    PieChart, Pie, Cell, Legend, RadarChart, PolarGrid, Radar
 } from 'recharts';
 import toast from 'react-hot-toast';
 // Styled Components

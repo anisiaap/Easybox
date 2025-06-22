@@ -78,13 +78,13 @@ const Input = styled.input`
     border: 1px solid #ccc;
 `;
 
-const Form = styled.form`
-    margin-top: 40px;
-    background: #f9f9f9;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-`;
+// const Form = styled.form`
+//     margin-top: 40px;
+//     background: #f9f9f9;
+//     padding: 24px;
+//     border-radius: 12px;
+//     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+// `;
 const Td = styled.td`
     padding: 16px;
     border-bottom: 1px solid #eee;
@@ -146,19 +146,19 @@ const Bakeries: React.FC = () => {
 
 
 
-    const handleCreateBakery = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await api.post('/admin/bakeries', newBakery);
-            toast.success('Bakery created successfully!');
-            setNewBakery({ name: '', phone: '', pluginInstalled: true, token: '' });
-            fetchBakeries();
-        }  catch (error: any) {
-            const message = error?.response?.data || 'Failed to create bakery';
-            toast.error(message);
-            console.error('Error creating bakery', error);
-        }
-    };
+    // const handleCreateBakery = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     try {
+    //         await api.post('/admin/bakeries', newBakery);
+    //         toast.success('Bakery created successfully!');
+    //         setNewBakery({ name: '', phone: '', pluginInstalled: true, token: '' });
+    //         fetchBakeries();
+    //     }  catch (error: any) {
+    //         const message = error?.response?.data || 'Failed to create bakery';
+    //         toast.error(message);
+    //         console.error('Error creating bakery', error);
+    //     }
+    // };
 
     const handleDeleteBakery = async (id: number) => {
         setConfirmDialog({
