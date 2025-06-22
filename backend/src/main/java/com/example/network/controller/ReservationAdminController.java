@@ -12,11 +12,14 @@ import com.example.network.model.Easybox;
 import com.example.network.dto.ReservationDto;
 import com.example.network.repository.UserRepository;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/reservations")
@@ -83,21 +86,40 @@ public class ReservationAdminController {
         return reservationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Reservation not found")))
                 .flatMap(reservation -> {
+                    if (!reservation.getVersion().equals(update.getVersion())) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Reservation was modified by someone else."));
+                    }
+
                     if (update.getStatus() != null) {
                         reservation.setStatus(update.getStatus());
                     }
                     if (update.getEasyboxId() != null) {
                         reservation.setEasyboxId(update.getEasyboxId());
                     }
+
                     return reservationRepository.save(reservation);
                 });
     }
 
+
     // DELETE reservation
     @DeleteMapping("/{id}")
-    public Mono<Void> deleteReservation(@PathVariable Long id) {
-        return reservationRepository.deleteById(id);
+    public Mono<Void> deleteReservation(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Long version = body.get("version") instanceof Number ? ((Number) body.get("version")).longValue() : null;
+        if (version == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Version required for delete"));
+        }
+
+        return reservationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Reservation not found")))
+                .flatMap(reservation -> {
+                    if (!reservation.getVersion().equals(version)) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Reservation was modified by someone else."));
+                    }
+                    return reservationRepository.delete(reservation);
+                });
     }
+
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
         Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId());

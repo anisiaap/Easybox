@@ -87,8 +87,8 @@ interface Customer {
     id: number;
     name: string;
     phoneNumber: string;
+    version: number; // 🆕
 }
-
 const Customers: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -132,11 +132,20 @@ const Customers: React.FC = () => {
             message: 'Are you sure you want to delete this customer? This action cannot be undone.',
             onConfirm: async () => {
                 try {
-                    await api.delete(`/admin/users/${id}`);
+                    await api.delete(`/admin/users/${id}`, {
+                        data: { version: customers.find(c => c.id === id)?.version }
+                    });
+
                     fetchCustomers();
                     toast.success('Customer deleted');
-                } catch (err) {
-                    toast.error('Failed to delete customer');
+                } catch (error) {
+                    const status = (error as any)?.response?.status;
+
+                    if (status === 409) {
+                        toast.error("This item was modified by someone else. Please refresh.");
+                    } else {
+                        toast.error("Delete failed.");
+                    }
                 }
                 setConfirmDialog(null);
             },
@@ -153,12 +162,21 @@ const Customers: React.FC = () => {
             message: 'Are you sure you want to save the changes to this customer?',
             onConfirm: async () => {
                 try {
-                    await api.put(`/admin/users/${id}`, editData);
+                    await api.put(`/admin/users/${id}`, {
+                        ...editData,
+                        version: customers.find(c => c.id === id)?.version,
+                    });
                     setEditingId(null);
                     fetchCustomers();
                     toast.success('Customer updated');
-                } catch (err) {
-                    toast.error('Failed to update customer');
+                } catch (error) {
+                    const status = (error as any)?.response?.status;
+
+                    if (status === 409) {
+                        toast.error("This item was modified by someone else. Please refresh.");
+                    } else {
+                        toast.error("Delete failed.");
+                    }
                 }
                 setConfirmDialog(null);
             },

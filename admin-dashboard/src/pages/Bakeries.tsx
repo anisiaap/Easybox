@@ -99,6 +99,7 @@ interface Bakery {
     phone: string;
     pluginInstalled: boolean;
     token: string;
+    version: number; // 🆕
 }
 
 const Bakeries: React.FC = () => {
@@ -173,11 +174,20 @@ const Bakeries: React.FC = () => {
             message: 'Are you sure you want to delete this bakery? This action cannot be undone.',
             onConfirm: async () => {
                 try {
-                    await api.delete(`/admin/bakeries/${id}`);
+                    await api.delete(`/admin/bakeries/${id}`, {
+                        data: { version: bakeries.find(b => b.id === id)?.version }
+                    });
+
                     fetchBakeries();
                     toast.success('Bakery deleted!');
                 } catch (error) {
-                    toast.error('Failed to delete bakery.');
+                    const status = (error as any)?.response?.status;
+
+                    if (status === 409) {
+                        toast.error("This item was modified by someone else. Please refresh.");
+                    } else {
+                        toast.error("Delete failed.");
+                    }
                 }
                 setConfirmDialog(null);
             }
@@ -199,12 +209,22 @@ const Bakeries: React.FC = () => {
             message: 'Are you sure you want to save the changes to this bakery?',
             onConfirm: async () => {
                 try {
-                    await api.put(`/admin/bakeries/${id}`, editData);
+                    await api.put(`/admin/bakeries/${id}`, {
+                        ...editData,
+                        version: bakeries.find(b => b.id === id)?.version,
+                    });
+
                     setEditingId(null);
                     fetchBakeries();
                     toast.success('Bakery updated!');
                 } catch (error) {
-                    toast.error('Error updating bakery');
+                    const status = (error as any)?.response?.status;
+
+                    if (status === 409) {
+                        toast.error("This item was modified by someone else. Please refresh.");
+                    } else {
+                        toast.error("Delete failed.");
+                    }
                 }
                 setConfirmDialog(null);
             }
@@ -274,19 +294,7 @@ const Bakeries: React.FC = () => {
                                 b.name
                             )}
                         </Td>
-                        {/*<Td>*/}
-                        {/*    {editingId === b.id ? (*/}
-                        {/*        <Input*/}
-                        {/*            value={editData.phone}*/}
-                        {/*            onChange={e =>*/}
-                        {/*                setEditData({ ...editData, phone: e.target.value })*/}
-                        {/*            }*/}
-                        {/*            placeholder="Phone Number"*/}
-                        {/*        />*/}
-                        {/*    ) : (*/}
-                        {/*        b.phone*/}
-                        {/*    )}*/}
-                        {/*</Td>*/}
+                        <Td>{b.phone}</Td>
                         <Td>{b.pluginInstalled ? '✅' : '❌'}</Td>
                         <Td>
                             <Button onClick={() => {

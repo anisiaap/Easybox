@@ -1,6 +1,7 @@
 package com.example.network.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("bakery")
@@ -8,7 +9,8 @@ public class Bakery {
 
     @Id
     private Long id;
-
+    @Version
+    private Long version;
     private String name;
     private String phone;
     private Boolean pluginInstalled;
@@ -16,7 +18,8 @@ public class Bakery {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
     private String token;
-
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
     public String getToken() {
         return token;
     }

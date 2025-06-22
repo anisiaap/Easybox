@@ -4,9 +4,13 @@ package com.example.network.controller;
 import com.example.network.model.User;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -45,6 +49,9 @@ public class UserAdminController {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("User not found")))
                 .flatMap(user -> {
+                    if (!user.getVersion().equals(userUpdate.getVersion())) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Entity was modified by someone else."));
+                    }
                     user.setName(userUpdate.getName());
                     user.setPhoneNumber(userUpdate.getPhoneNumber());
                     return userRepository.save(user);
@@ -52,7 +59,20 @@ public class UserAdminController {
     }
 
     @DeleteMapping("/{id}")
-    public Mono<Void> deleteUser(@PathVariable Long id) {
-        return userRepository.deleteById(id);
+    public Mono<Void> deleteUser(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Long version = body.get("version") instanceof Number ? ((Number) body.get("version")).longValue() : null;
+        if (version == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Version is required."));
+        }
+
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("User not found")))
+                .flatMap(user -> {
+                    if (!user.getVersion().equals(version)) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "User was modified by someone else."));
+                    }
+                    return userRepository.delete(user);
+                });
     }
+
 }
