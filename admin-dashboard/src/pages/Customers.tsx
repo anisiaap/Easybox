@@ -93,7 +93,7 @@ const Customers: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
-    const [newCustomer, setNewCustomer] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
+    // const [newCustomer, setNewCustomer] = useState<Omit<Customer, 'id'>>({ name: '', phoneNumber: '' });
     const [page, setPage] = useState(0);
     const pageSize = 10;
     const [totalUsers, setTotalUsers] = useState(0);

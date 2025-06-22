@@ -104,12 +104,12 @@ interface Bakery {
 const Bakeries: React.FC = () => {
     const [bakeries, setBakeries] = useState<Bakery[]>([]);
     const [copiedTokenId, setCopiedTokenId] = useState<number | null>(null);
-    const [newBakery, setNewBakery] = useState<Omit<Bakery, 'id'>>({
-        name: '',
-        phone: '',
-        pluginInstalled: true,
-        token: ''
-    });
+    // const [newBakery, setNewBakery] = useState<Omit<Bakery, 'id'>>({
+    //     name: '',
+    //     phone: '',
+    //     pluginInstalled: true,
+    //     token: ''
+    // });
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Omit<Bakery, 'id'>>({
         name: '',

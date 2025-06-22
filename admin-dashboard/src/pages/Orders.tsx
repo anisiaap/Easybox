@@ -66,8 +66,7 @@ export default function Orders() {
     const [compartmentNumbers, setCompartmentNumbers] = useState<Record<number, number>>({});
 
 
-    const getCompartmentNumber = async (easyboxId: number, compartmentId: number): Promise<number | null> => {
-        // If already fetched, use it
+    const getCompartmentNumber = useCallback(async (easyboxId: number, compartmentId: number): Promise<number | null> => {
         if (compartmentMap[easyboxId]) {
             const sorted = [...compartmentMap[easyboxId]].sort((a, b) => a.id - b.id);
             const index = sorted.findIndex(c => c.id === compartmentId);
@@ -84,7 +83,8 @@ export default function Orders() {
             console.error("Failed to fetch compartments:", err);
             return null;
         }
-    };
+    }, [compartmentMap]);
+
 
 
     const fetchOrders = useCallback(async () => {
