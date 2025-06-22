@@ -23,6 +23,20 @@ type Order = {
     deliveryTime: string;
     easyboxAddress: string;
 };
+const statusOptions = [
+    { label: 'Pending', value: 'pending' },
+    { label: 'Confirmed', value: 'confirmed' },
+    { label: 'Waiting for Bakery Dropoff', value: 'waiting_bakery_drop_off' },
+    { label: 'Pickup Order', value: 'waiting_client_pick_up' },
+    { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Canceled', value: 'canceled' },
+    { label: 'Completed', value: 'completed' },
+];
+function getStatusLabel(status: string): string {
+    const found = statusOptions.find(option => option.value === status);
+    return found ? found.label : status;
+}
 
 function getStatusChipStyle(status: string) {
     return {
@@ -65,8 +79,12 @@ export default function HomeScreen() {
     }
 
     const activeOrders = orders.filter(
-        (o) => o.status !== 'canceled' && o.status !== 'completed'
+        (o) =>
+            o.status !== 'canceled' &&
+            o.status !== 'completed' &&
+            o.status !== 'pending'
     );
+
     const pastOrders = orders.filter(
         (o) => o.status === 'canceled' || o.status === 'completed'
     );
@@ -132,8 +150,9 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
             </View>
             <Text style={styles.orderTitle}>Order #{item.id}</Text>
             <Chip style={getStatusChipStyle(item.status)} textStyle={{ color: '#fff' }}>
-                {item.status.toUpperCase()}
+                {getStatusLabel(item.status)}
             </Chip>
+
 
 
             <Divider style={{ marginVertical: 10 }} />

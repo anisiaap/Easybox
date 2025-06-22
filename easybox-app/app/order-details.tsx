@@ -36,12 +36,16 @@ function calculateTimeLeft(deadline: string): string {
 
     return parts.join(' ');
 }
-function formatCountdown(start: string, end: string): { label: string, timeLeft: string } {
+function formatCountdown(start: string, end: string, status: string): { label: string, timeLeft: string } {
     const now = new Date();
     const startTime = new Date(start);
     const endTime = new Date(end);
 
-    if (now < startTime) {
+    // Override logic if status implies active use
+    const forceActive =
+        status === 'waiting_bakery_drop_off' || status === 'waiting_client_pick_up';
+
+    if (!forceActive && now < startTime) {
         return {
             label: 'Starts in',
             timeLeft: calculateTimeLeft(start)
@@ -53,6 +57,7 @@ function formatCountdown(start: string, end: string): { label: string, timeLeft:
         };
     }
 }
+
 
 
 
@@ -84,7 +89,8 @@ export default function OrderDetails() {
         if (!start || !order?.actionDeadline) return;
 
         const update = () => {
-            const { label, timeLeft } = formatCountdown(start, order.actionDeadline);
+            const { label, timeLeft } = formatCountdown(start, order.actionDeadline, order.status);
+
             setCountdownLabel(label);
             setTimeLeft(timeLeft);
         };
