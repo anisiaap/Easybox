@@ -53,17 +53,20 @@ public class ReservationAdminController {
         // resolve IDs reactively
         Mono<Long> bakeryIdMono = (bakeryName != null && !bakeryName.isEmpty())
                 ? bakeryRepository.findByName(bakeryName).map(Bakery::getId)
-                : Mono.just(null);
+                : Mono.empty();
 
         Mono<Long> userIdMono = (userPhone != null && !userPhone.isEmpty())
                 ? userRepository.findByPhoneNumber(userPhone).map(User::getId)
-                : Mono.just(null);
+                : Mono.empty();
 
         Mono<Long> orderIdMono = (orderId != null && !orderId.isEmpty())
                 ? Mono.just(Long.parseLong(orderId))
-                : Mono.just(null);
+                : Mono.empty();
 
-        return Mono.zip(bakeryIdMono, userIdMono, orderIdMono)
+
+        return Mono.zip(bakeryIdMono.defaultIfEmpty(null), userIdMono.defaultIfEmpty(null), orderIdMono.defaultIfEmpty(null))
+
+
                 .flatMapMany(tuple -> {
                     Long bakeryId = tuple.getT1();
                     Long userId = tuple.getT2();
