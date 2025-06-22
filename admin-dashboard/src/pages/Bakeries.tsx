@@ -252,19 +252,19 @@ const Bakeries: React.FC = () => {
                                 b.name
                             )}
                         </Td>
-                        <Td>
-                            {editingId === b.id ? (
-                                <Input
-                                    value={editData.phone}
-                                    onChange={e =>
-                                        setEditData({ ...editData, phone: e.target.value })
-                                    }
-                                    placeholder="Phone Number"
-                                />
-                            ) : (
-                                b.phone
-                            )}
-                        </Td>
+                        {/*<Td>*/}
+                        {/*    {editingId === b.id ? (*/}
+                        {/*        <Input*/}
+                        {/*            value={editData.phone}*/}
+                        {/*            onChange={e =>*/}
+                        {/*                setEditData({ ...editData, phone: e.target.value })*/}
+                        {/*            }*/}
+                        {/*            placeholder="Phone Number"*/}
+                        {/*        />*/}
+                        {/*    ) : (*/}
+                        {/*        b.phone*/}
+                        {/*    )}*/}
+                        {/*</Td>*/}
                         <Td>{b.pluginInstalled ? '✅' : '❌'}</Td>
                         <Td>
                             <Button onClick={() => {
@@ -306,20 +306,20 @@ const Bakeries: React.FC = () => {
                             disabled={(page + 1) >= Math.ceil(totalBakeries / pageSize)}>Next</Button>
                 </div>
                 </TableWrapper>
-            <Form onSubmit={handleCreateBakery}>
-                <h3>Add New Bakery (Approved)</h3>
-                <Input
-                    value={newBakery.name}
-                    onChange={e => setNewBakery({ ...newBakery, name: e.target.value })}
-                    placeholder="Bakery Name"
-                />
-                <Input
-                    value={newBakery.phone}
-                    onChange={e => setNewBakery({ ...newBakery, phone: e.target.value })}
-                    placeholder="Phone Number"
-                />
-                <Button type="submit">Create Bakery</Button>
-            </Form>
+            {/*<Form onSubmit={handleCreateBakery}>*/}
+            {/*    <h3>Add New Bakery (Approved)</h3>*/}
+            {/*    <Input*/}
+            {/*        value={newBakery.name}*/}
+            {/*        onChange={e => setNewBakery({ ...newBakery, name: e.target.value })}*/}
+            {/*        placeholder="Bakery Name"*/}
+            {/*    />*/}
+            {/*    <Input*/}
+            {/*        value={newBakery.phone}*/}
+            {/*        onChange={e => setNewBakery({ ...newBakery, phone: e.target.value })}*/}
+            {/*        placeholder="Phone Number"*/}
+            {/*    />*/}
+            {/*    <Button type="submit">Create Bakery</Button>*/}
+            {/*</Form>*/}
             {confirmDialog && (
                 <ConfirmDialog
                     message={confirmDialog.message}

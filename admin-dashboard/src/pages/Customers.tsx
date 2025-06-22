@@ -202,19 +202,19 @@ const Customers: React.FC = () => {
                                 c.name
                             )}
                         </Td>
-                        <Td>
-                            {editingId === c.id ? (
-                                <Input
-                                    value={editData.phoneNumber}
-                                    onChange={(e) =>
-                                        setEditData({ ...editData, phoneNumber: e.target.value })
-                                    }
-                                    placeholder="Phone Number"
-                                />
-                            ) : (
-                                c.phoneNumber
-                            )}
-                        </Td>
+                        {/*<Td>*/}
+                        {/*    {editingId === c.id ? (*/}
+                        {/*        <Input*/}
+                        {/*            value={editData.phoneNumber}*/}
+                        {/*            onChange={(e) =>*/}
+                        {/*                setEditData({ ...editData, phoneNumber: e.target.value })*/}
+                        {/*            }*/}
+                        {/*            placeholder="Phone Number"*/}
+                        {/*        />*/}
+                        {/*    ) : (*/}
+                        {/*        c.phoneNumber*/}
+                        {/*    )}*/}
+                        {/*</Td>*/}
                         <Td>
                             <ButtonGroup>
                                 {editingId === c.id ? (
@@ -241,20 +241,20 @@ const Customers: React.FC = () => {
                         disabled={(page + 1) >= Math.ceil(totalUsers / pageSize)}>Next</Button>
             </div>
 
-            <Form onSubmit={handleCreate}>
-                <h3>Add New Customer</h3>
-                <Input
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    placeholder="Name"
-                />
-                <Input
-                    value={newCustomer.phoneNumber}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
-                    placeholder="Phone Number"
-                />
-                <Button type="submit">Create</Button>
-            </Form>
+            {/*<Form onSubmit={handleCreate}>*/}
+            {/*    <h3>Add New Customer</h3>*/}
+            {/*    <Input*/}
+            {/*        value={newCustomer.name}*/}
+            {/*        onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}*/}
+            {/*        placeholder="Name"*/}
+            {/*    />*/}
+            {/*    <Input*/}
+            {/*        value={newCustomer.phoneNumber}*/}
+            {/*        onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}*/}
+            {/*        placeholder="Phone Number"*/}
+            {/*    />*/}
+            {/*    <Button type="submit">Create</Button>*/}
+            {/*</Form>*/}
             {confirmDialog && (
                 <ConfirmDialog
                     message={confirmDialog.message}

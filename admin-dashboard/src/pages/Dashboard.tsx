@@ -140,8 +140,8 @@ const Dashboard: React.FC = () => {
                     <ResponsiveContainer width="100%" height={350}>
                         <RadarChart data={radarData}>
                             <PolarGrid />
-                            <PolarAngleAxis dataKey="easybox" />
-                            <PolarRadiusAxis />
+                            {/*<PolarAngleAxis dataKey="easybox" />*/}
+                            {/*<PolarRadiusAxis />*/}
                             <Radar name="Good" dataKey="good" stroke="#00b894" fill="#00b894" fillOpacity={0.6} />
                             <Radar name="Dirty" dataKey="dirty" stroke="#fdcb6e" fill="#fdcb6e" fillOpacity={0.6} />
                             <Radar name="Broken" dataKey="broken" stroke="#d63031" fill="#d63031" fillOpacity={0.6} />
@@ -182,12 +182,11 @@ const Dashboard: React.FC = () => {
                             <XAxis type="number" stroke="#999" />
                             <YAxis dataKey="name" type="category" stroke="#999" />
                             <Tooltip />
-                            <Bar
-                                dataKey="value"
-                                fill="#00b894"
-                                barSize={30}
-                                radius={[4, 4, 4, 4]}
-                            />
+                            <Bar dataKey="value" barSize={30}>
+                                {easyboxOccupancyData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartCard>

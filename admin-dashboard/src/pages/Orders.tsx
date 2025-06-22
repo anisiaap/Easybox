@@ -15,6 +15,13 @@ const Button = styled.button`margin:4px;background:#28a745;color:#fff;border:non
     border-radius:6px;font-size:.9rem;cursor:pointer;transition:.2s;
     &:hover{background:#28a745;} &:disabled{background:#aaa;cursor:not-allowed;}`;
 const Input = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
+interface Compartment {
+    id: number;
+    size: number;
+    temperature: number;
+    status: string;
+    condition: string;
+}
 
 interface Order {
     id: number;
@@ -55,6 +62,27 @@ export default function Orders() {
         message: string;
         onConfirm: () => void;
     } | null>(null);
+    const [compartmentMap, setCompartmentMap] = useState<Record<number, Compartment[]>>({});
+    const getCompartmentNumber = async (easyboxId: number, compartmentId: number): Promise<number | null> => {
+        // If already fetched, use it
+        if (compartmentMap[easyboxId]) {
+            const sorted = [...compartmentMap[easyboxId]].sort((a, b) => a.id - b.id);
+            const index = sorted.findIndex(c => c.id === compartmentId);
+            return index >= 0 ? index + 1 : null;
+        }
+
+        try {
+            const res = await api.get(`/admin/easyboxes/${easyboxId}/details`);
+            const sorted = res.data.compartments.sort((a: Compartment, b: Compartment) => a.id - b.id);
+            setCompartmentMap(prev => ({ ...prev, [easyboxId]: sorted }));
+            const index = sorted.findIndex((c: Compartment) => c.id === compartmentId);
+            return index >= 0 ? index + 1 : null;
+        } catch (err) {
+            console.error("Failed to fetch compartments:", err);
+            return null;
+        }
+    };
+
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -80,6 +108,30 @@ export default function Orders() {
     useEffect(() => {
         fetchOrders();
     }, [fetchOrders]);
+    useEffect(() => {
+        const fetchCompartmentNumbers = async () => {
+            const promises = orders.map(async (o) => {
+                if (o.easyboxId != null) {
+                    const number = await getCompartmentNumber(o.easyboxId, o.compartmentId);
+                    return { orderId: o.id, number };
+                }
+                return { orderId: o.id, number: null };
+            });
+
+            const results = await Promise.all(promises);
+            const newMap: Record<number, number> = {};
+            results.forEach(({ orderId, number }) => {
+                if (number != null) {
+                    newMap[orderId] = number;
+                }
+            });
+            setCompartmentNumbers(newMap);
+        };
+
+        if (orders.length > 0) {
+            fetchCompartmentNumbers();
+        }
+    }, [orders]);
 
     const handleDeleteOrder = (id: number) =>
         setConfirmDialog({
@@ -152,7 +204,12 @@ export default function Orders() {
                         <Td>{o.userPhone}</Td>
                         <Td>{o.bakeryName}</Td>
                         <Td>{o.easyboxAddress}</Td>
-                        <Td>{o.compartmentId}</Td>
+                        <Td>
+                            {compartmentNumbers[o.id] != null
+                                ? `${compartmentNumbers[o.id]}`
+                                : 'Loading...'}
+                        </Td>
+
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
                         <Td>

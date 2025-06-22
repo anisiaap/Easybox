@@ -179,6 +179,18 @@ const getDescription = (predefinedArray: PredefinedValue[] | undefined, value: n
     const found = predefinedArray.find(item => item.value === String(value));
     return found ? found.description : String(value);
 };
+const formatStatus = (status: string): string => {
+    switch (status.toLowerCase()) {
+        case 'active':
+            return 'Active';
+        case 'inactive':
+            return 'Inactive';
+        case 'in_approval':
+            return 'In approval';
+        default:
+            return status;
+    }
+};
 
 const Dashboard: React.FC = () => {
     const [easyboxes, setEasyboxes] = useState<Easybox[]>([]);
@@ -262,7 +274,7 @@ return (
                             <div>
                                 <strong>{box.address}</strong>
                                 <br />
-                                Status: {box.status}
+                                Status: {formatStatus(box.status)}
                                 <br />
                                 <button onClick={() => handleSelectEasybox(box)}>Details</button>
                             </div>
@@ -325,7 +337,7 @@ return (
 
                         )}
                 </h2>
-                    <p>Status: {selectedEasybox.status}</p>
+                    <p>Status: {formatStatus(selectedEasybox.status)}</p>
 
                     {/*{selectedEasybox.approved && (*/}
                     {/*    <button*/}
@@ -382,7 +394,7 @@ return (
                     </h3>
                     {showApproved && filteredEasyboxes.filter(box => box.approved).map(box => (
                         <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
-                            <strong>{box.address}</strong> — Status: {box.status}
+                            <strong>{box.address}</strong> — Status: {formatStatus(box.status)}
                         </EasyboxItem>
                     ))}
 
@@ -391,7 +403,7 @@ return (
                     </h3>
                     {showPending && filteredEasyboxes.filter(box => !box.approved).map(box => (
                         <EasyboxItem key={box.id} onClick={() => handleSelectEasybox(box)}>
-                            <strong>{box.address}</strong> — <span style={{ color: 'gray' }}>Pending</span>
+                            <strong>{box.address}</strong> — <span style={{ color: 'gray' }}>{formatStatus(box.status)}</span>
                         </EasyboxItem>
                     ))}
                 </div>

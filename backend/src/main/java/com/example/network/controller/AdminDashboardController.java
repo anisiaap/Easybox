@@ -89,20 +89,27 @@ public class AdminDashboardController {
                 });
     }
     @GetMapping("/orders-weekly")
-    public Flux<OrdersWeeklyDto> getOrdersWeekly() {
+    public Mono<List<OrdersWeeklyDto>> getOrdersWeekly() {
         LocalDate today = LocalDate.now();
-        LocalDate weekAgo = today.minusDays(6); // includes today (7 days)
+        LocalDate weekLater = today.plusDays(6);
 
         return reservationRepository.findAll()
                 .filter(r -> r.getDeliveryTime() != null)
                 .filter(r -> {
                     LocalDate date = r.getDeliveryTime().toLocalDate();
-                    return (date.isEqual(weekAgo) || date.isAfter(weekAgo)) && (date.isBefore(today.plusDays(1)));
+                    return !date.isBefore(today) && !date.isAfter(weekLater);
                 })
-                .groupBy(r -> r.getDeliveryTime().toLocalDate())
-                .flatMap(group -> group.count()
-                        .map(count -> new OrdersWeeklyDto(group.key().toString(), count))
-                )
-                .sort(Comparator.comparing(OrdersWeeklyDto::getDay));
+                .collect(Collectors.groupingBy(r -> r.getDeliveryTime().toLocalDate(), Collectors.counting()))
+                .map(countsByDate -> {
+                    List<OrdersWeeklyDto> result = new java.util.ArrayList<>();
+                    for (int i = 0; i < 7; i++) {
+                        LocalDate date = today.plusDays(i);
+                        long count = countsByDate.getOrDefault(date, 0L);
+                        result.add(new OrdersWeeklyDto(date.toString(), count));
+                    }
+                    return result;
+                });
     }
+
+
 }
