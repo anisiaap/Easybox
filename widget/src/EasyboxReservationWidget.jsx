@@ -395,7 +395,7 @@ const EasyboxReservationWidget = forwardRef(
 const styles = {
     widgetContainer: {
         width: '100%',
-        height: '100%', // ensures full height usage
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Arial, sans-serif',
@@ -416,8 +416,7 @@ const styles = {
     mainSection: {
         display: 'flex',
         flex: 1,
-        minHeight: 0, // allows inner flex children to scroll
-        height: '100%'
+        minHeight: '400px'
     },
     sidePanel: {
         width: '250px',
@@ -425,16 +424,38 @@ const styles = {
         padding: '10px',
         boxSizing: 'border-box',
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
+        flexDirection: 'column'
+    },
+    searchForm: {
+        display: 'flex',
+        marginBottom: '10px'
+    },
+    input: {
+        flex: 1,
+        padding: '6px',
+        marginRight: '5px',
+        border: '1px solid #ccc',
+        borderRadius: '4px'
+    },
+    button: {
+        padding: '6px 12px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        cursor: 'pointer'
+    },
+    checkBtn: {
+        padding: '6px 12px',
+        marginBottom: '10px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        cursor: 'pointer'
     },
     easyboxList: {
         flex: 1,
         overflowY: 'auto',
         border: '1px solid #eee',
         borderRadius: '4px',
-        padding: '5px',
-        minHeight: 0
+        padding: '5px'
     },
     boxItem: {
         borderBottom: '1px solid #eee',
@@ -460,9 +481,7 @@ const styles = {
         padding: '10px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '8px'
+        alignItems: 'center'
     },
     selectedInfo: {
         fontWeight: 'bold'
@@ -474,11 +493,6 @@ const styles = {
         backgroundColor: '#4caf50',
         color: '#fff',
         cursor: 'pointer'
-    },
-    memoText: {
-        fontSize: '0.85rem',
-        color: '#666',
-        maxWidth: '400px'
     }
 };
 
