@@ -40,8 +40,8 @@ public class ReservationAdminController {
     public Flux<ReservationDto> getAllReservations(@RequestParam(required = false) Long bakeryId,
                                                    @RequestParam(required = false) Long userId,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
-                                                   @RequestParam(required = false, defaultValue = "0") int page,
-                                                   @RequestParam(required = false, defaultValue = "10") int size) {
+                                                   @RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
         Flux<Reservation> base = (bakeryId != null)
                 ? reservationRepository.findAllByBakeryIdOrderByReservationStartDesc(bakeryId)
                 : reservationRepository.findAllByOrderByReservationStartDesc();
@@ -100,9 +100,9 @@ public class ReservationAdminController {
     }
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
-        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId()).defaultIfEmpty(null);
-        Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null);
-        Mono<User> userMono = userRepository.findById(reservation.getUserId()).defaultIfEmpty(null);
+        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId());
+        Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId());
+        Mono<User> userMono = userRepository.findById(reservation.getUserId());
 
         return Mono.zip(bakeryMono, easyboxMono, userMono)
                 .map(tuple -> {
@@ -122,5 +122,4 @@ public class ReservationAdminController {
                     );
                 });
     }
-
 }
