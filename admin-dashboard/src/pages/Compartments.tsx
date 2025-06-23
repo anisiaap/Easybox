@@ -171,27 +171,6 @@ const AdminCompartments: React.FC = () => {
                             <Td>{c.temperature}</Td>
                             <Td>
                                 {c.easyboxAddress}
-                                <ButtonGroup>
-                                    <Button
-                                        onClick={() => {
-                                            setConfirmDialog({
-                                                message: `Are you sure you want to delete compartment ${c.id}?`,
-                                                onConfirm: async () => {
-                                                    try {
-                                                        await api.delete(`/admin/compartments/${c.id}`);
-                                                        toast.success('Compartment deleted');
-                                                        fetchCompartments();
-                                                    } catch (error: any) {
-                                                        toast.error(error?.response?.data?.message || 'Delete failed');
-                                                    }
-                                                    setConfirmDialog(null);
-                                                }
-                                            });
-                                        }}
-                                    >
-                                        Delete
-                                    </Button>
-                                </ButtonGroup>
                             </Td>
                         </TableRow>
                     ))}

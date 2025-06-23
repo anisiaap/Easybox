@@ -6,6 +6,13 @@ import L from 'leaflet';
 import { api } from '../api';  // adjust the path if needed
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+
+type ConfirmAction = null | {
+    message: string;
+    onConfirm: () => void;
+};
+
 
 // Styled Components
 const DashboardContainer = styled.div`
@@ -201,7 +208,7 @@ const Dashboard: React.FC = () => {
     const [showPending, setShowPending] = useState(true);
     const center: [number, number] = [45.9432, 24.9668]; // Center in Romania
     const [isApproving, setIsApproving] = useState(false);
-
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     const zoom = 6;
     const tileLayerProps = {
         attribution: '&copy; OpenStreetMap contributors',
@@ -365,21 +372,24 @@ return (
                     {/*    </button>*/}
                     {/*)}*/}
                     <button
-                        onClick={async () => {
-                            if (!window.confirm("Are you sure you want to delete this Easybox?")) return;
-
-                            try {
-                                await api.delete(`/admin/easyboxes/${selectedEasybox.id}`);
-                                toast.success("Easybox deleted.");
-                                setSelectedEasybox(null);
-                                // Re-fetch updated list
-                                const updated = await api.get('/admin/easyboxes');
-                                setEasyboxes(updated.data);
-                                setFilteredEasyboxes(updated.data);
-                            } catch (err: any) {
-                                const msg = err?.response?.data || "Failed to delete.";
-                                toast.error(msg);
-                            }
+                        onClick={() => {
+                            setConfirmDialog({
+                                message: `Are you sure you want to delete Easybox ${selectedEasybox.id}?`,
+                                onConfirm: async () => {
+                                    try {
+                                        await api.delete(`/admin/easyboxes/${selectedEasybox.id}`);
+                                        toast.success("Easybox deleted.");
+                                        setSelectedEasybox(null);
+                                        const updated = await api.get('/admin/easyboxes');
+                                        setEasyboxes(updated.data);
+                                        setFilteredEasyboxes(updated.data);
+                                    } catch (err: any) {
+                                        const msg = err?.response?.data || "Failed to delete.";
+                                        toast.error(msg);
+                                    }
+                                    setConfirmDialog(null);
+                                }
+                            });
                         }}
                         style={{
                             marginLeft: "10px",
@@ -440,6 +450,14 @@ return (
                     ))}
                 </div>
             )}
+            {confirmDialog && (
+                <ConfirmDialog
+                    message={confirmDialog.message}
+                    onConfirm={confirmDialog.onConfirm}
+                    onCancel={() => setConfirmDialog(null)}
+                />
+            )}
+
         </DetailsPanel>
     </DashboardContainer>
 );
