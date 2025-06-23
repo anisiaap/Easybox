@@ -131,7 +131,7 @@ const Customers: React.FC = () => {
         }
 
         if (searchPhone.trim()) {
-            filtered = filtered.filter(c => c.phone.includes(searchPhone));
+            filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
         }
 
         setCustomers(filtered);
