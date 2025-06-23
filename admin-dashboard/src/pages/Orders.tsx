@@ -92,7 +92,7 @@ export default function Orders() {
             });
 
             const [bakeryRes, countRes] = await Promise.all([
-                api.get(`/admin/reservations?${params}`),
+                api.get(`/admin/reservations`),
                 api.get(`/admin/reservations/count?${params}`),
             ]);
             setAllOrders(bakeryRes.data);
