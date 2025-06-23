@@ -63,13 +63,6 @@ const Input = styled.input`
     border: 1px solid #ccc;
 `;
 
-const ButtonGroup = styled.div`
-    margin-top: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-`;
-
 const Button = styled.button`
     background-color: #28a745;
     color: white;
