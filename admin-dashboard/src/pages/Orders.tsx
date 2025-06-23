@@ -105,7 +105,7 @@ export default function Orders() {
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch bakeries');
         }
-    }, [page, filterOrderId, filterBakeryName, filterUserPhone, filterDate, allOrders]);
+    }, [page,  filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
     useEffect(() => {
         let filtered = allOrders;
 
