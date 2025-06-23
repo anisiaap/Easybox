@@ -53,18 +53,25 @@ const Input = styled.input`
     border: 1px solid #ccc;
 `;
 
-// const Button = styled.button`
-//     background-color: #28a745;
-//     color: white;
-//     border: none;
-//     padding: 8px 14px;
-//     border-radius: 6px;
-//     cursor: pointer;
-//     transition: background 0.2s ease;
-//     &:hover {
-//         background-color: #218838;
-//     }
-// `;
+const ButtonGroup = styled.div`
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+`;
+
+const Button = styled.button`
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    &:hover {
+        background-color: #c82333;
+    }
+`;
 
 interface Compartment {
     id: number;
@@ -75,14 +82,16 @@ interface Compartment {
     easyboxAddress: string;
 }
 
+type ConfirmAction = null | {
+    message: string;
+    onConfirm: () => void;
+};
+
 const AdminCompartments: React.FC = () => {
     const [compartments, setCompartments] = useState<Compartment[]>([]);
     const [searchAddress, setSearchAddress] = useState('');
     const [filtered, setFiltered] = useState<Compartment[]>([]);
-    const [confirmDialog, setConfirmDialog] = useState<null | {
-        message: string;
-        onConfirm: () => void;
-    }>(null);
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
 
     const fetchCompartments = useCallback(async () => {
         try {
@@ -90,7 +99,7 @@ const AdminCompartments: React.FC = () => {
             setCompartments(res.data);
             setFiltered(res.data);
         } catch (error: any) {
-            toast.error(error?.response?.data || 'Failed to fetch compartments');
+            toast.error(error?.response?.data?.message || 'Something went wrong');
         }
     }, []);
 
@@ -134,7 +143,30 @@ const AdminCompartments: React.FC = () => {
                         <Td>{c.condition}</Td>
                         <Td>{c.size}</Td>
                         <Td>{c.temperature}</Td>
-                        <Td>{c.easyboxAddress}</Td>
+                        <Td>
+                            {c.easyboxAddress}
+                            <ButtonGroup>
+                                <Button
+                                    onClick={() => {
+                                        setConfirmDialog({
+                                            message: `Are you sure you want to delete compartment ${c.id}?`,
+                                            onConfirm: async () => {
+                                                try {
+                                                    await api.delete(`/admin/compartments/${c.id}`);
+                                                    toast.success('Compartment deleted');
+                                                    fetchCompartments();
+                                                } catch (error: any) {
+                                                    toast.error(error?.response?.data?.message || 'Delete failed');
+                                                }
+                                                setConfirmDialog(null);
+                                            }
+                                        });
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </ButtonGroup>
+                        </Td>
                     </TableRow>
                 ))}
                 </tbody>

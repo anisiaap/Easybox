@@ -45,7 +45,7 @@ public class CompartmentAdminController {
     public Mono<Void> markClean(@PathVariable Long id) {
         return syncService.updateStatus(id, "free");
     }
-    @GetMapping("/api/admin/compartments")
+    @GetMapping("")
     public Flux<CompartmentDtoWithAddress> getAllWithAddress() {
         return compartmentRepository.findAll()
                 .flatMap(comp -> easyboxRepository.findById(comp.getEasyboxId())
