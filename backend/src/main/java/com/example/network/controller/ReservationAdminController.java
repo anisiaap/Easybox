@@ -101,7 +101,9 @@ public class ReservationAdminController {
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
         Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId()).defaultIfEmpty(null);
-        Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null);
+        Mono<Easybox> easyboxMono = reservation.getEasyboxId() != null
+                ? easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null)
+                : Mono.just(null);
         Mono<User> userMono = userRepository.findById(reservation.getUserId()).defaultIfEmpty(null);
 
         return Mono.zip(bakeryMono, easyboxMono, userMono)
@@ -122,5 +124,6 @@ public class ReservationAdminController {
                     );
                 });
     }
+
 
 }

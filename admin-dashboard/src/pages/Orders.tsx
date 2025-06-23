@@ -241,7 +241,7 @@ export default function Orders() {
                         <Td>{o.id}</Td>
                         <Td>{o.userPhone}</Td>
                         <Td>{o.bakeryName}</Td>
-                        <Td>{o.easyboxAddress}</Td>
+                        <Td>{o.easyboxAddress || 'N/A'}</Td>
                         <Td>{o.compartmentId}</Td>
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
