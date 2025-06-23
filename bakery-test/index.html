@@ -175,7 +175,7 @@
     const dateInput = document.getElementById('deliveryDate');
 
     const today = new Date();
-    today.setDate(today.getDate() + 2); // 2 days in the future
+    today.setDate(today.getDate()); // 2 days in the future
     const minDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
 
     dateInput.min = minDate;
