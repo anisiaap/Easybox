@@ -53,18 +53,18 @@ const Input = styled.input`
     border: 1px solid #ccc;
 `;
 
-const Button = styled.button`
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    &:hover {
-        background-color: #218838;
-    }
-`;
+// const Button = styled.button`
+//     background-color: #28a745;
+//     color: white;
+//     border: none;
+//     padding: 8px 14px;
+//     border-radius: 6px;
+//     cursor: pointer;
+//     transition: background 0.2s ease;
+//     &:hover {
+//         background-color: #218838;
+//     }
+// `;
 
 interface Compartment {
     id: number;

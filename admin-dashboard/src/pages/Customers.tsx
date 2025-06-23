@@ -116,7 +116,7 @@ const Customers: React.FC = () => {
                 api.get(`/admin/users/count?${params}`),
             ]);
             setCustomers(usersRes.data);
-            setCustomers(usersRes.data);
+            setAllCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
             toast.error(error?.response?.data || 'Failed to fetch customers');
