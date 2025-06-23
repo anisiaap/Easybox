@@ -102,6 +102,7 @@ export default function Orders() {
                 toast.error(list.data?.message || 'Unexpected response');
                 setOrders([]); // fallback
                 setAllOrders([]);
+                return;
             }
 
             if (typeof count.data === 'number') {

@@ -100,9 +100,9 @@ public class ReservationAdminController {
     }
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
-        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId());
-        Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId());
-        Mono<User> userMono = userRepository.findById(reservation.getUserId());
+        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId()).defaultIfEmpty(null);
+        Mono<Easybox> easyboxMono = easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null);
+        Mono<User> userMono = userRepository.findById(reservation.getUserId()).defaultIfEmpty(null);
 
         return Mono.zip(bakeryMono, easyboxMono, userMono)
                 .map(tuple -> {
@@ -122,4 +122,5 @@ public class ReservationAdminController {
                     );
                 });
     }
+
 }
