@@ -103,7 +103,8 @@ public class ReservationAdminController {
         Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId()).defaultIfEmpty(null);
         Mono<Easybox> easyboxMono = reservation.getEasyboxId() != null
                 ? easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null)
-                : Mono.just(null);
+                : Mono.empty();
+
         Mono<User> userMono = userRepository.findById(reservation.getUserId()).defaultIfEmpty(null);
 
         return Mono.zip(bakeryMono, easyboxMono, userMono)
