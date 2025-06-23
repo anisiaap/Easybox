@@ -61,7 +61,7 @@ export default function Orders() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editStatus, setEditStatus] = useState('');
     const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
-
+    const [allOrders, setAllOrders] = useState<Order[]>([]);
     // const compartmentMapRef = useRef<Record<number, Compartment[]>>({});
     // const [compartmentNumbers, setCompartmentNumbers] = useState<Record<number, number>>({});
 
@@ -88,23 +88,65 @@ export default function Orders() {
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
-                size: pageSize.toString(),
-                ...(filterDate && { deliveryDate: filterDate }),
-                ...(filterBakeryName && { bakeryName: filterBakeryName }),
-                ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && { orderId: filterOrderId }),
+                size: pageSize.toString()
             }).toString();
 
             const [list, count] = await Promise.all([
                 api.get(`/admin/reservations?${query}`),
                 api.get(`/admin/reservations/count?${query}`),
             ]);
-            setOrders(list.data);
-            setTotalOrders(count.data);
+            if (Array.isArray(list.data)) {
+                setOrders(list.data);
+                setAllOrders(list.data);
+            } else {
+                toast.error(list.data?.message || 'Unexpected response');
+                setOrders([]); // fallback
+                setAllOrders([]);
+            }
+
+            if (typeof count.data === 'number') {
+                setTotalOrders(count.data);
+            } else {
+                toast.error(count.data?.message || 'Failed to fetch order count');
+                setTotalOrders(0);
+            }
+
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch orders');
         }
-    }, [page, filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
+    }, [page]);
+    useEffect(() => {
+        let filtered = allOrders;
+
+        if (filterOrderId.trim()) {
+            filtered = filtered.filter(o => o.id.toString().includes(filterOrderId.trim()));
+        }
+
+        if (filterBakeryName.trim()) {
+            filtered = filtered.filter(o =>
+                o.bakeryName.toLowerCase().includes(filterBakeryName.toLowerCase())
+            );
+        }
+
+        if (filterUserPhone.trim()) {
+            filtered = filtered.filter(o =>
+                o.userPhone.toLowerCase().includes(filterUserPhone.toLowerCase())
+            );
+        }
+
+        if (filterDate.trim()) {
+            const selectedDate = new Date(filterDate).toDateString();
+            filtered = filtered.filter(o =>
+                new Date(o.reservationStart).toDateString() === selectedDate
+            );
+        }
+
+        setOrders(filtered);
+        setTotalOrders(filtered.length);
+        setPage(0);
+    }, [filterOrderId, filterBakeryName, filterUserPhone, filterDate, allOrders]);
+
+
 
     useEffect(() => {
         fetchOrders();

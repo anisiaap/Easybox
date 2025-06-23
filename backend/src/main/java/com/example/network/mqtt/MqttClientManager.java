@@ -236,7 +236,7 @@ public class MqttClientManager {
                     return;                 // done with /response/**
                 }
 
-                /* ─────────────────────────────  C.  OTHER TOPICS (ignored)  ─────────────────── */
+                /* ─────────────────────────────  C.java.  OTHER TOPICS (ignored)  ─────────────────── */
                 System.out.println("ℹ️  Unhandled topic: " + topic);
             }
 

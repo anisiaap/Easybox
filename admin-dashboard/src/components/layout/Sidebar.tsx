@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { NavLink } from 'react-router-dom'
 import { AiOutlineDashboard, AiOutlineBoxPlot, AiOutlineShoppingCart } from 'react-icons/ai'
 import { FaUsers, FaBreadSlice } from 'react-icons/fa'
+import { MdViewModule } from 'react-icons/md';
 
 const SidebarContainer = styled.div`
   width: 240px;
@@ -57,6 +58,10 @@ const Sidebar: React.FC = () => {
             <MenuLink to="/bakeries">
                 <FaBreadSlice />
                 Bakeries
+            </MenuLink>
+            <MenuLink to="/compartments">
+                <MdViewModule />
+                Compartments
             </MenuLink>
         </SidebarContainer>
     )

@@ -10,6 +10,7 @@ import com.example.network.exception.ConflictException;
 import com.example.network.exception.NotFoundException;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
+import com.example.network.repository.ReservationRepository;
 import com.example.network.service.CompartmentSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +31,12 @@ public class EasyboxAdminController {
     private PredefinedValuesDto predefinedValuesDto;
     private final CompartmentRepository compartmentRepository;
     private final CompartmentSyncService syncService;
-    public EasyboxAdminController(EasyboxRepository easyboxRepository, CompartmentRepository compartmentRepository, CompartmentSyncService syncService) {
+    private final ReservationRepository reservationRepository;
+    public EasyboxAdminController(EasyboxRepository easyboxRepository, CompartmentRepository compartmentRepository, CompartmentSyncService syncService, ReservationRepository reservationRepository) {
         this.easyboxRepository = easyboxRepository;
         this.compartmentRepository = compartmentRepository;
         this.syncService = syncService;
+        this.reservationRepository = reservationRepository;
     }
 
     // GET all Easyboxes as a reactive stream
@@ -68,6 +71,27 @@ public class EasyboxAdminController {
                 compartment.getCondition()
         );
     }
+    @DeleteMapping("/{id}")
+    public Mono<ResponseEntity<Void>> deleteEasybox(@PathVariable Long id) {
+        return easyboxRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Easybox not found")))
+                .flatMap(easybox ->
+                        reservationRepository.findByEasyboxId(id)
+                                .filter(res -> {
+                                    LocalDateTime now = LocalDateTime.now();
+                                    return res.getReservationStart() == null || !res.getReservationStart().isBefore(now);
+                                })
+                                .flatMap(res -> {
+                                    res.setStatus("cancelled");
+                                    return reservationRepository.save(res);
+                                })
+                                .thenMany(compartmentRepository.findByEasyboxId(id)
+                                        .flatMap(compartmentRepository::delete))
+                                .then(easyboxRepository.delete(easybox))
+                                .then(Mono.just(ResponseEntity.noContent().build()))
+                );
+    }
+
     @PostMapping("/{id}/approve")
     public Mono<ResponseEntity<String>> approveBox(@PathVariable Long id) {
         return easyboxRepository.findById(id)
