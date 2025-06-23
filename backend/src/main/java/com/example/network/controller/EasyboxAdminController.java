@@ -83,6 +83,7 @@ public class EasyboxAdminController {
                                 })
                                 .flatMap(res -> {
                                     res.setStatus("cancelled");
+                                    res.setEasyboxId(null);
                                     return reservationRepository.save(res);
                                 })
                                 .thenMany(compartmentRepository.findByEasyboxId(id)
