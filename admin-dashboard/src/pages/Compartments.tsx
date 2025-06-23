@@ -9,6 +9,28 @@ const Container = styled.div`
     max-width: 1000px;
     margin: 0 auto;
 `;
+export const SIZE_MAP: Record<number, string> = {
+    10: 'Small',
+    15: 'Medium',
+    20: 'Large',
+};
+
+export const TEMPERATURE_MAP: Record<number, string> = {
+    4: 'Refrigerated',
+    8: 'Cool',
+    12: 'Room Temperature',
+};
+
+export const STATUS_MAP: Record<string, string> = {
+    free: 'Available for use',
+    busy: 'Occupied or reserved',
+};
+
+export const CONDITION_MAP: Record<string, string> = {
+    good: 'Fully operational',
+    dirty: 'Needs cleaning',
+    broken: 'Not functioning',
+};
 
 const Title = styled.h1`
     font-size: 28px;
@@ -169,10 +191,10 @@ const AdminCompartments: React.FC = () => {
                     {pagedData.map(c => (
                         <TableRow key={c.id}>
                             <Td>{c.id}</Td>
-                            <Td>{c.status}</Td>
-                            <Td>{c.condition}</Td>
-                            <Td>{c.size}</Td>
-                            <Td>{c.temperature}</Td>
+                            <Td>{STATUS_MAP[c.status] || c.status}</Td>
+                            <Td>{CONDITION_MAP[c.condition] || c.condition}</Td>
+                            <Td>{SIZE_MAP[c.size] || c.size}</Td>
+                            <Td>{TEMPERATURE_MAP[c.temperature] || c.temperature}</Td>
                             <Td>{c.easyboxAddress}</Td>
                         </TableRow>
                     ))}
