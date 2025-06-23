@@ -15,6 +15,12 @@ const Title = styled.h1`
     margin-bottom: 24px;
 `;
 
+const TableWrapper = styled.div`
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 32px;
+`;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: separate;
@@ -29,19 +35,23 @@ const Table = styled.table`
 const Th = styled.th`
     text-align: left;
     padding: 16px;
-    background-color: #333;
+    background-color: #5e5e5e;
     color: white;
+    border-bottom: 1px solid #ddd;
     font-weight: 600;
 `;
 
 const Td = styled.td`
     padding: 16px;
     border-bottom: 1px solid #eee;
+    vertical-align: top;
+    word-break: break-word;
+    max-width: 250px;
 `;
 
 const TableRow = styled.tr`
     &:hover {
-        background-color: #f9f9f9;
+        background-color: #f0f8f0;
     }
 `;
 
@@ -61,7 +71,7 @@ const ButtonGroup = styled.div`
 `;
 
 const Button = styled.button`
-    background-color: #dc3545;
+    background-color: #28a745;
     color: white;
     border: none;
     padding: 8px 14px;
@@ -69,7 +79,7 @@ const Button = styled.button`
     cursor: pointer;
     transition: background 0.2s ease;
     &:hover {
-        background-color: #c82333;
+        background-color: #218838;
     }
 `;
 
@@ -89,8 +99,9 @@ type ConfirmAction = null | {
 
 const AdminCompartments: React.FC = () => {
     const [compartments, setCompartments] = useState<Compartment[]>([]);
-    const [searchAddress, setSearchAddress] = useState('');
     const [filtered, setFiltered] = useState<Compartment[]>([]);
+    const [searchAddress, setSearchAddress] = useState('');
+    const [searchStatus, setSearchStatus] = useState('');
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
 
     const fetchCompartments = useCallback(async () => {
@@ -108,69 +119,85 @@ const AdminCompartments: React.FC = () => {
     }, [fetchCompartments]);
 
     useEffect(() => {
-        const lowerSearch = searchAddress.trim().toLowerCase();
+        const lowerAddress = searchAddress.trim().toLowerCase();
+        const lowerStatus = searchStatus.trim().toLowerCase();
+
         setFiltered(
             compartments.filter(c =>
-                c.easyboxAddress.toLowerCase().includes(lowerSearch)
+                c.easyboxAddress.toLowerCase().includes(lowerAddress) &&
+                c.status.toLowerCase().includes(lowerStatus)
             )
         );
-    }, [searchAddress, compartments]);
+    }, [searchAddress, searchStatus, compartments]);
 
     return (
         <Container>
             <Title>Compartments Overview</Title>
-            <Input
-                placeholder="Search by Easybox address"
-                value={searchAddress}
-                onChange={(e) => setSearchAddress(e.target.value)}
-            />
-            <Table>
-                <thead>
-                <tr>
-                    <Th>ID</Th>
-                    <Th>Status</Th>
-                    <Th>Condition</Th>
-                    <Th>Size</Th>
-                    <Th>Temperature (°C)</Th>
-                    <Th>Easybox Address</Th>
-                </tr>
-                </thead>
-                <tbody>
-                {filtered.map((c) => (
-                    <TableRow key={c.id}>
-                        <Td>{c.id}</Td>
-                        <Td>{c.status}</Td>
-                        <Td>{c.condition}</Td>
-                        <Td>{c.size}</Td>
-                        <Td>{c.temperature}</Td>
-                        <Td>
-                            {c.easyboxAddress}
-                            <ButtonGroup>
-                                <Button
-                                    onClick={() => {
-                                        setConfirmDialog({
-                                            message: `Are you sure you want to delete compartment ${c.id}?`,
-                                            onConfirm: async () => {
-                                                try {
-                                                    await api.delete(`/admin/compartments/${c.id}`);
-                                                    toast.success('Compartment deleted');
-                                                    fetchCompartments();
-                                                } catch (error: any) {
-                                                    toast.error(error?.response?.data?.message || 'Delete failed');
+
+            {/* Search inputs */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                <Input
+                    placeholder="Search by Easybox address"
+                    value={searchAddress}
+                    onChange={(e) => setSearchAddress(e.target.value)}
+                />
+                <Input
+                    placeholder="Search by status (e.g. free, busy)"
+                    value={searchStatus}
+                    onChange={(e) => setSearchStatus(e.target.value)}
+                />
+                <Button onClick={fetchCompartments}>Search</Button>
+            </div>
+
+            <TableWrapper>
+                <Table>
+                    <thead>
+                    <tr>
+                        <Th>ID</Th>
+                        <Th>Status</Th>
+                        <Th>Condition</Th>
+                        <Th>Size</Th>
+                        <Th>Temperature (°C)</Th>
+                        <Th>Easybox Address</Th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {filtered.map(c => (
+                        <TableRow key={c.id}>
+                            <Td>{c.id}</Td>
+                            <Td>{c.status}</Td>
+                            <Td>{c.condition}</Td>
+                            <Td>{c.size}</Td>
+                            <Td>{c.temperature}</Td>
+                            <Td>
+                                {c.easyboxAddress}
+                                <ButtonGroup>
+                                    <Button
+                                        onClick={() => {
+                                            setConfirmDialog({
+                                                message: `Are you sure you want to delete compartment ${c.id}?`,
+                                                onConfirm: async () => {
+                                                    try {
+                                                        await api.delete(`/admin/compartments/${c.id}`);
+                                                        toast.success('Compartment deleted');
+                                                        fetchCompartments();
+                                                    } catch (error: any) {
+                                                        toast.error(error?.response?.data?.message || 'Delete failed');
+                                                    }
+                                                    setConfirmDialog(null);
                                                 }
-                                                setConfirmDialog(null);
-                                            }
-                                        });
-                                    }}
-                                >
-                                    Delete
-                                </Button>
-                            </ButtonGroup>
-                        </Td>
-                    </TableRow>
-                ))}
-                </tbody>
-            </Table>
+                                            });
+                                        }}
+                                    >
+                                        Delete
+                                    </Button>
+                                </ButtonGroup>
+                            </Td>
+                        </TableRow>
+                    ))}
+                    </tbody>
+                </Table>
+            </TableWrapper>
 
             {confirmDialog && (
                 <ConfirmDialog
