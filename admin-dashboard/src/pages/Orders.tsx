@@ -86,34 +86,20 @@ export default function Orders() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const query = new URLSearchParams({
+            const params = new URLSearchParams({
                 page: page.toString(),
-                size: pageSize.toString()
-            }).toString();
+                size: pageSize.toString(),
+            });
 
-            const [list, count] = await Promise.all([
-                api.get(`/admin/reservations?${query}`),
-                api.get(`/admin/reservations/count?${query}`),
+            const [bakeryRes, countRes] = await Promise.all([
+                api.get(`/admin/reservations?${params}`),
+                api.get(`/admin/reservations/count?${params}`),
             ]);
-            if (Array.isArray(list.data)) {
-                setOrders(list.data);
-                setAllOrders(list.data);
-            } else {
-                toast.error(list.data?.message || 'Unexpected response');
-                setOrders([]); // fallback
-                setAllOrders([]);
-                return;
-            }
-
-            if (typeof count.data === 'number') {
-                setTotalOrders(count.data);
-            } else {
-                toast.error(count.data?.message || 'Failed to fetch order count');
-                setTotalOrders(0);
-            }
-
+            setAllOrders(bakeryRes.data);
+            setOrders(bakeryRes.data); // filtered will be applied in effect
+            setTotalOrders(countRes.data);
         } catch (err: any) {
-            toast.error(err?.response?.data || 'Failed to fetch orders');
+            toast.error(err?.response?.data || 'Failed to fetch bakeries');
         }
     }, [page]);
     useEffect(() => {
