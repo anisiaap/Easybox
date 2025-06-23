@@ -57,7 +57,6 @@ const TableRow = styled.tr`
 
 const Input = styled.input`
     width: 100%;
-    margin-bottom: 12px;
     padding: 10px;
     border-radius: 6px;
     border: 1px solid #ccc;
@@ -90,12 +89,16 @@ type ConfirmAction = null | {
     onConfirm: () => void;
 };
 
+const pageSize = 10;
+
 const AdminCompartments: React.FC = () => {
     const [compartments, setCompartments] = useState<Compartment[]>([]);
     const [filtered, setFiltered] = useState<Compartment[]>([]);
     const [searchAddress, setSearchAddress] = useState('');
     const [searchStatus, setSearchStatus] = useState('');
+    const [searchCondition, setSearchCondition] = useState('');
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
+    const [page, setPage] = useState(0);
 
     const fetchCompartments = useCallback(async () => {
         try {
@@ -112,34 +115,42 @@ const AdminCompartments: React.FC = () => {
     }, [fetchCompartments]);
 
     useEffect(() => {
-        const lowerAddress = searchAddress.trim().toLowerCase();
-        const lowerStatus = searchStatus.trim().toLowerCase();
+        const address = searchAddress.trim().toLowerCase();
+        const status = searchStatus.trim().toLowerCase();
+        const condition = searchCondition.trim().toLowerCase();
 
-        setFiltered(
-            compartments.filter(c =>
-                c.easyboxAddress.toLowerCase().includes(lowerAddress) &&
-                c.status.toLowerCase().includes(lowerStatus)
-            )
+        const result = compartments.filter(c =>
+            c.easyboxAddress.toLowerCase().includes(address) &&
+            c.status.toLowerCase().includes(status) &&
+            c.condition.toLowerCase().includes(condition)
         );
-    }, [searchAddress, searchStatus, compartments]);
+        setFiltered(result);
+        setPage(0);
+    }, [searchAddress, searchStatus, searchCondition, compartments]);
+
+    const pagedData = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
     return (
         <Container>
             <Title>Compartments Overview</Title>
 
-            {/* Search inputs */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
                 <Input
-                    placeholder="Search by Easybox address"
+                    placeholder="Search Easybox Address"
                     value={searchAddress}
                     onChange={(e) => setSearchAddress(e.target.value)}
                 />
                 <Input
-                    placeholder="Search by status (e.g. free, busy)"
+                    placeholder="Search Status"
                     value={searchStatus}
                     onChange={(e) => setSearchStatus(e.target.value)}
                 />
-                <Button onClick={fetchCompartments}>Search</Button>
+                <Input
+                    placeholder="Search Condition"
+                    value={searchCondition}
+                    onChange={(e) => setSearchCondition(e.target.value)}
+                />
+                <Button onClick={fetchCompartments}>Refresh</Button>
             </div>
 
             <TableWrapper>
@@ -155,20 +166,29 @@ const AdminCompartments: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {filtered.map(c => (
+                    {pagedData.map(c => (
                         <TableRow key={c.id}>
                             <Td>{c.id}</Td>
                             <Td>{c.status}</Td>
                             <Td>{c.condition}</Td>
                             <Td>{c.size}</Td>
                             <Td>{c.temperature}</Td>
-                            <Td>
-                                {c.easyboxAddress}
-                            </Td>
+                            <Td>{c.easyboxAddress}</Td>
                         </TableRow>
                     ))}
                     </tbody>
                 </Table>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
+                    <span>Page {page + 1} of {Math.ceil(filtered.length / pageSize)}</span>
+                    <Button
+                        onClick={() => setPage(p => (p + 1 < Math.ceil(filtered.length / pageSize) ? p + 1 : p))}
+                        disabled={(page + 1) >= Math.ceil(filtered.length / pageSize)}
+                    >
+                        Next
+                    </Button>
+                </div>
             </TableWrapper>
 
             {confirmDialog && (
