@@ -100,30 +100,30 @@ public class ReservationAdminController {
     }
 
     private Mono<ReservationDto> toDto(Reservation reservation) {
-        Mono<Bakery> bakeryMono  = bakeryRepository.findById(reservation.getBakeryId()).defaultIfEmpty(null);
-        Mono<Easybox> easyboxMono = reservation.getEasyboxId() != null
-                ? easyboxRepository.findById(reservation.getEasyboxId()).defaultIfEmpty(null)
-                : Mono.empty();
 
-        Mono<User> userMono = userRepository.findById(reservation.getUserId()).defaultIfEmpty(null);
+        Mono<Bakery> bakeryMono = Mono.justOrEmpty(reservation.getBakeryId())
+                .flatMap(bakeryRepository::findById)
+                .defaultIfEmpty(null);   // ← guard against NULL
+
+        Mono<Easybox> easyboxMono = Mono.justOrEmpty(reservation.getEasyboxId())
+                .flatMap(easyboxRepository::findById)
+                .defaultIfEmpty(null);   // ← keeps existing behaviour
+
+        Mono<User> userMono = Mono.justOrEmpty(reservation.getUserId())
+                .flatMap(userRepository::findById)
+                .defaultIfEmpty(null);   // ← guard against NULL
 
         return Mono.zip(bakeryMono, easyboxMono, userMono)
-                .map(tuple -> {
-                    Bakery bakery = tuple.getT1();
-                    Easybox easybox = tuple.getT2();
-                    User user = tuple.getT3();
-
-                    return new ReservationDto(
-                            reservation.getId(),
-                            user != null ? user.getPhoneNumber() : "Unknown",
-                            bakery != null ? bakery.getName() : "Unknown Bakery",
-                            easybox != null ? easybox.getAddress() : "Unknown Easybox",
-                            reservation.getStatus(),
-                            reservation.getCompartmentId(),
-                            reservation.getReservationStart(),
-                            reservation.getReservationEnd()
-                    );
-                });
+                .map(tuple -> new ReservationDto(
+                        reservation.getId(),
+                        tuple.getT3() != null ? tuple.getT3().getPhoneNumber() : "Unknown",
+                        tuple.getT1() != null ? tuple.getT1().getName()        : "Unknown Bakery",
+                        tuple.getT2() != null ? tuple.getT2().getAddress()     : "Unknown Easybox",
+                        reservation.getStatus(),
+                        reservation.getCompartmentId(),
+                        reservation.getReservationStart(),
+                        reservation.getReservationEnd()
+                ));
     }
 
 
