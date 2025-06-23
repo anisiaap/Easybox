@@ -11,6 +11,7 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from './pages/ProtectedRoute';
 import React, { useEffect } from 'react';
 import {decodeJwt, forceLogout, scheduleTokenRefresh} from './api';
+import Compartments from "./pages/Compartments";
 
 
 const App: React.FC = () => {
@@ -77,6 +78,16 @@ const App: React.FC = () => {
                         <ProtectedRoute>
                             <MainLayout>
                                 <Bakeries />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/compartments"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <Compartments />
                             </MainLayout>
                         </ProtectedRoute>
                     }

@@ -58,6 +58,10 @@ const Sidebar: React.FC = () => {
                 <FaBreadSlice />
                 Bakeries
             </MenuLink>
+            <MenuLink to="/compartments">
+                <FaBreadSlice />
+                Compartments
+            </MenuLink>
         </SidebarContainer>
     )
 }
