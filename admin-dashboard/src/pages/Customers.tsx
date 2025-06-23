@@ -127,11 +127,11 @@ const Customers: React.FC = () => {
         let filtered = allCustomers;
 
         if (searchName.trim()) {
-            filtered = filtered.filter(b => b.name.toLowerCase().includes(searchName.toLowerCase()));
+            filtered = filtered.filter(c => c.name.toLowerCase().includes(searchName.toLowerCase()));
         }
 
         if (searchPhone.trim()) {
-            filtered = filtered.filter(b => b.phone.includes(searchPhone));
+            filtered = filtered.filter(c => c.phone.includes(searchPhone));
         }
 
         setCustomers(filtered);
