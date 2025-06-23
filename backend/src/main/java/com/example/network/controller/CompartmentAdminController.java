@@ -1,12 +1,10 @@
 package com.example.network.controller;
 
-import com.example.network.dto.CompartmentDto;
-import com.example.network.dto.CompartmentDtoWithAddress;
-import com.example.network.repository.CompartmentRepository;
-import com.example.network.repository.EasyboxRepository;
 import com.example.network.service.CompartmentSyncService;
-import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -14,12 +12,9 @@ import reactor.core.publisher.Mono;
 public class CompartmentAdminController {
 
     private final CompartmentSyncService syncService;
-    private final CompartmentRepository compartmentRepository;
-    private final EasyboxRepository easyboxRepository;
-    public CompartmentAdminController(CompartmentSyncService syncService, CompartmentRepository compartmentRepository, EasyboxRepository easyboxRepository) {
+
+    public CompartmentAdminController(CompartmentSyncService syncService) {
         this.syncService = syncService;
-        this.compartmentRepository = compartmentRepository;
-        this.easyboxRepository = easyboxRepository;
     }
     @PostMapping("/sync/{easyboxId}")
     public Mono<Void> syncCompartments(@PathVariable Long easyboxId) {
@@ -45,21 +40,4 @@ public class CompartmentAdminController {
     public Mono<Void> markClean(@PathVariable Long id) {
         return syncService.updateStatus(id, "free");
     }
-    @GetMapping("")
-    public Flux<CompartmentDtoWithAddress> getAllWithAddress() {
-        return compartmentRepository.findAll()
-                .flatMap(comp -> easyboxRepository.findById(comp.getEasyboxId())
-                        .switchIfEmpty(Mono.empty()) // skip compartments with missing easybox
-                        .map(box -> new CompartmentDtoWithAddress(
-                                comp.getId(),
-                                comp.getStatus(),
-                                comp.getCondition(),
-                                comp.getSize(),
-                                comp.getTemperature(),
-                                box.getAddress()
-                        ))
-                );
-    }
-
-
 }

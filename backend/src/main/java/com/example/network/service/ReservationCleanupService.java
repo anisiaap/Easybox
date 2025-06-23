@@ -1,6 +1,5 @@
 package com.example.network.service;
 
-import com.example.network.model.Reservation;
 import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.EasyboxRepository;
 import com.example.network.repository.ReservationRepository;
@@ -36,48 +35,58 @@ public class ReservationCleanupService {
                     LocalDateTime start = reservation.getReservationStart();
                     boolean startingSoon = start != null && !start.isAfter(now.plusHours(1)); // starts in <= 1h
 
-                    Mono<Reservation> updated = Mono.just(reservation);
-
+                    // 💥 New condition: cancel if Easybox inactive or compartment dirty/broken, and reservation starts soon
                     if (startingSoon) {
-                        updated = easyboxRepository.findById(reservation.getEasyboxId())
+                        return easyboxRepository.findById(reservation.getEasyboxId())
                                 .flatMap(easybox -> {
                                     if (!"active".equals(easybox.getStatus())) {
+                                        if("waiting_client_pick_up".equals(reservation.getStatus() )&& "waiting_cleaning".equals(reservation.getStatus())){
+                                            reservation.setStatus("waiting_cleaning");
+                                            return Mono.just(reservation);
+                                        }
                                         reservation.setStatus("canceled");
                                         return Mono.just(reservation);
                                     }
                                     return compartmentRepository.findById(reservation.getCompartmentId())
                                             .flatMap(compartment -> {
-                                                String cond = compartment.getStatus();
-                                                if ("dirty".equalsIgnoreCase(cond) || "broken".equalsIgnoreCase(cond)) {
+                                                String status = compartment.getStatus();
+                                                if ("dirty".equalsIgnoreCase(status) || "broken".equalsIgnoreCase(status)) {
                                                     reservation.setStatus("waiting_cleaning");
                                                     return Mono.just(reservation);
                                                 }
-                                                return Mono.just(reservation); // ✅ continue to rest of logic
+                                                return Mono.empty(); // no update needed
                                             });
                                 });
                     }
 
-                    // then chain your rest logic:
-                    return updated.flatMap(r -> {
-                        if (r.getReservationEnd() != null && r.getReservationEnd().isBefore(now) && !"waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus())) {
-                            r.setStatus("expired");
-                            return Mono.just(r);
-                        }
+                    // Case 1: Expired reservation
+                    if (reservation.getReservationEnd() != null && reservation.getReservationEnd().isBefore(now) && !"waiting_bakery_drop_off".equalsIgnoreCase(reservation.getStatus()))  {
+                        return easyboxRepository.findById(reservation.getEasyboxId())
+                                .flatMap(box -> compartmentRepository.findById(reservation.getCompartmentId())
+                                        .then(Mono.fromCallable(() -> {
+                                            reservation.setStatus("expired");
+                                            return reservation;
+                                        }))
+                                );
+                    }
 
-                        if ("confirmed".equalsIgnoreCase(r.getStatus()) && r.getReservationStart().isBefore(now)) {
-                            r.setStatus("waiting_bakery_drop_off");
-                            return Mono.just(r);
-                        }
+                    // Case 2: After reservationStart → waiting_bakery_drop_off
+                    if ("confirmed".equalsIgnoreCase(reservation.getStatus()) &&
+                            reservation.getReservationStart() != null &&
+                            reservation.getReservationStart().isBefore(now)) {
+                        reservation.setStatus("waiting_bakery_drop_off");
+                        return Mono.just(reservation);
+                    }
 
-                        if ("waiting_client_pick_up".equalsIgnoreCase(r.getStatus()) &&
-                                r.getReservationEnd().minusHours(3).isBefore(now)) {
-                            r.setStatus("waiting_cleaning");
-                            return Mono.just(r);
-                        }
-
-                        return Mono.empty();
-                    });
-
+                    // Case 3: Within 3 hours before reservationEnd → waiting_cleaning
+                    if ("waiting_client_pick_up".equalsIgnoreCase(reservation.getStatus()) &&
+                            reservation.getReservationEnd() != null &&
+                            reservation.getReservationEnd().minusHours(3).isBefore(now)) {
+                        reservation.setStatus("waiting_cleaning");
+                        return Mono.just(reservation);
+                    }
+                    // No changes
+                    return Mono.empty();
                 })
                 .flatMap(reservationRepository::save)
                 .subscribe(

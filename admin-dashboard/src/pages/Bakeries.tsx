@@ -119,7 +119,6 @@ const Bakeries: React.FC = () => {
     });
     const [searchName, setSearchName] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
-    const [allBakeries, setAllBakeries] = useState<Bakery[]>([]);
 
     const [page, setPage] = useState(0);
     const pageSize = 10;
@@ -133,38 +132,24 @@ const Bakeries: React.FC = () => {
             const params = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
+                ...(searchName && { name: searchName }),
+                ...(searchPhone && { phone: searchPhone }),
             });
-
             const [bakeryRes, countRes] = await Promise.all([
                 api.get(`/admin/bakeries?${params}`),
                 api.get(`/admin/bakeries/count?${params}`),
             ]);
-            setAllBakeries(bakeryRes.data);
-            setBakeries(bakeryRes.data); // filtered will be applied in effect
+            setBakeries(bakeryRes.data);
             setTotalBakeries(countRes.data);
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch bakeries');
         }
-    }, [page]);
+    }, [page, searchName, searchPhone]);
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmAction>(null);
     useEffect(() => {
         fetchBakeries();
     }, [fetchBakeries]);
-    useEffect(() => {
-        let filtered = allBakeries;
-
-        if (searchName.trim()) {
-            filtered = filtered.filter(b => b.name.toLowerCase().includes(searchName.toLowerCase()));
-        }
-
-        if (searchPhone.trim()) {
-            filtered = filtered.filter(b => b.phone.includes(searchPhone));
-        }
-
-        setBakeries(filtered);
-        setPage(0); // reset pagination
-    }, [searchName, searchPhone, allBakeries]);
 
 
 
