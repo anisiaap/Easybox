@@ -174,13 +174,19 @@
   window.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('deliveryDate');
 
-    const today = new Date();
-    today.setDate(today.getDate()); // 2 days in the future
-    const minDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
 
-    dateInput.min = minDate;
-    dateInput.value = minDate; // prefill the default
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    if (dateInput) {
+      dateInput.min = todayStr;
+      dateInput.value = todayStr;
+    }
   });
+
 
   function getDeliveryTimeString() {
     const date = document.getElementById('deliveryDate').value;
