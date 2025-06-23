@@ -13,16 +13,8 @@ const Td = styled.td`padding:16px;border-bottom:1px solid #eee;vertical-align:to
 const TableRow = styled.tr`&:hover{background:#f0f8f0;}`;
 const Button = styled.button`margin:4px;background:#28a745;color:#fff;border:none;padding:6px 12px;
     border-radius:6px;font-size:.9rem;cursor:pointer;transition:.2s;
-    &:hover{background:#28a745;} &:disabled{background:#aaa;cursor:not-allowed;}`;
+    &:hover{background:#218838;} &:disabled{background:#aaa;cursor:not-allowed;}`;
 const Input = styled.input`padding:6px 10px;border-radius:4px;border:1px solid #ccc;width:100%;max-width:200px;`;
-
-// interface Compartment {
-//     id: number;
-//     size: number;
-//     temperature: number;
-//     status: string;
-//     condition: string;
-// }
 
 interface Order {
     id: number;
@@ -49,8 +41,8 @@ const statusOptions = [
 
 export default function Orders() {
     const [orders, setOrders] = useState<Order[]>([]);
+    const [allOrders, setAllOrders] = useState<Order[]>([]);
     const [page, setPage] = useState(0);
-    const [totalOrders, setTotalOrders] = useState(0);
     const pageSize = 10;
 
     const [filterDate, setFilterDate] = useState('');
@@ -61,61 +53,20 @@ export default function Orders() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editStatus, setEditStatus] = useState('');
     const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
-    const [allOrders, setAllOrders] = useState<Order[]>([]);
-    // const compartmentMapRef = useRef<Record<number, Compartment[]>>({});
-    // const [compartmentNumbers, setCompartmentNumbers] = useState<Record<number, number>>({});
-
-    // const getCompartmentNumber = useCallback(async (easyboxId: number, compartmentId: number): Promise<number | null> => {
-    //     if (compartmentMapRef.current[easyboxId]) {
-    //         const sorted = [...compartmentMapRef.current[easyboxId]].sort((a, b) => a.id - b.id);
-    //         const index = sorted.findIndex(c => c.id === compartmentId);
-    //         return index >= 0 ? index + 1 : null;
-    //     }
-    //
-    //     try {
-    //         const res = await api.get(`/admin/easyboxes/${easyboxId}/details`);
-    //         const sorted = res.data.compartments.sort((a: Compartment, b: Compartment) => a.id - b.id);
-    //         compartmentMapRef.current[easyboxId] = sorted;
-    //         const index = sorted.findIndex((c: Compartment) => c.id === compartmentId);
-    //         return index >= 0 ? index + 1 : null;
-    //     } catch (err) {
-    //         console.error("Failed to fetch compartments:", err);
-    //         return null;
-    //     }
-    // }, []);
 
     const fetchOrders = useCallback(async () => {
         try {
-            const query = new URLSearchParams({
-                page: page.toString(),
-                size: pageSize.toString()
-            }).toString();
-
-            const [list, count] = await Promise.all([
-                api.get(`/admin/reservations?${query}`),
-                api.get(`/admin/reservations/count?${query}`),
-            ]);
-            if (Array.isArray(list.data)) {
-                setOrders(list.data);
-                setAllOrders(list.data);
-            } else {
-                toast.error(list.data?.message || 'Unexpected response');
-                setOrders([]); // fallback
-                setAllOrders([]);
-                return;
-            }
-
-            if (typeof count.data === 'number') {
-                setTotalOrders(count.data);
-            } else {
-                toast.error(count.data?.message || 'Failed to fetch order count');
-                setTotalOrders(0);
-            }
-
+            const res = await api.get('/admin/reservations');
+            setAllOrders(res.data);
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch orders');
         }
-    }, [page]);
+    }, []);
+
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
+
     useEffect(() => {
         let filtered = allOrders;
 
@@ -143,38 +94,10 @@ export default function Orders() {
         }
 
         setOrders(filtered);
-        setTotalOrders(filtered.length);
         setPage(0);
     }, [filterOrderId, filterBakeryName, filterUserPhone, filterDate, allOrders]);
 
-
-
-    useEffect(() => {
-        fetchOrders();
-    }, [fetchOrders]);
-
-    // useEffect(() => {
-    //     // const fetchCompartmentNumbers = async () => {
-    //     //     const promises = orders.map(async (o) => {
-    //     //         if (o.easyboxId != null) {
-    //     //             const number = await getCompartmentNumber(o.easyboxId, o.compartmentId);
-    //     //             return { orderId: o.id, number };
-    //     //         }
-    //     //         return { orderId: o.id, number: null };
-    //     //     });
-    //     //
-    //     //     const results = await Promise.all(promises);
-    //     //     const newMap: Record<number, number> = {};
-    //     //     results.forEach(({ orderId, number }) => {
-    //     //         if (number != null) newMap[orderId] = number;
-    //     //     });
-    //     //     setCompartmentNumbers(newMap);
-    //     // };
-    //
-    //     if (orders.length > 0) {
-    //         fetchCompartmentNumbers();
-    //     }
-    // }, [orders, getCompartmentNumber]);
+    const paginatedOrders = orders.slice(page * pageSize, (page + 1) * pageSize);
 
     const handleDeleteOrder = (id: number) =>
         setConfirmDialog({
@@ -233,7 +156,12 @@ export default function Orders() {
                 <Input value={filterOrderId} onChange={e => setFilterOrderId(e.target.value)} placeholder="Order ID" />
                 <Input value={filterBakeryName} onChange={e => setFilterBakeryName(e.target.value)} placeholder="Bakery Name" />
                 <Input value={filterUserPhone} onChange={e => setFilterUserPhone(e.target.value)} placeholder="User Phone" />
-                <Button onClick={fetchOrders}>Apply</Button>
+                <Button onClick={() => {
+                    setFilterDate('');
+                    setFilterOrderId('');
+                    setFilterBakeryName('');
+                    setFilterUserPhone('');
+                }}>Reset Filters</Button>
             </div>
             <Table>
                 <thead>
@@ -250,7 +178,7 @@ export default function Orders() {
                 </tr>
                 </thead>
                 <tbody>
-                {orders.map(o => (
+                {paginatedOrders.map(o => (
                     <TableRow key={o.id}>
                         <Td>{o.id}</Td>
                         <Td>{o.userPhone}</Td>
@@ -294,11 +222,9 @@ export default function Orders() {
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, margin: 20 }}>
                 <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Prev</Button>
-                <span>Page {page + 1} / {Math.ceil(totalOrders / pageSize)}</span>
-                <Button onClick={() => setPage(p => p + 1 < Math.ceil(totalOrders / pageSize) ? p + 1 : p)} disabled={page + 1 >= Math.ceil(totalOrders / pageSize)}>Next</Button>
+                <span>Page {page + 1} / {Math.max(1, Math.ceil(orders.length / pageSize))}</span>
+                <Button onClick={() => setPage(p => p + 1 < Math.ceil(orders.length / pageSize) ? p + 1 : p)} disabled={page + 1 >= Math.ceil(orders.length / pageSize)}>Next</Button>
             </div>
-
-
 
             {confirmDialog && (
                 <ConfirmDialog
