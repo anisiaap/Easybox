@@ -334,8 +334,38 @@ return (
                             >
                                 {isApproving ? "Approving..." : "Approve Device."}
                             </button>
+                            <button
+                            onClick={async () => {
+                            if (!window.confirm("Are you sure you want to delete this Easybox?")) return;
 
-                        )}
+                            try {
+                            await api.delete(`/admin/easyboxes/${selectedEasybox.id}`);
+                            toast.success("Easybox deleted.");
+                            setSelectedEasybox(null);
+                            // Re-fetch updated list
+                            const updated = await api.get('/admin/easyboxes');
+                            setEasyboxes(updated.data);
+                            setFilteredEasyboxes(updated.data);
+                        } catch (err: any) {
+                            const msg = err?.response?.data || "Failed to delete.";
+                            toast.error(msg);
+                        }
+                        }}
+                        style={{
+                            marginLeft: "10px",
+                            padding: "6px 12px",
+                            backgroundColor: "#dc3545",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "12px",
+                            cursor: "pointer",
+                            fontSize: "0.55em"
+                        }}
+                        disabled={isApproving}
+                    >
+                        Delete Device
+                    </button>
+                    )}
                 </h2>
                     <p>Status: {formatStatus(selectedEasybox.status)}</p>
 
