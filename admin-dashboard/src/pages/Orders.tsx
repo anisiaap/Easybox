@@ -86,14 +86,18 @@ export default function Orders() {
 
     const fetchOrders = useCallback(async () => {
         try {
-            const params = new URLSearchParams({
+            const query = new URLSearchParams({
                 page: page.toString(),
                 size: pageSize.toString(),
-            });
+                ...(filterDate && { deliveryDate: filterDate }),
+                ...(filterBakeryName && { bakeryName: filterBakeryName }),
+                ...(filterUserPhone && { userPhone: filterUserPhone }),
+                ...(filterOrderId && { orderId: filterOrderId }),
+            }).toString();
 
             const [bakeryRes, countRes] = await Promise.all([
-                api.get(`/admin/reservations`),
-                api.get(`/admin/reservations/count?${params}`),
+                api.get(`/admin/reservations?${query}`),
+                api.get(`/admin/reservations/count?${query}`),
             ]);
             setAllOrders(bakeryRes.data);
             setOrders(bakeryRes.data); // filtered will be applied in effect
