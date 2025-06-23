@@ -40,8 +40,9 @@ public class ReservationAdminController {
     public Flux<ReservationDto> getAllReservations(@RequestParam(required = false) Long bakeryId,
                                                    @RequestParam(required = false) Long userId,
                                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deliveryDate,
-                                                   @RequestParam(defaultValue = "0") int page,
-                                                   @RequestParam(defaultValue = "10") int size) {
+                                                   @RequestParam(required = false, defaultValue = "0") int page,
+                                                   @RequestParam(required = false, defaultValue = "10") int size)
+    {
         Flux<Reservation> base = (bakeryId != null)
                 ? reservationRepository.findAllByBakeryIdOrderByReservationStartDesc(bakeryId)
                 : reservationRepository.findAllByOrderByReservationStartDesc();

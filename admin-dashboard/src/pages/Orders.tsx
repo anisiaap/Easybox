@@ -88,24 +88,20 @@ export default function Orders() {
         try {
             const query = new URLSearchParams({
                 page: page.toString(),
-                size: pageSize.toString(),
-                ...(filterDate && { deliveryDate: filterDate }),
-                ...(filterBakeryName && { bakeryName: filterBakeryName }),
-                ...(filterUserPhone && { userPhone: filterUserPhone }),
-                ...(filterOrderId && { orderId: filterOrderId }),
+                size: pageSize.toString()
             }).toString();
 
-            const [bakeryRes, countRes] = await Promise.all([
+            const [list, count] = await Promise.all([
                 api.get(`/admin/reservations?${query}`),
                 api.get(`/admin/reservations/count?${query}`),
             ]);
-            setAllOrders(bakeryRes.data);
-            setOrders(bakeryRes.data); // filtered will be applied in effect
-            setTotalOrders(countRes.data);
+            setOrders(list.data);
+            setAllOrders(list.data);
+            setTotalOrders(count.data);
         } catch (err: any) {
-            toast.error(err?.response?.data || 'Failed to fetch bakeries');
+            toast.error(err?.response?.data || 'Failed to fetch orders');
         }
-    }, [page,  filterDate, filterBakeryName, filterUserPhone, filterOrderId]);
+    }, [page]);
     useEffect(() => {
         let filtered = allOrders;
 
@@ -245,7 +241,7 @@ export default function Orders() {
                         <Td>{o.id}</Td>
                         <Td>{o.userPhone}</Td>
                         <Td>{o.bakeryName}</Td>
-                        <Td>{o.easyboxAddress || 'N/A'}</Td>
+                        <Td>{o.easyboxAddress}</Td>
                         <Td>{o.compartmentId}</Td>
                         <Td>{new Date(o.reservationStart).toLocaleString()}</Td>
                         <Td>{new Date(o.reservationEnd).toLocaleString()}</Td>
