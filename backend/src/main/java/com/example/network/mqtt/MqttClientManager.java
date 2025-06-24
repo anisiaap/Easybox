@@ -65,8 +65,13 @@ public class MqttClientManager {
 
         client.setCallback(callback());
         client.connect(opts);
+
         String qrTopic = properties.getTopicPrefix() + "/qrcode/+";
+        String responseTopicWildcard = properties.getTopicPrefix() + "/response/+";
+
         client.subscribe(qrTopic, 1);
+        client.subscribe(responseTopicWildcard, 1);
+
         System.out.println(" Subscribed to: " + qrTopic);
 
         System.out.println("MQTT connected");
@@ -132,7 +137,11 @@ public class MqttClientManager {
                 if (reconnect) {
                     try {
                         String qrTopic = properties.getTopicPrefix() + "/qrcode/+";
+                        String responseTopicWildcard = properties.getTopicPrefix() + "/response/+";
+
                         client.subscribe(qrTopic, 1);
+                        client.subscribe(responseTopicWildcard, 1);
+
                         System.out.println(" Re-subscribed to: " + qrTopic);
                     } catch (MqttException e) {
                         System.err.println(" Failed to re-subscribe: " + e.getMessage());
