@@ -46,9 +46,9 @@ public class QrCodeService {
                 .switchIfEmpty(Mono.error(new InvalidRequestException("No reservation matches this QR code")))
                 .flatMap(reservation -> {
                     if (isExpired(reservation) ||
-                            "canceled".equals(reservation.getStatus()) ||
+                            "cancelled".equals(reservation.getStatus()) ||
                             "expired".equals(reservation.getStatus())) {
-                        return Mono.error(new InvalidRequestException("Reservation expired or canceled"));
+                        return Mono.error(new InvalidRequestException("Reservation expired or cancelled"));
                     }
 
                     String status = reservation.getStatus();

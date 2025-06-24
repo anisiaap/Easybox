@@ -118,8 +118,8 @@ export default function OrderDetails() {
                 const updatedOrder = res.data;
                 setOrder(updatedOrder);
 
-                if (updatedOrder.status === 'canceled') {
-                    notify({ type: 'error', message: `No alternative found. Reservation was canceled.` });
+                if (updatedOrder.status === 'cancelled') {
+                    notify({ type: 'error', message: `No alternative found. Reservation was cancelled.` });
                 } else if (updatedOrder.compartmentId !== order!.compartmentId) {
                     notify({ type: 'success', message: `Compartment reassigned successfully.` });
                 } else {

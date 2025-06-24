@@ -67,7 +67,7 @@ public class CompartmentIssueController {
                                                 return reservationRepository.save(order); // Step 3: swap to new comp
                                             })
                                             .switchIfEmpty(Mono.defer(() -> {
-                                                order.setStatus("canceled");
+                                                order.setStatus("cancelled");
                                                 return reservationRepository.save(order); // Step 4: cancel if no alt found
                                             }))
                             );
@@ -86,7 +86,7 @@ public class CompartmentIssueController {
                 .filter(c -> !c.getId().equals(excludeCompartmentId))
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
-                                .filter(r -> !"canceled".equalsIgnoreCase(r.getStatus()) && !"expired".equalsIgnoreCase(r.getStatus()))
+                                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()) && !"expired".equalsIgnoreCase(r.getStatus()))
                                 .filter(r -> r.getReservationStart().isBefore(end) && r.getReservationEnd().isAfter(start))
                                 .hasElements()
                                 .map(hasConflict -> !hasConflict)

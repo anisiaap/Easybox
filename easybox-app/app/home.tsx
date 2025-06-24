@@ -30,7 +30,7 @@ const statusOptions = [
     { label: 'Pickup Order', value: 'waiting_client_pick_up' },
     { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
     { label: 'Expired', value: 'expired' },
-    { label: 'Canceled', value: 'canceled' },
+    { label: 'Cancelled', value: 'cancelled' },
     { label: 'Completed', value: 'completed' },
 ];
 function getStatusLabel(status: string): string {
@@ -80,13 +80,13 @@ export default function HomeScreen() {
 
     const activeOrders = orders.filter(
         (o) =>
-            o.status !== 'canceled' &&
+            o.status !== 'cancelled' &&
             o.status !== 'completed' &&
             o.status !== 'pending'
     );
 
     const pastOrders = orders.filter(
-        (o) => o.status === 'canceled' || o.status === 'completed'
+        (o) => o.status === 'cancelled' || o.status === 'completed'
     );
 
     return (
