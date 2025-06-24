@@ -52,14 +52,13 @@ public class ReservationCleanupService {
                                                     reservation.setStatus("waiting_cleaning");
                                                     return Mono.just(reservation);
                                                 }
-                                                return Mono.just(reservation); // ✅ continue to rest of logic
+                                                return Mono.just(reservation);
                                             });
                                 });
                     }
 
-                    // then chain your rest logic:
                     return updated.flatMap(r -> {
-                        if (r.getReservationEnd() != null && r.getReservationEnd().isBefore(now) && !"waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus())) {
+                        if (r.getReservationEnd() != null && r.getReservationEnd().isBefore(now) && "waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus())) {
                             r.setStatus("expired");
                             return Mono.just(r);
                         }
@@ -81,8 +80,8 @@ public class ReservationCleanupService {
                 })
                 .flatMap(reservationRepository::save)
                 .subscribe(
-                        res -> System.out.println("🔄 Updated reservation " + res.getId() + " → " + res.getStatus()),
-                        error -> System.err.println("❌ Error during reservation update: " + error.getMessage())
+                        res -> System.out.println("Updated reservation " + res.getId() + " → " + res.getStatus()),
+                        error -> System.err.println("Error during reservation update: " + error.getMessage())
                 );
     }
 

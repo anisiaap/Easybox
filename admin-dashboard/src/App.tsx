@@ -22,7 +22,7 @@ const App: React.FC = () => {
             if (payload?.exp && payload.exp * 1000 > Date.now()) {
                 scheduleTokenRefresh();
             } else {
-                forceLogout(); // ✅ explicitly log out on invalid/expired
+                forceLogout(); //  explicitly log out on invalid/expired
             }
         }
     }, []);

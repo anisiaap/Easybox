@@ -34,7 +34,7 @@ public class BakeryService {
         } catch (ExpiredJwtException ex) {
             expired = true;
         } catch (Exception ex) {
-            expired = true; // treat invalid/malformed tokens as expired
+            expired = true;
         }
 
         if (expired) {
@@ -45,7 +45,7 @@ public class BakeryService {
             );
             bakery.setToken(newToken);
             return bakeryRepository.save(bakery)
-                    .doOnSuccess(b -> System.out.println("🔑 Refreshed token for bakery " + b.getId()));
+                    .doOnSuccess(b -> System.out.println(" Refreshed token for bakery " + b.getId()));
         }
 
         return Mono.just(bakery);

@@ -17,8 +17,6 @@ public class UserService {
                 .switchIfEmpty(
                         userRepo.save(new User(null, null, phone, null))
                 )
-                /* handles race when two requests try to insert
-                   the same phone concurrently */
                 .onErrorResume(DuplicateKeyException.class,
                         ex -> userRepo.findByPhoneNumber(phone));
     }

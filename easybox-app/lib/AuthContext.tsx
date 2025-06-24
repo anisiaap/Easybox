@@ -9,14 +9,14 @@ import { jwtDecode } from 'jwt-decode';
 import api from './api';
 import { getToken, saveToken, removeToken } from './auth';
 
-const REFRESH_BUFFER_MS = 60_000; // ✱ CHANGE: moved to a named constant
+const REFRESH_BUFFER_MS = 60_000;
 
 interface JwtPayload {
     sub: number;
     name: string;
     exp: number;
     role: 'USER' | 'BAKERY';
-} // ✱ CHANGE: explicit payload type
+}
 
 export type UserInfo = {
     userId: number;
@@ -37,12 +37,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<UserInfo | null | undefined>(undefined);
     const refreshTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    /** Clears any pending timeout before scheduling the next one. */
+
     const scheduleTokenRefresh = (token: string) => {
-        if (refreshTimeout.current) clearTimeout(refreshTimeout.current); // ✱ CHANGE: prevent leaks
+        if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
 
         try {
-            const { exp } = jwtDecode<JwtPayload>(token); // ✱ CHANGE: typed decode
+            const { exp } = jwtDecode<JwtPayload>(token);
             const refreshInMs = exp * 1000 - Date.now() - REFRESH_BUFFER_MS;
 
             if (refreshInMs > 0) {
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     try {
                         const { data: newToken } = await api.get<string>('/auth/refresh-token');
                         await saveToken(newToken);
-                        scheduleTokenRefresh(newToken); // 🔁 keep chain alive
+                        scheduleTokenRefresh(newToken); //  keep chain alive
                     } catch {
                         await logout();
                     }
@@ -74,37 +74,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
     };
 
-    // ✱ CHANGE: auto‑log‑in on cold start
     useEffect(() => {
         let cancelled = false;
 
         (async () => {
             try {
-                const token = await getToken();                 // 1️⃣ read from storage
+                const token = await getToken();
                 console.log('[AUTH] stored token =', token?.slice(0, 20) || 'null');
 
                 if (cancelled) return;
 
                 if (!token) {
-                    console.log('[AUTH] no token on disk → guest');
+                    console.log('[AUTH] no token on disk guest');
                     setUser(null);
                     return;
                 }
 
-                // 2️⃣ check token expiry
                 const { exp } = jwtDecode<JwtPayload>(token);
                 if (exp * 1000 <= Date.now()) {
-                    console.log('[AUTH] token expired → remove & guest');
+                    console.log('[AUTH] token expired  remove & guest');
                     await removeToken();
                     setUser(null);
                     return;
                 }
 
-                // 3️⃣ fetch profile
                 const { data: profile } = await api.get('/auth/me');
                 if (cancelled) return;
 
-                console.log('[AUTH] fetched profile OK → logged-in');
+                console.log('[AUTH] fetched profile OK logged-in');
 
                 setAuth({
                     userId: profile.userId,
@@ -116,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 scheduleTokenRefresh(token);
             } catch (err) {
                 if (cancelled) return;
-                console.warn('[AUTH] bootstrap failed → guest', err);
+                console.warn('[AUTH] bootstrap failed guest', err);
                 await removeToken().catch(() => {});
                 setUser(null);
             }

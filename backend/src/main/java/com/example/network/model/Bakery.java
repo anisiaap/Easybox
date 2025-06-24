@@ -23,7 +23,7 @@ public class Bakery {
     public void setToken(String token) {
         this.token = token;
     }
-    // Getters and setters
+
     public Long getId() {
         return id;
     }

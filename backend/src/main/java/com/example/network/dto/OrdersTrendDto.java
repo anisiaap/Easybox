@@ -9,7 +9,6 @@ public class OrdersTrendDto {
         this.count = count;
     }
 
-    // Getters and Setters
 
     public String getDate() {
         return date;

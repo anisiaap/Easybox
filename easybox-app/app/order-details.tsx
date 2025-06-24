@@ -10,8 +10,8 @@ import { useNotification } from '../components/NotificationContext';
 type Order = {
     id: string;
     status: string;
-    deliveryTime: string; // could be reservationStart
-    reservationStart?: string; // ✅ optional
+    deliveryTime: string;
+    reservationStart?: string;
     easyboxAddress: string;
     qrCodeData?: string;
     compartmentId: number;
@@ -116,7 +116,7 @@ export default function OrderDetails() {
                     params: { issue: type, reservationId: order!.id }
                 });
                 const updatedOrder = res.data;
-                setOrder(updatedOrder); // ⬅️ update UI state
+                setOrder(updatedOrder);
 
                 if (updatedOrder.status === 'canceled') {
                     notify({ type: 'error', message: `No alternative found. Reservation was canceled.` });
@@ -193,7 +193,7 @@ export default function OrderDetails() {
                     </View>
                 )}
             </View>
-            {/* ✱ NEW: Dialog to confirm report */}
+
             <Portal>
                 <Dialog visible={!!confirm} onDismiss={() => setConfirm(null)}>
                     <Dialog.Title>Confirm Report</Dialog.Title>
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     card: { borderRadius: 10, elevation: 3, backgroundColor: '#fff' },
     label: { fontWeight: 'bold', marginTop: 12 },
     divider: { marginVertical: 12 },
-    qr: { width: 200, height: 200, alignSelf: 'center', marginVertical: 10 },
+    qr: { width: 500, height: 500, alignSelf: 'center', marginVertical: 10 },
     bottomButtons: {
         padding: 16,
         backgroundColor: '#fff',

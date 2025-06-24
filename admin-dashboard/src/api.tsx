@@ -6,7 +6,7 @@ export const api = axios.create({
     timeout: 10000,
 });
 
-// 🔑 Decode JWT
+//  Decode JWT
 export function decodeJwt(token: string): { exp: number } | null {
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -17,14 +17,14 @@ export function decodeJwt(token: string): { exp: number } | null {
     }
 }
 
-// ❌ Force logout
+// Force logout
 export function forceLogout(): void {
     sessionStorage.removeItem('token');
     toast.error('Session expired. Please log in again.');
     window.location.href = '/login';
 }
 
-// 🔐 Attach token before requests
+//  Attach token before requests
 
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -37,7 +37,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     return config;
 });
 
-// 🧯 Global response error handler
+//  Global response error handler
 api.interceptors.response.use(
     (res: AxiosResponse) => res,
     async (err: AxiosError): Promise<any> => {
@@ -73,7 +73,7 @@ api.interceptors.response.use(
     }
 );
 
-// ⏰ Token refresh scheduler
+//  Token refresh scheduler
 export const scheduleTokenRefresh = (): void => {
     const token = sessionStorage.getItem('token');
     if (!token) return;

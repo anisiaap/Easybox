@@ -22,14 +22,14 @@ export const TEMPERATURE_MAP: Record<number, string> = {
 };
 
 export const STATUS_MAP: Record<string, string> = {
-    free: 'Available for use',
-    busy: 'Occupied or reserved',
+    free: 'Available',
+    busy: 'Occupied',
 };
 
 export const CONDITION_MAP: Record<string, string> = {
-    good: 'Fully operational',
+    good: 'Good',
     dirty: 'Needs cleaning',
-    broken: 'Not functioning',
+    broken: 'Broken',
 };
 
 const Title = styled.h1`
@@ -162,18 +162,29 @@ const AdminCompartments: React.FC = () => {
                     value={searchAddress}
                     onChange={(e) => setSearchAddress(e.target.value)}
                 />
-                <Input
-                    placeholder="Search Status"
+                <select
                     value={searchStatus}
                     onChange={(e) => setSearchStatus(e.target.value)}
-                />
-                <Input
-                    placeholder="Search Condition"
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
+                >
+                    <option value="">All Statuses</option>
+                    {Object.entries(STATUS_MAP).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                    ))}
+                </select>
+                <select
                     value={searchCondition}
                     onChange={(e) => setSearchCondition(e.target.value)}
-                />
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
+                >
+                    <option value="">All Conditions</option>
+                    {Object.entries(CONDITION_MAP).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                    ))}
+                </select>
                 <Button onClick={fetchCompartments}>Refresh</Button>
             </div>
+
 
             <TableWrapper>
                 <Table>

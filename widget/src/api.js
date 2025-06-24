@@ -20,7 +20,6 @@ api.interceptors.request.use(
     },
     error => Promise.reject(error)
 );
-/* Global response interceptor */
 api.interceptors.response.use(
     res => res,
     err => {
@@ -31,6 +30,6 @@ api.interceptors.response.use(
             'Network / server error';
 
         toast.error(msg, { autoClose: 4000 });
-        return Promise.reject(err);            // propagate so callers may .catch
+        return Promise.reject(err);
     }
 );

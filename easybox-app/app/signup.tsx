@@ -113,7 +113,7 @@ export default function Signup() {
                         mode={role === 'client' ? 'contained' : 'outlined'}
                         onPress={() => setRole('client')}
                         style={styles.toggleBtn}
-                        accessibilityState={{ selected: role === 'client' }} // ✱ CHANGE
+                        accessibilityState={{ selected: role === 'client' }}
                     >
                         Client
                     </Button>
@@ -121,7 +121,7 @@ export default function Signup() {
                         mode={role === 'bakery' ? 'contained' : 'outlined'}
                         onPress={() => setRole('bakery')}
                         style={styles.toggleBtn}
-                        accessibilityState={{ selected: role === 'bakery' }} // ✱ CHANGE
+                        accessibilityState={{ selected: role === 'bakery' }}
                     >
                         Bakery
                     </Button>

@@ -15,11 +15,11 @@ public class Easybox {
     private String address;
     private double latitude;
     private double longitude;
-    private String status; // e.g., "active"
+    private String status; //"active"
     private String secretKey;              // unique secret
     private Boolean approved;              // false or null until approved
     private LocalDateTime lastSecretRotation; // for JWT invalidation tracking
-    // New field for the device’s API URL
+
     @Column("device_url")
     private String clientId;
     @Version
@@ -34,7 +34,6 @@ public class Easybox {
         this.clientId = clientId;
     }
 
-    // Getters and setters
     public Long getId() {
         return id;
     }

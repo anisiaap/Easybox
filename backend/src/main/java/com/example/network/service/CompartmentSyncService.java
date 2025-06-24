@@ -35,7 +35,7 @@ public class CompartmentSyncService {
                 .then();
     }
     public Mono<Void> syncCompartmentsForEasybox(Long easyboxId) {
-        System.out.println("🔄 Syncing compartments for easyboxId=" + easyboxId);
+        System.out.println(" Syncing compartments for easyboxId=" + easyboxId);
 
         return easyboxRepository.findById(easyboxId)
                 .switchIfEmpty(Mono.error(new InvalidRequestException("Easybox " + easyboxId + " not found")))
@@ -61,9 +61,9 @@ public class CompartmentSyncService {
                     existing.setTemperature(dto.getTemperature());
                     existing.setStatus(dto.getStatus());
                     existing.setCondition(dto.getCondition());
-                    System.out.println("🛠️ Upserting compartment: id=" + dto.getId() + ", size=" + dto.getSize());
+                    System.out.println("Upserting compartment: id=" + dto.getId() + ", size=" + dto.getSize());
 
-                    return compartmentRepository.save(existing); // <<< save it to the database
+                    return compartmentRepository.save(existing);
                 });
     }
 

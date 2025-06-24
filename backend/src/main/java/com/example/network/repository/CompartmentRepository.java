@@ -6,6 +6,5 @@ import reactor.core.publisher.Flux;
 
 public interface CompartmentRepository extends ReactiveCrudRepository<Compartment, Long> {
 
-    // Optionally define queries if you want to look up compartments by easyboxId:
     Flux<Compartment> findByEasyboxId(Long easyboxId);
 }

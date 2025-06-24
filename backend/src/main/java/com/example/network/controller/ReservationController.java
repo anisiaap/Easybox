@@ -49,5 +49,4 @@ public class ReservationController {
     }
 
 
-    // If you want endpoints for listing or reading reservations, add them here...
 }

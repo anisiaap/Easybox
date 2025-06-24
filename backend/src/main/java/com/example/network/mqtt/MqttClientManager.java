@@ -25,12 +25,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Minimal, battle‑tested MQTT manager that works with HiveMQ Cloud (TLS + SNI).
- * <p>
- * No custom {@code SocketFactory}, no exotic options – just the defaults that
- * work out‑of‑the‑box with JDK 11+ (SNI is automatic when you use a host‑name URI).
- */
 @Component
 public class MqttClientManager {
 
@@ -54,7 +48,7 @@ public class MqttClientManager {
     @PostConstruct
     public void connect() throws MqttException {
         String brokerUri = properties.getBrokerUrl();
-        System.out.println("🔗 Connecting to MQTT broker " + brokerUri);
+        System.out.println(" Connecting to MQTT broker " + brokerUri);
 
         client = new MqttClient(
                 brokerUri,
@@ -71,21 +65,24 @@ public class MqttClientManager {
 
         client.setCallback(callback());
         client.connect(opts);
+        String qrTopic = properties.getTopicPrefix() + "/qrcode/+";
+        client.subscribe(qrTopic, 1);
+        System.out.println(" Subscribed to: " + qrTopic);
 
-        System.out.println("✅ MQTT connected");
+        System.out.println("MQTT connected");
     }
 
     @PreDestroy
     public void disconnect() throws MqttException {
         if (client != null && client.isConnected()) {
             client.disconnect();
-            System.out.println("🔌 MQTT disconnected");
+            System.out.println(" MQTT disconnected");
         }
     }
 
     public Mono<List<CompartmentDto>> requestCompartments(String clientId) {
         String responseTopic = properties.getTopicPrefix() + "/response/" + clientId;
-        System.out.println("📡 Preparing to subscribe to " + responseTopic);
+        System.out.println(" Preparing to subscribe to " + responseTopic);
 
         return Mono.<List<CompartmentDto>>create(sink -> {
             if (client == null || !client.isConnected()) {
@@ -98,7 +95,7 @@ public class MqttClientManager {
 
             try {
                 client.subscribe(responseTopic, 1);
-                System.out.println("📡 Subscribed to response topic for clientId: " + clientId);
+                System.out.println(" Subscribed to response topic for clientId: " + clientId);
 
                 String cmdTopic = properties.getTopicPrefix() + "/commands/" + clientId;
                 MqttMessage msg = new MqttMessage(
@@ -107,13 +104,13 @@ public class MqttClientManager {
                 msg.setQos(1);
                 msg.setRetained(true);
                 client.publish(cmdTopic, msg);
-                System.out.println("📤 Sent 'request-compartments' command to " + cmdTopic);
+                System.out.println(" Sent 'request-compartments' command to " + cmdTopic);
             } catch (MqttException e) {
                 sink.error(e);
             }
-        }).timeout(Duration.ofSeconds(30)) // ⏱️ Reactor handles timeout for you
+        }).timeout(Duration.ofSeconds(30))
                 .doOnError(TimeoutException.class, ex -> {
-                    System.err.println("⏰ Timeout waiting for response from clientId: " + clientId);
+                    System.err.println("Timeout waiting for response from clientId: " + clientId);
                     cleanup(responseTopic);
                 });
     }
@@ -121,7 +118,7 @@ public class MqttClientManager {
     private void cleanup( String responseTopic) {
         try {
             client.unsubscribe(responseTopic);
-            System.out.println("🚫 Unsubscribed from " + responseTopic);
+            System.out.println(" Unsubscribed from " + responseTopic);
         } catch (Exception ignored) {}
         currentRequestSink = null;
         currentExpectedClientId = null;
@@ -130,23 +127,31 @@ public class MqttClientManager {
         return new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
-                System.out.println((reconnect ? "🔁 Reconnected to " : "✅ Connected to ") + serverURI);
+                System.out.println((reconnect ? " Reconnected to " : " Connected to ") + serverURI);
+
+                if (reconnect) {
+                    try {
+                        String qrTopic = properties.getTopicPrefix() + "/qrcode/+";
+                        client.subscribe(qrTopic, 1);
+                        System.out.println(" Re-subscribed to: " + qrTopic);
+                    } catch (MqttException e) {
+                        System.err.println(" Failed to re-subscribe: " + e.getMessage());
+                    }
+                }
             }
 
             @Override
             public void connectionLost(Throwable cause) {
-                System.err.println("❌ connectionLost – " + cause);   // prints full class + msg
-                if (cause != null) cause.printStackTrace();           // <-- add this line
+                System.err.println(" connectionLost – " + cause);
+                if (cause != null) cause.printStackTrace();
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
-                System.out.println("📥 MQTT message arrived on topic: " + topic);
+                System.out.println(" MQTT message arrived on topic: " + topic);
 
-                // One decode, visible everywhere
                 String raw = new String(message.getPayload(), StandardCharsets.UTF_8);
 
-                /* ─────────────────────────────  A.  QR-SCAN PATH  ───────────────────────────── */
                 String qrPrefix = properties.getTopicPrefix() + "/qrcode/";
                 if (topic.startsWith(qrPrefix)) {
                     String clientId = topic.substring(qrPrefix.length());
@@ -175,10 +180,9 @@ public class MqttClientManager {
                             })
                             .subscribe();
 
-                    return;                 // done with /qrcode/**
+                    return;
                 }
 
-                /* ─────────────────────────────  B.  RESPONSE PATH  ───────────────────────────── */
                 String respPrefix = properties.getTopicPrefix() + "/response/";
                 if (topic.startsWith(respPrefix)) {
                     String clientId = topic.substring(respPrefix.length());
@@ -197,8 +201,6 @@ public class MqttClientManager {
                                     System.err.println("Token clientId mismatch");
                                     return Mono.empty();
                                 }
-
-                                /* ---- 1. confirmations (placed / picked) ---- */
                                 if (payload.startsWith("confirm:placed:") ||
                                         payload.startsWith("confirm:picked:")) {
 
@@ -206,7 +208,6 @@ public class MqttClientManager {
                                     return qrCodeService.handleConfirmation(id);
                                 }
 
-                                /* ---- 2. compartment list response ---- */
                                 if (currentRequestSink != null && clientId.equals(currentExpectedClientId)) {
                                     try {
                                         List<CompartmentDto> list = Arrays.asList(
@@ -220,30 +221,29 @@ public class MqttClientManager {
                                             empty.setQos(1);
                                             empty.setRetained(true);
                                             client.publish(topic, empty); // topic is the one we just received from
-                                            System.out.println("🧹 Cleared retained response on " + topic);
+                                            System.out.println(" Cleared retained response on " + topic);
                                         } catch (Exception ex) {
-                                            System.err.println("⚠️ Failed to clear retained message: " + ex.getMessage());
+                                            System.err.println(" Failed to clear retained message: " + ex.getMessage());
                                         }
 
                                     } catch (Exception ex) {
-                                        System.err.println("❌ Failed to parse compartments: " + ex.getMessage());
+                                        System.err.println(" Failed to parse compartments: " + ex.getMessage());
                                     }
                                 }
                                 return Mono.empty();
                             })
                             .subscribe();
 
-                    return;                 // done with /response/**
+                    return;
                 }
 
-                /* ─────────────────────────────  C.java.  OTHER TOPICS (ignored)  ─────────────────── */
-                System.out.println("ℹ️  Unhandled topic: " + topic);
+                System.out.println("ℹ Unhandled topic: " + topic);
             }
 
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken token) {
-                // no‑op
+
             }
         };
 
@@ -254,7 +254,7 @@ public class MqttClientManager {
     public void startConnectionMonitor() {
         monitor.scheduleAtFixedRate(() -> {
             if (client != null) {
-                System.out.println(client.isConnected() ? "✅ MQTT connection healthy" : "❌ MQTT disconnected");
+                System.out.println(client.isConnected() ? " MQTT connection healthy" : " MQTT disconnected");
             }
         }, 0, 30, TimeUnit.SECONDS);  // every 30 seconds
     }
@@ -280,11 +280,11 @@ public class MqttClientManager {
             message.setQos(1);
             client.publish(responseTopic, message);
 
-            System.out.println("📤 Sent QR response to " + responseTopic + ": " + payload);
+            System.out.println(" Sent QR response to " + responseTopic + ": " + payload);
 
             return Mono.empty();
         } catch (Exception e) {
-            System.err.println("❌ Failed to send QR response: " + e.getMessage());
+            System.err.println(" Failed to send QR response: " + e.getMessage());
             return Mono.empty();
         }
     }

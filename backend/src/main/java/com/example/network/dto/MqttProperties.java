@@ -11,7 +11,7 @@ public class MqttProperties {
     private String password;
     private String clientId;
     private String topicPrefix;
-    private String brokerUrl;  // <-- keep this too if needed
+    private String brokerUrl;
 
 
     public int getPort() { return port; }

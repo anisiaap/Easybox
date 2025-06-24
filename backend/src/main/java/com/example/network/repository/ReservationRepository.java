@@ -8,13 +8,11 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 
 public interface ReservationRepository extends ReactiveCrudRepository<Reservation, Long> {
-    // e.g. find all reservations for a given easybox
     Flux<Reservation> findByEasyboxId(Long easyboxId);
 
     Flux<Reservation>findAllByStatusAndExpiresAtBefore(String pending, LocalDateTime now);
     Flux<Reservation> findAllByBakeryIdOrderByReservationStartDesc(Long bakeryId);
-    // For all reservations, sorted descending by reservationStart
-    Flux<Reservation> findAllByOrderByReservationStartDesc();
+     Flux<Reservation> findAllByOrderByReservationStartDesc();
     Flux<Reservation> findAllByUserIdOrderByReservationStartDesc(Long userId);
     Flux<Reservation> findByCompartmentId(Long id);
     Flux<Reservation> findAllByUserId(Long userId);

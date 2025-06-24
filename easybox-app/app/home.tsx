@@ -64,7 +64,7 @@ export default function HomeScreen() {
         if (!userId || !role) return;
 
         api.get('/orders')
-        .then(res => setOrders(res.data))
+            .then(res => setOrders(res.data))
             .catch(() => setOrders([]));
     }, [userId, role]);
 
@@ -159,10 +159,10 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
 
             <View>
                 <Text style={styles.itemText}>
-                    Location: {item.easyboxAddress}
+                    Location: {item.easyboxAddress ?? 'Unknown'}
                 </Text>
                 <Text style={styles.itemText}>
-                     Delivery: {new Date(item.deliveryTime).toLocaleString()}
+                    Delivery: {new Date(item.deliveryTime).toLocaleString()}
                 </Text>
             </View>
 

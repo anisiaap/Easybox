@@ -8,7 +8,6 @@ public class ReservationQueryRequest {
     private Integer minTemperature;
     private Integer totalDimension;
 
-    // Getters and setters
     public String getAddress() {
         return address;
     }

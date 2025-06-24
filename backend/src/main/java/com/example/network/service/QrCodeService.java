@@ -59,7 +59,7 @@ public class QrCodeService {
                     if ("waiting_bakery_drop_off".equals(status) || "waiting_client_pick_up".equals(status)) {
                         return Mono.just(new QrCodeResult(
                                 reservation.getCompartmentId(),
-                                status // just echo the current valid status
+                                status
                         ));
                     }
                     return Mono.error(new InvalidRequestException(
