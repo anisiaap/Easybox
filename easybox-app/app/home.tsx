@@ -82,11 +82,12 @@ export default function HomeScreen() {
         (o) =>
             o.status !== 'cancelled' &&
             o.status !== 'completed' &&
-            o.status !== 'pending'
+            o.status !== 'pending' &&
+            o.status !== 'expired'
     );
 
     const pastOrders = orders.filter(
-        (o) => o.status === 'cancelled' || o.status === 'completed'
+        (o) => o.status === 'cancelled' || o.status === 'completed' || o.status == 'expired'
     );
 
     return (
