@@ -260,33 +260,37 @@ public class MqttClientManager {
     }
     private Mono<Void> sendQrCodeResponse(String clientId, boolean success,
                                           Long compartmentId, String newStatus, String errorReason) {
-        try {
-            String responseTopic = properties.getTopicPrefix() + "/qrcode-response/" + clientId;
+        return easyboxRepository.findByClientId(clientId)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Device not found")))
+                .flatMap(box -> {
+                    if (box.getSecretKey() == null) {
+                        return Mono.error(new IllegalStateException("Missing device secret"));
+                    }
 
-            String payload;
-            if (success) {
-                payload = "{\"result\":\"ok\",\"compartmentId\":" + compartmentId + ",\"newReservationStatus\":\"" + newStatus + "\"}";
-            } else {
-                payload = "{\"result\":\"error\",\"reason\":\"" + errorReason + "\"}";
-            }
+                    String payload;
+                    if (success) {
+                        payload = "{\"result\":\"ok\",\"compartmentId\":" + compartmentId +
+                                ",\"newReservationStatus\":\"" + newStatus + "\"}";
+                    } else {
+                        payload = "{\"result\":\"error\",\"reason\":\"" + errorReason + "\"}";
+                    }
 
-            Easybox box = easyboxRepository.findByClientId(clientId).block();
-            if (box == null || box.getSecretKey() == null) {
-                throw new IllegalStateException("Device not found or secret missing");
-            }
-            String token = jwtUtil.generateToken(clientId, box.getSecretKey());
-            String signedPayload = token + "::" + payload;
-            MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
-            message.setQos(1);
-            client.publish(responseTopic, message);
+                    String token = jwtUtil.generateToken(clientId, box.getSecretKey());
+                    String signedPayload = token + "::" + payload;
 
-            System.out.println(" Sent QR response to " + responseTopic + ": " + payload);
-
-            return Mono.empty();
-        } catch (Exception e) {
-            System.err.println(" Failed to send QR response: " + e.getMessage());
-            return Mono.empty();
-        }
+                    try {
+                        String responseTopic = properties.getTopicPrefix() + "/qrcode-response/" + clientId;
+                        MqttMessage message = new MqttMessage(signedPayload.getBytes(StandardCharsets.UTF_8));
+                        message.setQos(1);
+                        client.publish(responseTopic, message);
+                        System.out.println(" Sent QR response to " + responseTopic + ": " + payload);
+                        return Mono.empty();
+                    } catch (Exception e) {
+                        System.err.println(" Failed to publish MQTT: " + e.getMessage());
+                        return Mono.error(e);
+                    }
+                });
     }
+
 
 }
