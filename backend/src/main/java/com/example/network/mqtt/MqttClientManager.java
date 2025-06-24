@@ -70,9 +70,7 @@ public class MqttClientManager {
         String responseTopicWildcard = properties.getTopicPrefix() + "/response/+";
 
         client.subscribe(qrTopic, 1);
-        client.subscribe(responseTopicWildcard, 1);
-
-        System.out.println(" Subscribed to: " + qrTopic);
+        client.subscribe(responseTopicWildcard, 1); // <--- Always listen for responses
 
         System.out.println("MQTT connected");
     }
@@ -140,7 +138,7 @@ public class MqttClientManager {
                         String responseTopicWildcard = properties.getTopicPrefix() + "/response/+";
 
                         client.subscribe(qrTopic, 1);
-                        client.subscribe(responseTopicWildcard, 1);
+                        client.subscribe(responseTopicWildcard, 1); // <--- Always listen for responses
 
                         System.out.println(" Re-subscribed to: " + qrTopic);
                     } catch (MqttException e) {
