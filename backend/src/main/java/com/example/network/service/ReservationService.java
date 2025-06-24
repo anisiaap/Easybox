@@ -61,11 +61,8 @@ public class ReservationService {
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
                                 .filter(r -> {
-                                    boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
-                                    boolean pending = "pending".equalsIgnoreCase(r.getStatus())
-                                            && r.getExpiresAt() != null
-                                            && r.getExpiresAt().isAfter(now);
-                                    return confirmed || pending;
+                                    String status = r.getStatus() != null ? r.getStatus().toLowerCase() : "";
+                                    return !status.equals("cancelled") && !status.equals("expired");
                                 })
                                 .filter(r -> r.getReservationStart().isBefore(end) &&
                                         r.getReservationEnd().isAfter(start))

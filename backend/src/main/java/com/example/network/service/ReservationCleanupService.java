@@ -61,20 +61,18 @@ public class ReservationCleanupService {
                         if ("waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus()) &&
                                 r.getReservationStart() != null &&
                                 r.getReservationStart().plusHours(3).isBefore(now)) {
+                            System.out.println("Expiring reservation " + r.getId());
                             r.setStatus("expired");
                             return Mono.just(r);
                         }
 
+
                         if ("confirmed".equalsIgnoreCase(r.getStatus()) &&
                                 r.getReservationStart() != null &&
                                 r.getReservationStart().isBefore(now)) {
-                            System.out.println("Transitioning reservation " + r.getId() + " → waiting_bakery_drop_off");
                             r.setStatus("waiting_bakery_drop_off");
                             return Mono.just(r);
-                        } else if ("confirmed".equalsIgnoreCase(r.getStatus())) {
-                            System.out.println("Reservation " + r.getId() + " still confirmed, start=" + r.getReservationStart() + ", now=" + now);
                         }
-
 
                         if ("waiting_client_pick_up".equalsIgnoreCase(r.getStatus()) &&
                                 r.getReservationEnd().minusHours(3).isBefore(now)) {
