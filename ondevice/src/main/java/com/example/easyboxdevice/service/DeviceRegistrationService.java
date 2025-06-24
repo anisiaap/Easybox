@@ -37,7 +37,7 @@ public class DeviceRegistrationService {
     private String fallbackSecret;
     private volatile boolean mqttStarted = false;
     private final JwtUtil jwtUtil;
-    private final MqttService mqttService;  // 👈 injected
+    private final MqttService mqttService;  // injected
     private final WebClient webClient;
     private final DeviceDisplayController display;
 
@@ -63,13 +63,16 @@ public class DeviceRegistrationService {
                 .flatMap(approved -> {
                     if (approved) {
                         System.out.println(" Registration response received: approved=" + approved);
+                        display.showStatus("Device approved - waiting for MQTT to start...");
+                         display.showStatus("MQTT connected — ready to scan QR");
+                    display.showStatus("Please scan your QR code...");
                         return Mono.delay(Duration.ofMinutes(30)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     } else {
                         return Mono.delay(Duration.ofMinutes(1)).then(Mono.fromRunnable(this::keepTryingUntilApproved));
                     }
                 })
                 .onErrorResume(e -> {
-                    System.err.println("❌ Registration error: " + e.getMessage());
+                    System.err.println("Registration error: " + e.getMessage());
                     return Mono.delay(Duration.ofMinutes(1))
                             .then(Mono.fromRunnable(this::keepTryingUntilApproved));
                 })
@@ -92,18 +95,18 @@ public class DeviceRegistrationService {
                 .retrieve()
                 .onStatus(status -> status.value() == 403 || status.value() == 400, resp ->
                         resp.bodyToMono(String.class).flatMap(errorBody -> {
-                            System.err.println("❌ Server returned " + resp.statusCode().value() + ": " + errorBody);
+                            System.err.println("Server returned " + resp.statusCode().value() + ": " + errorBody);
 
                             if (!SecretStorageUtil.exists()) {
                                 // This means we tried to register with fallback, got rejected, but MAY be approved already
-                                System.err.println("⚠️ No stored secret — trying to fetch assigned secret...");
+                                System.err.println(" No stored secret — trying to fetch assigned secret...");
                                 return fetchNewSecretAndRetry().flatMap(approved -> {
                                     if (approved) return Mono.empty();
                                     return Mono.error(new SecurityException("Secret fetch failed or device not approved"));
                                 });
                             }
 
-                            System.err.println("⚠️ JWT rejected with stored secret — possibly rotated, trying refresh...");
+                            System.err.println("JWT rejected with stored secret — possibly rotated, trying refresh...");
                             return fetchNewSecretAndRetry().flatMap(approved -> {
                                 if (approved) return Mono.empty();
                                 return Mono.error(new SecurityException("Secret refresh failed"));
@@ -119,9 +122,9 @@ public class DeviceRegistrationService {
                     if (isApproved && newSecret != null && !newSecret.isBlank() && !SecretStorageUtil.exists()) {
                         try {
                             SecretStorageUtil.storeSecret(newSecret);
-                            System.out.println("🔐 Approved secret stored");
+                            System.out.println("Approved secret stored");
                         } catch (Exception e) {
-                            System.err.println("❌ Failed to store device secret: " + e.getMessage());
+                            System.err.println("Failed to store device secret: " + e.getMessage());
                         }
                     }
 
@@ -129,16 +132,16 @@ public class DeviceRegistrationService {
                         try {
                             mqttStarted = true;
                             mqttService.start();
-                            System.out.println("✅ Device approved — MQTT started");
+                            System.out.println("Device approved — MQTT started");
                         } catch (MqttException e) {
                             throw new RuntimeException(e);
                         }
-                        System.out.println("✅ Device approved — MQTT started");
+                        System.out.println("Device approved — MQTT started");
                         display.showStatus("Device approved — connecting to MQTT...");
                     } else {
-                        System.out.println("⏳ Still waiting for admin approval…");
+                        System.out.println(" Still waiting for admin approval…");
                         display.showStatus("Awaiting approval...");
-                        // 🧹 If we somehow have a stored secret, delete it to force fallback usage
+                        //  If we somehow have a stored secret, delete it to force fallback usage
 //                        if (SecretStorageUtil.exists()) {
 //                            try {
 //                                SecretStorageUtil.deleteSecret();  // implement this method
@@ -222,15 +225,15 @@ public class DeviceRegistrationService {
                 .flatMap(secret -> {
                     try {
                         SecretStorageUtil.storeSecret(secret);
-                        System.out.println("🔁 Fetched and stored new secret after rotation");
+                        System.out.println("Fetched and stored new secret after rotation");
                         return attemptRegistration(); // retry with fresh secret
                     } catch (Exception e) {
-                        System.err.println("❌ Failed to store fetched secret: " + e.getMessage());
+                        System.err.println(" Failed to store fetched secret: " + e.getMessage());
                         return Mono.just(false);
                     }
                 })
                 .onErrorResume(e -> {
-                    System.err.println("❌ Failed to fetch new secret: " + e.getMessage());
+                    System.err.println("Failed to fetch new secret: " + e.getMessage());
                     return Mono.just(false);
                 });
     }

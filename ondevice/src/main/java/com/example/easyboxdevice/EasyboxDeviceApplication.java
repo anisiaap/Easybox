@@ -11,22 +11,11 @@ import org.springframework.boot.CommandLineRunner;
 @SpringBootApplication
 @EnableScheduling
 @EnableConfigurationProperties
-public class EasyboxDeviceApplication{
-
-    private final QrScannerService qrScannerService;
-    private final DeviceDisplayController displayController;
-
-    public EasyboxDeviceApplication(QrScannerService qrScannerService,
-                                    DeviceDisplayController displayController) {
-        this.qrScannerService = qrScannerService;
-        this.displayController = displayController;
-    }
+public class EasyboxDeviceApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(EasyboxDeviceApplication.class, args);
     }
-
-
-
 }
+
 

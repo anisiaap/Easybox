@@ -37,7 +37,7 @@ public class SecretStorageUtil {
         Path path = getFilePath();
         if (Files.exists(path)) {
             Files.delete(path);
-            System.out.println("🗑️ Deleted stored secret: " + path.toAbsolutePath());
+            System.out.println(" Deleted stored secret: " + path.toAbsolutePath());
         }
     }
 

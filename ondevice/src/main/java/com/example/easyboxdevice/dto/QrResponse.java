@@ -5,7 +5,7 @@ public class QrResponse {
     private Long compartmentId;
     private String newReservationStatus;
     private String reason;
-    // getters & setters …
+    
 
     public String getResult() {
         return result;

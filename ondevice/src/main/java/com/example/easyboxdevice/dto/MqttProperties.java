@@ -13,7 +13,6 @@ public class MqttProperties {
     private String clientId;
     private String topicPrefix;
 
-    // Getters & Setters
     public String getBrokerUrl() { return brokerUrl; }
     public void setBrokerUrl(String brokerUrl) { this.brokerUrl = brokerUrl; }
 

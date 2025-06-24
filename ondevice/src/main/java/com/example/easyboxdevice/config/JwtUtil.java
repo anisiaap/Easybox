@@ -24,7 +24,7 @@ public class JwtUtil {
                     ? SecretStorageUtil.loadSecret()
                     : fallbackSecret;
         } catch (Exception ex) {
-            System.err.println("❌ Failed to load secret: " + ex.getMessage());
+            System.err.println(" Failed to load secret: " + ex.getMessage());
             secret = fallbackSecret;
         }
         return Jwts.builder()

@@ -1,99 +1,113 @@
 package com.example.easyboxdevice.service;
 
-import com.example.easyboxdevice.controller.DeviceDisplayController;
-import com.example.easyboxdevice.exception.ProductNotFoundException;
 import com.example.easyboxdevice.service.MqttService;
+import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
-import com.google.zxing.*;
-import com.google.zxing.common.HybridBinarizer;
-
-import org.bytedeco.javacpp.Loader;                 // <-- correct Loader
-import org.bytedeco.javacpp.BytePointer;           // buffer for imencode
-import org.bytedeco.opencv.global.opencv_core;     // CV_VERSION
-import org.bytedeco.opencv.global.opencv_imgcodecs;
-import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_videoio.VideoCapture;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.util.Hashtable;
-import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
-
+import java.io.File;
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 @Service
-@RequiredArgsConstructor
 public class QrScannerService {
 
-    private final DeviceDisplayController display;
     private final MqttService mqttService;
+    private String lastQr = null;
+    private long lastTime = 0;
+    private volatile boolean running = true;
+    private Thread scannerThread;
 
-    /** Pi camera or USB cam at /dev/video0 */
-    private final VideoCapture camera = new VideoCapture(0);
-
-    private String lastQr = "";
-    private long   lastAt = 0;
-
-    /* Load native OpenCV libs once */
-    static { Loader.load(opencv_core.class); }
-
-    @PostConstruct
-    public void init() {
-        if (!camera.isOpened()) {
-            System.err.println("❌ Cannot open camera!");
-        } else {
-            System.out.println("✅ Camera initialised (OpenCV "
-                    + opencv_core.CV_VERSION() + ")");
-        }
+    public QrScannerService(MqttService mqttService) {
+        this.mqttService = mqttService;
     }
 
-    /** Grab frame every second, look for QR */
-    @Scheduled(fixedDelay = 1000)
-    public void scanLoop() {
-        Mat frame = new Mat();
-        if (!camera.read(frame)) return;
-
-        // Encode Mat -> JPEG -> byte[]
-        try (BytePointer buf = new BytePointer()) {
-            opencv_imgcodecs.imencode(".jpg", frame, buf);
-            byte[] bytes = new byte[(int) buf.limit()];
-            buf.get(bytes);
-
-            BufferedImage img = ImageIO.read(new ByteArrayInputStream(bytes));
-            if (img == null) return;
-
-            BinaryBitmap bitmap = new BinaryBitmap(
-                    new HybridBinarizer(new BufferedImageLuminanceSource(img)));
-
-            Result qrRes = new MultiFormatReader().decode(
-                    bitmap, new Hashtable<>());
-
-            String qr  = qrRes.getText();
-            long   now = System.currentTimeMillis();
-
-            if (!qr.equals(lastQr) || now - lastAt > 5_000) {
-                System.out.println("QR Found: " + qr);
-                mqttService.publishQr(qr);
-                display.showLoading();
-                lastQr = qr;
-                lastAt = now;
-            }
-        } catch (NotFoundException ignore) {
-            // No QR this frame
-        } catch (ProductNotFoundException ignore) {
-            // Domain-specific
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+    @PostConstruct
+    public void start() {
+        scannerThread = new Thread(this::scanLoop, "QrScannerThread");
+        scannerThread.start();
     }
 
     @PreDestroy
-    public void shutdown() {
-        if (camera.isOpened()) camera.release();
+    public void stop() {
+        running = false;
+        if (scannerThread != null) {
+            scannerThread.interrupt();
+        }
+    }
+
+    private void scanLoop() {
+        while (running) {
+            try {
+                captureImage();
+                String qr = decodeQrWithZbar();
+
+                if (qr != null && (!qr.equals(lastQr) || System.currentTimeMillis() - lastTime > 5000)) {
+                    lastQr = qr;
+                    lastTime = System.currentTimeMillis();
+                    System.out.println(" QR detected: " + qr);
+                    mqttService.publishQr(qr);
+                }
+
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                break;
+            } catch (Exception e) {
+                System.err.println(" Error: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void captureImage() throws IOException, InterruptedException {
+        long timestamp = System.currentTimeMillis();
+        String uniquePath = "/tmp/qr_" + timestamp + ".jpg";
+        String latestPath = "/tmp/latest_qr.jpg";
+
+        ProcessBuilder pb = new ProcessBuilder(
+            "libcamera-still",
+            "-o", uniquePath,
+            "--width", "1280", "--height", "960",
+            "--quality", "90",
+            "--nopreview", "-t", "300"
+        );
+
+        Process process = pb.inheritIO().start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IOException("libcamera-still failed with code " + exitCode);
+        }
+
+        java.nio.file.Files.copy(
+            new File(uniquePath).toPath(),
+            new File(latestPath).toPath(),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING
+        );
+    }
+
+    private String decodeQrWithZbar() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("zbarimg", "/tmp/latest_qr.jpg");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("QR-Code:")) {
+                        return line.substring("QR-Code:".length()).trim();
+                    }
+                }
+            }
+
+            process.waitFor();
+        } catch (Exception e) {
+            System.err.println(" ZBar failed: " + e.getMessage());
+        }
+
+        return null;
     }
 }

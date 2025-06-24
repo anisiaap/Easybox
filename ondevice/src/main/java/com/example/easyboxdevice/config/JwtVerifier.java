@@ -24,7 +24,7 @@ public class JwtVerifier {
                     ? SecretStorageUtil.loadSecret()
                     : jwtSecret;
         } catch (Exception ex) {
-            System.err.println("❌ Failed to load stored secret, falling back to shared secret");
+            System.err.println(" Failed to load stored secret, falling back to shared secret");
             secret = jwtSecret;
         }
         return Jwts.parser()

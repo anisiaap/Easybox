@@ -3,7 +3,6 @@ package com.example.easyboxdevice.model;
 public class GpioMapping {
     private int compartmentId;
     private int pin;
-    // getters and setters
 
     public int getCompartmentId() {
         return compartmentId;

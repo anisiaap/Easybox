@@ -4,7 +4,6 @@ import java.util.List;
 
 public class GpioConfig {
     private List<GpioMapping> mappings;
-    // getters and setters
 
     public List<GpioMapping> getMappings() {
         return mappings;
