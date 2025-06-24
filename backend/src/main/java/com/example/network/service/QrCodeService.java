@@ -40,28 +40,25 @@ public class QrCodeService {
             return Mono.error(new InvalidRequestException("Invalid QR format"));
         }
 
-        Long reservationId;
-        try {
-            reservationId = Long.parseLong(qrContent.substring("reservation:".length()));
-        } catch (NumberFormatException e) {
-            return Mono.error(new InvalidRequestException("Invalid reservation ID"));
-        }
-
-        return reservationRepository.findById(reservationId)
-                .switchIfEmpty(Mono.error(new InvalidRequestException("Reservation not found")))
+        return reservationRepository.findAll()
+                .filter(res -> qrContent.equals(res.getQrCodeData()))
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new InvalidRequestException("No reservation matches this QR code")))
                 .flatMap(reservation -> {
-                    String status = reservation.getStatus();
                     if (isExpired(reservation) ||
                             "canceled".equals(reservation.getStatus()) ||
                             "expired".equals(reservation.getStatus())) {
                         return Mono.error(new InvalidRequestException("Reservation expired or canceled"));
                     }
+
+                    String status = reservation.getStatus();
                     if ("waiting_bakery_drop_off".equals(status) || "waiting_client_pick_up".equals(status)) {
                         return Mono.just(new QrCodeResult(
                                 reservation.getCompartmentId(),
                                 status
                         ));
                     }
+
                     return Mono.error(new InvalidRequestException(
                             "Reservation in unexpected state: " + status));
                 });
