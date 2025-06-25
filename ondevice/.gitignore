@@ -33,3 +33,4 @@ build/
 .vscode/
 .env
 device-secret.enc
+.jpg
