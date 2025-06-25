@@ -119,34 +119,33 @@ const Customers: React.FC = () => {
             console.log('Count response:', countRes.data);
 
             setAllCustomers(usersRes.data);
+            setCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
             toast.error(error?.response?.data || 'Failed to fetch customers');
         }
     }, [page ]);
-    // useEffect(() => {
-    //     if (searchName.trim() === '' && searchPhone.trim() === '') {
-    //         setCustomers(allCustomers);
-    //     } else {
-    //         let filtered = allCustomers;
-    //
-    //         if (searchName.trim()) {
-    //             filtered = filtered.filter(c => c.name?.toLowerCase().includes(searchName.toLowerCase()));
-    //         }
-    //
-    //         if (searchPhone.trim()) {
-    //             filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
-    //         }
-    //
-    //         setCustomers(filtered);
-    //         setPage(0);
-    //     }
-    // }, [searchName, searchPhone, allCustomers]);
     useEffect(() => {
-        console.log('🔍 allCustomers updated:', allCustomers);
-        setCustomers(allCustomers); // remove filtering logic temporarily
-    }, [allCustomers]);
+        fetchCustomers();
+    }, [fetchCustomers]);
+    useEffect(() => {
+        if (searchName.trim() === '' && searchPhone.trim() === '') {
+            setCustomers(allCustomers);
+        } else {
+            let filtered = allCustomers;
 
+            if (searchName.trim()) {
+                filtered = filtered.filter(c => c.name?.toLowerCase().includes(searchName.toLowerCase()));
+            }
+
+            if (searchPhone.trim()) {
+                filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
+            }
+
+            setCustomers(filtered);
+            setPage(0);
+        }
+    }, [searchName, searchPhone, allCustomers]);
 
 
     const handleDelete = (id: number) => {
@@ -187,19 +186,6 @@ const Customers: React.FC = () => {
         });
     };
 
-    // const handleCreate = async (e: React.FormEvent) => {
-    //     e.preventDefault();
-    //     try {
-    //         await api.post('/admin/users', newCustomer);
-    //         setNewCustomer({ name: '', phoneNumber: '' });
-    //         toast.success('Customer created successfully!');
-    //         fetchCustomers();
-    //     }catch (error: any) {
-    //         const message = error?.response?.data || 'Failed to create customer';
-    //         toast.error(message);
-    //         console.error('Error creating customer', error);
-    //     }
-    // };
 
     return (
         <Container>
@@ -227,7 +213,7 @@ const Customers: React.FC = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {(customers || []).map((c) => (
+                {customers.map(c => (
 
                     <TableRow key={c.id}>
                         <Td>
