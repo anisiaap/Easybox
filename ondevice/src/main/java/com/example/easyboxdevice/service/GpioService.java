@@ -58,6 +58,6 @@ public class GpioService {
 
     @PreDestroy
     public void shutdown() {
-        System.out.println("Shutdown: No Pi4J cleanup needed for gpioset");
+        System.out.println("Shutdown: No cleanup needed for gpioset");
     }
 }

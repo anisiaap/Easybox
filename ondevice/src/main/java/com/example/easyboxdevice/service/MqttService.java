@@ -46,7 +46,7 @@ public MqttService(MqttProperties properties,
 
 
 
-    /** ✅ Call this only after device has been approved. Safe to call multiple times. */
+    /** Call this only after device has been approved. Safe to call multiple times. */
     public synchronized void start() throws MqttException {
         if (!SecretStorageUtil.exists()) {
             throw new IllegalStateException(" Cannot start MQTT: device not yet approved");

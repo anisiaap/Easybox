@@ -65,19 +65,6 @@ public class ReservationCleanupService {
                             r.setStatus("expired");
                             return Mono.just(r);
                         }
-                    else {
-                        System.out.println("Not expiring reservation " + r.getId() + " because:");
-                        System.out.println("  status: " + r.getStatus());
-                        System.out.println("  reservationStart: " + r.getReservationStart());
-                        System.out.println("  reservationStart + 3h: " +
-                                (r.getReservationStart() != null ? r.getReservationStart().plusHours(3) : "null"));
-                        System.out.println("  now: " + now);
-                        System.out.println("  is 'waiting_bakery_drop_off': " +
-                                "waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus()));
-                        System.out.println("  reservationStart != null: " + (r.getReservationStart() != null));
-                        System.out.println("  reservationStart + 3h < now: " +
-                                (r.getReservationStart() != null && r.getReservationStart().plusHours(3).isBefore(now)));
-                    }
 
                         if ("confirmed".equalsIgnoreCase(r.getStatus()) &&
                                 r.getReservationStart() != null &&
