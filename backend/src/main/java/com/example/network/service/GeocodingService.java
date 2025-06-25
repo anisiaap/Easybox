@@ -25,15 +25,8 @@ public class GeocodingService {
         this.webClient = webClientBuilder.build();
         this.LOCATIONIQ_URL = "https://us1.locationiq.com/v1/search?format=json&limit=1&key=" + apiKey + "&q=";
     }
-    /**
-     * Returns [latitude, longitude] for the given address, or [0,0] if not found.
-     * If you want a strict error approach, you can throw a GeocodingException
-     * if the array is empty or lat/lon can't be parsed.
-     */
-    // src/main/java/com/example/network/service/GeocodingService.java
     public Mono<double[]> geocodeAddress(String address) {
         if (address == null || address.isBlank()) {
-            // If you also want to fail immediately when address is blank:
             return Mono.error(new GeocodingException("Address is blank or null."));
         }
         System.out.println("error2");
@@ -45,7 +38,7 @@ public class GeocodingService {
                 .header("User-Agent", "MyApp/1.0 (contact: your-email@example.com)")
                 .retrieve()
                 .bodyToMono(NominatimResponse[].class)
-                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2)))  // optional retry
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2)))
                 .flatMap(responses -> {
                     // Instead of returning [0,0], throw an error
                     if (responses == null || responses.length == 0) {
@@ -63,16 +56,11 @@ public class GeocodingService {
                         ));
                     }
                 })
-                // If you do *not* want a fallback and prefer to bubble up the exception,
-                // you can remove onErrorResume altogether. If you keep it, re-throw or adjust as needed:
                 .onErrorResume(ex -> Mono.error(new GeocodingException(
                         "Error calling geocoding service for address: " + address + ". " + ex.getMessage()
                 )));
     }
 
-    /**
-     * Haversine distance in meters between (lat1, lon1) and (lat2, lon2).
-     */
     public double distance(double lat1, double lon1, double lat2, double lon2) {
         final int EARTH_RADIUS = 6371000; // meters
         double dLat = Math.toRadians(lat2 - lat1);
@@ -83,8 +71,6 @@ public class GeocodingService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS * c;
     }
-
-    // Inner class for the JSON mapping
     private static class NominatimResponse {
         public String lat;
         public String lon;

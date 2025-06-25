@@ -25,7 +25,6 @@ public class UserAdminController {
                 .skip((long) page * size)
                 .take(size);
     }
-    // GET total count of users (for frontend to compute total pages)
     @GetMapping("/count")
     public Mono<Long> getUserCount() {
         return userRepository.count();

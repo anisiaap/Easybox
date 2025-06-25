@@ -42,7 +42,7 @@ public class ReservationCleanupService {
                         updated = easyboxRepository.findById(reservation.getEasyboxId())
                                 .flatMap(easybox -> {
                                     if (!"active".equals(easybox.getStatus())) {
-                                        reservation.setStatus("canceled");
+                                        reservation.setStatus("cancelled");
                                         return Mono.just(reservation);
                                     }
                                     return compartmentRepository.findById(reservation.getCompartmentId())
@@ -52,19 +52,36 @@ public class ReservationCleanupService {
                                                     reservation.setStatus("waiting_cleaning");
                                                     return Mono.just(reservation);
                                                 }
-                                                return Mono.just(reservation); // ✅ continue to rest of logic
+                                                return Mono.just(reservation);
                                             });
                                 });
                     }
 
-                    // then chain your rest logic:
                     return updated.flatMap(r -> {
-                        if (r.getReservationEnd() != null && r.getReservationEnd().isBefore(now) && !"waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus())) {
+                        if ("waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus()) &&
+                                r.getReservationStart() != null &&
+                                r.getReservationStart().plusHours(3).isBefore(now)) {
+                            System.out.println("Expiring reservation " + r.getId());
                             r.setStatus("expired");
                             return Mono.just(r);
                         }
+                    else {
+                        System.out.println("Not expiring reservation " + r.getId() + " because:");
+                        System.out.println("  status: " + r.getStatus());
+                        System.out.println("  reservationStart: " + r.getReservationStart());
+                        System.out.println("  reservationStart + 3h: " +
+                                (r.getReservationStart() != null ? r.getReservationStart().plusHours(3) : "null"));
+                        System.out.println("  now: " + now);
+                        System.out.println("  is 'waiting_bakery_drop_off': " +
+                                "waiting_bakery_drop_off".equalsIgnoreCase(r.getStatus()));
+                        System.out.println("  reservationStart != null: " + (r.getReservationStart() != null));
+                        System.out.println("  reservationStart + 3h < now: " +
+                                (r.getReservationStart() != null && r.getReservationStart().plusHours(3).isBefore(now)));
+                    }
 
-                        if ("confirmed".equalsIgnoreCase(r.getStatus()) && r.getReservationStart().isBefore(now)) {
+                        if ("confirmed".equalsIgnoreCase(r.getStatus()) &&
+                                r.getReservationStart() != null &&
+                                r.getReservationStart().isBefore(now)) {
                             r.setStatus("waiting_bakery_drop_off");
                             return Mono.just(r);
                         }
@@ -81,8 +98,8 @@ public class ReservationCleanupService {
                 })
                 .flatMap(reservationRepository::save)
                 .subscribe(
-                        res -> System.out.println("🔄 Updated reservation " + res.getId() + " → " + res.getStatus()),
-                        error -> System.err.println("❌ Error during reservation update: " + error.getMessage())
+                        res -> System.out.println("Updated reservation " + res.getId() + " → " + res.getStatus()),
+                        error -> System.err.println("Error during reservation update: " + error.getMessage())
                 );
     }
 

@@ -83,6 +83,7 @@ public class EasyboxAdminController {
                                 })
                                 .flatMap(res -> {
                                     res.setStatus("cancelled");
+                                    res.setEasyboxId(null);
                                     return reservationRepository.save(res);
                                 })
                                 .thenMany(compartmentRepository.findByEasyboxId(id)
@@ -111,14 +112,14 @@ public class EasyboxAdminController {
                                     syncService.syncCompartmentsForEasybox(saved.getId())
                                             .timeout(Duration.ofSeconds(30)) // optional extra safety
                                             .onErrorResume(e -> {
-                                                System.err.println("❌ Compartment sync failed: " + e.getMessage());
+                                                System.err.println(" Compartment sync failed: " + e.getMessage());
                                                 return Mono.empty();
                                             })
                                             .thenReturn(ResponseEntity.ok(saved.getSecretKey()))
                             );
                 })
                 .onErrorResume(e -> {
-                    System.err.println("❌ Unexpected error in approval: " + e.getMessage());
+                    System.err.println(" Unexpected error in approval: " + e.getMessage());
                     return Mono.just(ResponseEntity.status(500).body("Approval failed: " + e.getMessage()));
                 });
     }

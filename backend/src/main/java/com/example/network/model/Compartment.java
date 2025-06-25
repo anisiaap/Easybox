@@ -12,13 +12,13 @@ public class Compartment {
     private Long easyboxId;
     private int size;
     private int temperature;
-    private String status;    // e.g., "free", "busy"
-    private String condition; // e.g., "good", "dirty", "broken"
+    private String status;    //  "free", "busy"
+    private String condition; //  "good", "dirty", "broken"
 
     @Version
-    private Long version;  // optional, if you added a version column
+    private Long version;
 
-    // Constructors
+
     public Compartment() {}
 
     public Compartment(Long id, Long easyboxId, int size, int temperature,
@@ -31,7 +31,6 @@ public class Compartment {
         this.condition = condition;
     }
 
-    // Getters & setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

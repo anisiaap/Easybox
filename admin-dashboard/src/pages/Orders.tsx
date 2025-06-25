@@ -43,7 +43,7 @@ const statusOptions = [
     { label: 'Pickup Order', value: 'waiting_client_pick_up' },
     { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
     { label: 'Expired', value: 'expired' },
-    { label: 'Canceled', value: 'canceled' },
+    { label: 'Cancelled', value: 'cancelled' },
     { label: 'Completed', value: 'completed' },
 ];
 
@@ -95,9 +95,22 @@ export default function Orders() {
                 api.get(`/admin/reservations?${query}`),
                 api.get(`/admin/reservations/count?${query}`),
             ]);
-            setOrders(list.data);
-            setAllOrders(list.data);
-            setTotalOrders(count.data);
+            if (Array.isArray(list.data)) {
+                setOrders(list.data);
+                setAllOrders(list.data);
+            } else {
+                toast.error(list.data?.message || 'Unexpected response');
+                setOrders([]); // fallback
+                setAllOrders([]);
+            }
+
+            if (typeof count.data === 'number') {
+                setTotalOrders(count.data);
+            } else {
+                toast.error(count.data?.message || 'Failed to fetch order count');
+                setTotalOrders(0);
+            }
+
         } catch (err: any) {
             toast.error(err?.response?.data || 'Failed to fetch orders');
         }

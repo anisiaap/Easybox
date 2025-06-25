@@ -9,7 +9,6 @@ public class CompartmentsStatusDto {
         this.busy = busy;
     }
 
-    // Getters and Setters
 
     public Long getFree() {
         return free;

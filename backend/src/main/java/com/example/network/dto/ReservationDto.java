@@ -9,12 +9,10 @@ public class ReservationDto {
     private String easyboxAddress;
     private String status;
 
-    // ReservationDto.java
     private Long compartmentId;
     private LocalDateTime reservationStart;
     private LocalDateTime reservationEnd;
 
-    // Update constructor and getters/setters accordingly:
     public ReservationDto(Long id, String userPhone, String bakeryName, String easyboxAddress,
                           String status, Long compartmentId, LocalDateTime reservationStart, LocalDateTime reservationEnd) {
         this.id = id;
@@ -51,7 +49,6 @@ public class ReservationDto {
         this.reservationEnd = reservationEnd;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

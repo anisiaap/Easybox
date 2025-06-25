@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Custom error response structure
     static class ErrorResponse {
         private String message;
         private LocalDateTime timestamp;

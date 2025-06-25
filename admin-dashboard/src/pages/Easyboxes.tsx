@@ -383,6 +383,7 @@ return (
                                         const updated = await api.get('/admin/easyboxes');
                                         setEasyboxes(updated.data);
                                         setFilteredEasyboxes(updated.data);
+                                        navigate('/', { replace: true });
                                     } catch (err: any) {
                                         const msg = err?.response?.data || "Failed to delete.";
                                         toast.error(msg);

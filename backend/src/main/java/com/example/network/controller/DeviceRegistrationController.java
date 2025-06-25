@@ -76,7 +76,7 @@ public class DeviceRegistrationController {
                                                                             }
                                                                             return syncService.syncCompartmentsForEasybox(saved.getId())
                                                                                     .onErrorResume(e -> {
-                                                                                        System.err.println("❌ Failed to sync compartments on registration: " + e.getMessage());
+                                                                                        System.err.println(" Failed to sync compartments on registration: " + e.getMessage());
                                                                                         return Mono.empty();
                                                                                     })
                                                                                     .thenReturn(saved);

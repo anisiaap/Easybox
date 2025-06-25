@@ -9,7 +9,6 @@ public class OrdersStatusDto {
         this.count = count;
     }
 
-    // Getters and Setters
 
     public String getStatus() {
         return status;

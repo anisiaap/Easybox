@@ -18,9 +18,6 @@ public class User {
         this.password = password;
     }
 
-    // Additional fields as needed
-
-    // Getters & Setters
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }

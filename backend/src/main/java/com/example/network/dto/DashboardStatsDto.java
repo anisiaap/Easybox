@@ -13,7 +13,6 @@ public class DashboardStatsDto {
         this.expiredOrders = expiredOrders;
     }
 
-    // Getters and setters
     public long getTotalEasyboxes() { return totalEasyboxes; }
     public void setTotalEasyboxes(long totalEasyboxes) { this.totalEasyboxes = totalEasyboxes; }
 

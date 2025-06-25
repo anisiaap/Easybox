@@ -2,11 +2,14 @@ package com.example.network.service;
 
 import com.example.network.dto.QrCodeResult;
 import com.example.network.exception.InvalidRequestException;
-import com.google.zxing.BarcodeFormat;
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -18,6 +21,8 @@ import com.example.network.repository.CompartmentRepository;
 import com.example.network.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import javax.imageio.ImageIO;
 
 @Service
 public class QrCodeService {
@@ -40,32 +45,41 @@ public class QrCodeService {
             return Mono.error(new InvalidRequestException("Invalid QR format"));
         }
 
-        Long reservationId;
-        try {
-            reservationId = Long.parseLong(qrContent.substring("reservation:".length()));
-        } catch (NumberFormatException e) {
-            return Mono.error(new InvalidRequestException("Invalid reservation ID"));
-        }
-
-        return reservationRepository.findById(reservationId)
-                .switchIfEmpty(Mono.error(new InvalidRequestException("Reservation not found")))
-                .flatMap(reservation -> {
-                    String status = reservation.getStatus();
-                    if (isExpired(reservation) ||
-                            "canceled".equals(reservation.getStatus()) ||
-                            "expired".equals(reservation.getStatus())) {
-                        return Mono.error(new InvalidRequestException("Reservation expired or canceled"));
+        return reservationRepository.findAll()
+                .flatMap(res -> {
+                    try {
+                        String decoded = decodeQrFromBase64Png(res.getQrCodeData());
+                        if (qrContent.equals(decoded)) {
+                            return Mono.just(res);
+                        } else {
+                            return Mono.empty();
+                        }
+                    } catch (Exception e) {
+                        System.err.println("QR decode failed for reservation " + res.getId() + ": " + e.getMessage());
+                        return Mono.empty();
                     }
+                })
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new InvalidRequestException("No reservation matches this QR code")))
+                .flatMap(reservation -> {
+                    if (isExpired(reservation) ||
+                            "cancelled".equals(reservation.getStatus()) ||
+                            "expired".equals(reservation.getStatus())) {
+                        return Mono.error(new InvalidRequestException("Reservation expired or cancelled"));
+                    }
+
+                    String status = reservation.getStatus();
                     if ("waiting_bakery_drop_off".equals(status) || "waiting_client_pick_up".equals(status)) {
                         return Mono.just(new QrCodeResult(
                                 reservation.getCompartmentId(),
-                                status // just echo the current valid status
+                                status
                         ));
                     }
-                    return Mono.error(new InvalidRequestException(
-                            "Reservation in unexpected state: " + status));
+
+                    return Mono.error(new InvalidRequestException("Reservation in unexpected state: " + status));
                 });
     }
+
 
     public Mono<Void> handleConfirmation(Long compartmentId) {
         return reservationRepository.findByCompartmentIdAndStatus(compartmentId, "waiting_bakery_drop_off")
@@ -107,6 +121,20 @@ public class QrCodeService {
         byte[] bytes = baos.toByteArray();
 
         return Base64.getEncoder().encodeToString(bytes);
+    }
+    public static String decodeQrFromBase64Png(String base64Png) throws Exception {
+        byte[] imageBytes = Base64.getDecoder().decode(base64Png);
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+
+        if (image == null) {
+            throw new IllegalArgumentException("Failed to decode image from Base64");
+        }
+
+        LuminanceSource source = new BufferedImageLuminanceSource(image);
+        BinaryBitmap bitmap    = new BinaryBitmap(new HybridBinarizer(source));
+
+        Result result = new MultiFormatReader().decode(bitmap);
+        return result.getText();
     }
 
 }

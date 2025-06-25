@@ -11,9 +11,8 @@ import java.util.TimeZone;
 public class EasyboxApplication {
 
     static {
-        // Set default time zone globally to Europe/Bucharest
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Bucharest"));
-        System.out.println("✅ TimeZone set to Europe/Bucharest");
+        System.out.println("TimeZone set to Europe/Bucharest");
     }
 
     public static void main(String[] args) {

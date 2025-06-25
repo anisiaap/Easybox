@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 
@@ -41,10 +43,13 @@ public class ReservationService {
         this.geocodingService      = geocodingService;
         this.userService = userService;
     }
+    private static final SecureRandom random = new SecureRandom();
 
-    /* -------------------------------------------------------------------- */
-    /* -----------------------  H O L D   P H A S E  ---------------------- */
-    /* -------------------------------------------------------------------- */
+    private String generateUniqueSuffix() {
+        byte[] bytes = new byte[5]; // 40-bit
+        random.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes); // URL-safe
+    }
     private Flux<Compartment> filterCompartments(Easybox box, Integer minTemp, Integer totalDim, LocalDateTime start, LocalDateTime end) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -56,11 +61,8 @@ public class ReservationService {
                 .concatMap(c ->
                         reservationRepository.findByCompartmentId(c.getId())
                                 .filter(r -> {
-                                    boolean confirmed = "confirmed".equalsIgnoreCase(r.getStatus());
-                                    boolean pending = "pending".equalsIgnoreCase(r.getStatus())
-                                            && r.getExpiresAt() != null
-                                            && r.getExpiresAt().isAfter(now);
-                                    return confirmed || pending;
+                                    String status = r.getStatus() != null ? r.getStatus().toLowerCase() : "";
+                                    return !status.equals("cancelled") && !status.equals("expired");
                                 })
                                 .filter(r -> r.getReservationStart().isBefore(end) &&
                                         r.getReservationEnd().isAfter(start))
@@ -116,10 +118,6 @@ public class ReservationService {
                 });
     }
 
-    /* -------------------------------------------------------------------- */
-    /* --------------------  C.java O N F I R M   P H A S E  -------------------- */
-    /* -------------------------------------------------------------------- */
-
     @Transactional
     public Mono<Reservation> confirmReservation(Long reservationId) {
         return reservationRepository.findById(reservationId)
@@ -135,12 +133,15 @@ public class ReservationService {
                                 return reservationRepository.save(r)
                                         .flatMap(saved -> {
                                             try {
-                                                String qrContent = "reservation:" + saved.getId();  // you can customize QR content
+                                                String uniqueSuffix = generateUniqueSuffix();
+
+                                                String qrContent = "reservation:" + saved.getId() + ":" + uniqueSuffix;
+
                                                 String qrBase64 = QrCodeService.generateQrCodeBase64(qrContent);
 
                                                 saved.setQrCodeData(qrBase64);
 
-                                                return reservationRepository.save(saved);  // update reservation with QR
+                                                return reservationRepository.save(saved);
                                             } catch (Exception e) {
                                                 return Mono.error(new ConfigurationException("Failed to generate QR code"));
                                             }
@@ -175,17 +176,6 @@ public class ReservationService {
                 .switchIfEmpty(fallbackByDistance(address, start, end, minTemp, totalDim));
     }
 
-    /* -------------------------------------------------------------------- */
-    /* --------------------  I N T E R N A L   H E L P E R S --------------- */
-    /* -------------------------------------------------------------------- */
-
-    /**
-     * Atomically find **one** compartment that:
-     *   • is free & good/clean
-     *   • meets temp / size
-     *   • has **no confirmed overlap** with [start,end]
-     * then mark it busy and return its ID.
-     */
     private Mono<Long> findAndLockAvailableCompartment(Easybox box,
                                                        Integer minTemp,
                                                        Integer totalDim,
@@ -198,8 +188,6 @@ public class ReservationService {
                 .next()   // first compartment that we successfully locked
                 .switchIfEmpty(Mono.error(new ConflictException("No compartments available in that window")));
     }
-
-    /** Returns a DTO for UI if at least one qualifying compartment exists. */
     private Mono<EasyboxDto> boxIfAvailable(Easybox box,
                                             LocalDateTime st,
                                             LocalDateTime ed,
@@ -218,7 +206,7 @@ public class ReservationService {
                             box.getStatus(),
                             box.getLatitude(),
                             box.getLongitude(),
-                            1000   // capacity placeholder
+                            1000
                     );
                     dto.setAvailable(true);
                     if (userLat != null && userLon != null) {
@@ -230,7 +218,6 @@ public class ReservationService {
                 });
     }
 
-    /* ---------------- distance-fallback helpers (unchanged logic) -------- */
 
     private Mono<RecommendedBoxesResponse> collectOtherBoxes(String address, EasyboxDto exact,
                                                              LocalDateTime st, LocalDateTime ed,

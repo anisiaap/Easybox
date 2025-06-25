@@ -6,8 +6,8 @@ public class EasyboxDto {
     private String status;
     private double latitude;
     private double longitude;
-    private int capacity; // or compartments, or whatever detail you need
-    // THESE are the three new fields:
+    private int capacity;
+
     private boolean available;
     private Double distance;
     private Long freeCompartmentId;
@@ -23,7 +23,6 @@ public class EasyboxDto {
         this.capacity = capacity;
     }
 
-    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -41,7 +40,6 @@ public class EasyboxDto {
 
     public int getCapacity() { return capacity; }
     public void setCapacity(int capacity) { this.capacity = capacity; }
-    // ADD THESE:
 
     public boolean isAvailable() {
         return available;

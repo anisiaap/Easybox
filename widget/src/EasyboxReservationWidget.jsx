@@ -36,9 +36,6 @@ const EasyboxReservationWidget = forwardRef(
         },
         ref
     ) => {
-        // -------------------
-        // State & Refs
-        // -------------------
         const mapRef = useRef(null);
         const [leafletMap, setLeafletMap] = useState(null);
         const [markersLayer, setMarkersLayer] = useState(null);
@@ -68,9 +65,6 @@ const EasyboxReservationWidget = forwardRef(
             }
         }));
 
-        // -------------------
-        // Map Initialization
-        // -------------------
         useEffect(() => {
             if (leafletMap) return; // If we already have an instance, skip
 
@@ -97,7 +91,7 @@ const EasyboxReservationWidget = forwardRef(
                 if (event.data?.type === "init-jwt") {
                     setJwtToken(event.data.token);
                     setWidgetJwt(event.data.token);
-                    console.log("🔐 Received JWT:", event.data.token);
+                    console.log(" Received JWT:", event.data.token);
                 }
             }
             window.addEventListener("message", handleJwtMessage);
@@ -135,9 +129,6 @@ const EasyboxReservationWidget = forwardRef(
         }, [searchAddress, leafletMap]);
 
 
-        // -------------------
-        // Updating Markers on the Map
-        // -------------------
         useEffect(() => {
             if (!markersLayer) return;
             // Clear previous markers
@@ -161,10 +152,6 @@ const EasyboxReservationWidget = forwardRef(
             });
         }, [markersLayer, easyboxes]);
 
-        // -------------------
-        // Compute reservation window
-        // (Delivery time ± 3h before and +24h +3h after)
-        // -------------------
         const computeReservationWindow = (deliveryTime) => {
             const deliveryDate = new Date(deliveryTime);
             const start = new Date(deliveryDate.getTime() - 3 * 60 * 60 * 1000); // 3h before
@@ -172,9 +159,6 @@ const EasyboxReservationWidget = forwardRef(
             return { start, end };
         };
 
-        // -------------------
-        // Handlers
-        // -------------------
         const handleCheckAvailability = async (address = clientAddress) => {
             setLoading(true);
             try {
@@ -189,7 +173,7 @@ const EasyboxReservationWidget = forwardRef(
                 }
 
                 const body = {
-                    address,                              // 👈  use the argument
+                    address,
                     minTemperature : parseInt(minTemperature),
                     totalDimension : parseInt(totalDimension),
                     start,
@@ -249,7 +233,7 @@ const EasyboxReservationWidget = forwardRef(
                         headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}
                     })
                         .then(res => {
-                            console.log("✅ Easybox confirmed!", res.data);
+                            console.log(" Easybox confirmed!", res.data);
                             toast.success("Reservation confirmed successfully!", { autoClose: 3000 });
 
                             // Optionally, you can notify the parent
@@ -259,7 +243,7 @@ const EasyboxReservationWidget = forwardRef(
                             }, "*");
                         })
                         .catch(err => {
-                            console.error("❌ Confirm error:", err);
+                            console.error("Confirm error:", err);
                             toast.error("Failed to confirm reservation.", { autoClose: 3000 });
                         });
                 }
@@ -274,7 +258,7 @@ const EasyboxReservationWidget = forwardRef(
             if (!addr) return;
 
             setSearchAddress(addr);      // triggers geocoding / fly‑to
-            handleCheckAvailability(addr); // 👈 immediately fetch boxes
+            handleCheckAvailability(addr); // immediately fetch boxes
         };
 
         // Let the user click on a box in the side panel to focus it on the map
@@ -284,16 +268,13 @@ const EasyboxReservationWidget = forwardRef(
                 leafletMap.flyTo([box.latitude, box.longitude], 15, { duration: 1.0 });
             }
         };
-        // ⬇️ runs exactly once after the component mounts
+        // runs exactly once after the component mounts
         // fire once, but only after we have a token
         useEffect(() => {
             if (jwtToken && searchAddress?.trim()) {
                 handleCheckAvailability(searchAddress.trim());
             }
         }, [jwtToken]);
-        // -------------------
-        // Rendering
-        // -------------------
         return (
             <>
                 <div style={styles.widgetContainer}>
@@ -389,117 +370,11 @@ const EasyboxReservationWidget = forwardRef(
     }
 );
 
-// --------------
-// Some minimal inline styles
-// // --------------
-// const styles = {
-//     widgetContainer: {
-//         width: '100%',
-//         height: '100%',
-//         display: 'flex',
-//         flexDirection: 'column',
-//         fontFamily: 'Arial, sans-serif',
-//         border: '1px solid #ccc',
-//         borderRadius: '8px',
-//         overflow: 'hidden',
-//         backgroundColor: '#fff'
-//     },
-//     header: {
-//         backgroundColor: '#f7f7f7',
-//         padding: '10px 15px',
-//         borderBottom: '1px solid #ccc'
-//     },
-//     title: {
-//         margin: 0,
-//         fontSize: '1.2rem'
-//     },
-//     mainSection: {
-//         display: 'flex',
-//         flex: 1,
-//         minHeight: '400px'
-//     },
-//     sidePanel: {
-//         width: '250px',
-//         borderRight: '1px solid #ccc',
-//         padding: '10px',
-//         boxSizing: 'border-box',
-//         display: 'flex',
-//         flexDirection: 'column'
-//     },
-//     searchForm: {
-//         display: 'flex',
-//         marginBottom: '10px'
-//     },
-//     input: {
-//         flex: 1,
-//         padding: '6px',
-//         marginRight: '5px',
-//         border: '1px solid #ccc',
-//         borderRadius: '4px'
-//     },
-//     button: {
-//         padding: '6px 12px',
-//         borderRadius: '4px',
-//         border: '1px solid #ccc',
-//         cursor: 'pointer'
-//     },
-//     checkBtn: {
-//         padding: '6px 12px',
-//         marginBottom: '10px',
-//         borderRadius: '4px',
-//         border: '1px solid #ccc',
-//         cursor: 'pointer'
-//     },
-//     easyboxList: {
-//         flex: 1,
-//         overflowY: 'auto',
-//         border: '1px solid #eee',
-//         borderRadius: '4px',
-//         padding: '5px'
-//     },
-//     boxItem: {
-//         borderBottom: '1px solid #eee',
-//         padding: '8px',
-//         cursor: 'pointer'
-//     },
-//     noBoxes: {
-//         color: '#777',
-//         fontStyle: 'italic',
-//         textAlign: 'center',
-//         marginTop: '10px'
-//     },
-//     mapPanel: {
-//         flex: 1,
-//         position: 'relative'
-//     },
-//     map: {
-//         width: '100%',
-//         height: '100%'
-//     },
-//     footer: {
-//         borderTop: '1px solid #ccc',
-//         padding: '10px',
-//         display: 'flex',
-//         justifyContent: 'space-between',
-//         alignItems: 'center'
-//     },
-//     selectedInfo: {
-//         fontWeight: 'bold'
-//     },
-//     reserveBtn: {
-//         padding: '8px 16px',
-//         borderRadius: '4px',
-//         border: '1px solid #ccc',
-//         backgroundColor: '#4caf50',
-//         color: '#fff',
-//         cursor: 'pointer'
-//     }
-// };
 
 const styles = {
     widgetContainer: {
         width: '100%',
-        height: '600px', // 👈 fixed height for the whole widget
+        height: '600px',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Arial, sans-serif',
@@ -521,7 +396,7 @@ const styles = {
     mainSection: {
         display: 'flex',
         flex: 1,
-        overflow: 'hidden', // 👈 ensures no scroll on full widget
+        overflow: 'hidden',
         minHeight: 0
     },
     sidePanel: {
@@ -529,7 +404,7 @@ const styles = {
         borderRight: '1px solid #ccc',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden', // 👈 prevents outer scroll
+        overflow: 'hidden',
         flexShrink: 0
     },
     searchForm: {
@@ -551,7 +426,7 @@ const styles = {
         cursor: 'pointer'
     },
     easyboxList: {
-        flex: 1, // 👈 allow it to grow and scroll
+        flex: 1,
         overflowY: 'auto',
         borderTop: '1px solid #eee',
         padding: '5px'
@@ -570,7 +445,7 @@ const styles = {
     mapPanel: {
         flex: 1,
         position: 'relative',
-        height: '100%' // 👈 fully fill height next to list
+        height: '100%'
     },
     map: {
         width: '100%',

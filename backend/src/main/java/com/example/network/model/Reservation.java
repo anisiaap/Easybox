@@ -17,22 +17,21 @@ public class Reservation {
     private String qrCodeData;
 
     private LocalDateTime deliveryTime;
-    private String status; // e.g. "pending", "completed"
+    private String status; // "pending", "completed"
     private LocalDateTime expiresAt;      // nullable
-    // Time window
+
     private LocalDateTime reservationStart;
 
     private LocalDateTime reservationEnd;
 
-    // Relationship fields
     private Long easyboxId;
     @NotNull
     private Long compartmentId;
     private Long userId; // foreign key to user.id
 
     @Version
-    private Long version;  // <--- for optimistic locking
-    private Long bakeryId;  // ← Add this field for real
+    private Long version;  //  for optimistic locking
+    private Long bakeryId;
 
     public Long getBakeryId() {
         return bakeryId;
@@ -41,7 +40,7 @@ public class Reservation {
     public void setBakeryId(Long bakeryId) {
         this.bakeryId = bakeryId;
     }
-    // Getters and setters
+
 
     public Long getId() {
         return id;

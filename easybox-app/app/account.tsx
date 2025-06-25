@@ -3,7 +3,7 @@ import { View, StyleSheet, Clipboard } from 'react-native';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as ClipboardAPI from 'expo-clipboard'; // ✅ for clipboard
+import * as ClipboardAPI from 'expo-clipboard';
 import { useAuth } from '../lib/AuthContext';
 import ScreenHeader from './ScreenHeader';
 import { useNotification } from '../components/NotificationContext';

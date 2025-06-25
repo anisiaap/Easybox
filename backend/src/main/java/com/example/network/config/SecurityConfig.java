@@ -28,7 +28,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 @Configuration
 @EnableWebFluxSecurity
-@Order(1) // ✨ lower priority (after DeviceSecurityConfig)
+@Order(1) //  lower priority (after DeviceSecurityConfig)
 public class SecurityConfig {
 
     @Bean

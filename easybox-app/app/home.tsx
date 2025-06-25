@@ -30,7 +30,7 @@ const statusOptions = [
     { label: 'Pickup Order', value: 'waiting_client_pick_up' },
     { label: 'Waiting Cleaning', value: 'waiting_cleaning' },
     { label: 'Expired', value: 'expired' },
-    { label: 'Canceled', value: 'canceled' },
+    { label: 'Cancelled', value: 'cancelled' },
     { label: 'Completed', value: 'completed' },
 ];
 function getStatusLabel(status: string): string {
@@ -64,7 +64,7 @@ export default function HomeScreen() {
         if (!userId || !role) return;
 
         api.get('/orders')
-        .then(res => setOrders(res.data))
+            .then(res => setOrders(res.data))
             .catch(() => setOrders([]));
     }, [userId, role]);
 
@@ -80,13 +80,14 @@ export default function HomeScreen() {
 
     const activeOrders = orders.filter(
         (o) =>
-            o.status !== 'canceled' &&
+            o.status !== 'cancelled' &&
             o.status !== 'completed' &&
-            o.status !== 'pending'
+            o.status !== 'pending' &&
+            o.status !== 'expired'
     );
 
     const pastOrders = orders.filter(
-        (o) => o.status === 'canceled' || o.status === 'completed'
+        (o) => o.status === 'cancelled' || o.status === 'completed' || o.status == 'expired'
     );
 
     return (
@@ -159,10 +160,10 @@ function OrderCard({ item, role, router }: { item: Order; role: string; router: 
 
             <View>
                 <Text style={styles.itemText}>
-                    Location: {item.easyboxAddress}
+                    Location: {item.easyboxAddress ?? 'Unknown'}
                 </Text>
                 <Text style={styles.itemText}>
-                     Delivery: {new Date(item.deliveryTime).toLocaleString()}
+                    Delivery: {new Date(item.deliveryTime).toLocaleString()}
                 </Text>
             </View>
 

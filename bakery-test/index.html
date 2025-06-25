@@ -166,7 +166,7 @@
   //env setup
   window.env = {
     WIDGET_URL: "https://widget.easybox-food.xyz/",
-    JWT_TOKEN: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIwNzk5OTk5OTk5IiwidXNlcklkIjoyMCwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc1MDYyNzgwOSwiZXhwIjoxNzU4NDAzODA5fQ.p99qgjcRDMkCnVIHJQIs-q09tJq40pyuoCbAB0VqFhx4DDpmgC4bEDVyP7WTzuGIpsS_-TIj6TIYkbJWS1ryWtAXOi2xCfU1H4ZuDCsJhSSPh9-piAzaxozBcywl6MbgxSf37Xzku6WUS5ewApZ_Xy72jHFKort_f-tjfKdLN5XIvR58JQ-l9sjNpgi3nh3l-infSoZKkPInxrimH-ueMfEfg7MTlC7GamBI5Wf4Jq2bNbTlRaTVGNqBZYgDvxge6QuoZUEYwIa5beBZ8xNnrl4AgXkpgkuQsqaB0ZEF9Ue8aEZ7dcCW080S9AuI0rarsoYyjyzPzvsBLUIegbhQJw"
+    JWT_TOKEN: "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIwNzk5OTk5OTk5IiwidXNlcklkIjoyMCwicm9sZXMiOlsiQkFLRVJZIl0sImlhdCI6MTc1MDcyMDIyMiwiZXhwIjoxNzU4NDk2MjIyfQ.8b3TqXaOiBMSYf8x0eP9dz02AGcJnedPILG-J6AOGQdT-4FlcN_7SJy-2ToacLDUoaLtgxawS3i2gzY-0pCwvAnzsVhRdUPX0ObucetylI5GH4WKQlYO5zGH8bfckFbOY0lLK7Z-mGCoZUIv73_hgWcp0TMHgCJ1i1uoEj0tNApI5M5Ztn9vDIFTbzeX1AM0TaYJykoskoJ9wuvsWrV9RSaBea6FIsINgdhpUMrf-Ao2JLs8wfSxqsK5HipkCUuXalnjjMu5eLFUM96cn4yT94eidqWJKdhFtz3hR-Wk1Cu9VyrWu8IUBtEeaa8siRR3A5fu47LuziQvXiSj2AzXbg"
   };
   const API_URL = window.env.WIDGET_URL;
 
@@ -174,13 +174,19 @@
   window.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('deliveryDate');
 
-    const today = new Date();
-    today.setDate(today.getDate()); // 2 days in the future
-    const minDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
 
-    dateInput.min = minDate;
-    dateInput.value = minDate; // prefill the default
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    if (dateInput) {
+      dateInput.min = todayStr;
+      dateInput.value = todayStr;
+    }
   });
+
 
   function getDeliveryTimeString() {
     const date = document.getElementById('deliveryDate').value;
@@ -262,12 +268,12 @@
 
   window.addEventListener('message', function handleConfirmation(event) {
     if (event.data?.type === 'easybox-reservation-confirmed') {
-      console.log("🎉 Reservation confirmed by widget");
+      console.log("Reservation confirmed by widget");
 
       // Optional: remove listener to prevent duplicate handling
       window.removeEventListener('message', handleConfirmation);
       alert("Order placed . Easybox will now be confirmed!");
-      // ✅ Now it is safe to reload or redirect
+      // Now it is safe to reload or redirect
       // window.location.href = "index.html";  // Or any final confirmation page
       window.location.reload();
     }

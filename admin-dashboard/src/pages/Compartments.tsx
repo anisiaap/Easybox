@@ -9,6 +9,28 @@ const Container = styled.div`
     max-width: 1000px;
     margin: 0 auto;
 `;
+export const SIZE_MAP: Record<number, string> = {
+    10: 'Small',
+    15: 'Medium',
+    20: 'Large',
+};
+
+export const TEMPERATURE_MAP: Record<number, string> = {
+    4: 'Refrigerated',
+    8: 'Cool',
+    12: 'Room Temperature',
+};
+
+export const STATUS_MAP: Record<string, string> = {
+    free: 'Available',
+    busy: 'Occupied',
+};
+
+export const CONDITION_MAP: Record<string, string> = {
+    good: 'Good',
+    dirty: 'Needs cleaning',
+    broken: 'Broken',
+};
 
 const Title = styled.h1`
     font-size: 28px;
@@ -140,18 +162,29 @@ const AdminCompartments: React.FC = () => {
                     value={searchAddress}
                     onChange={(e) => setSearchAddress(e.target.value)}
                 />
-                <Input
-                    placeholder="Search Status"
+                <select
                     value={searchStatus}
                     onChange={(e) => setSearchStatus(e.target.value)}
-                />
-                <Input
-                    placeholder="Search Condition"
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
+                >
+                    <option value="">All Statuses</option>
+                    {Object.entries(STATUS_MAP).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                    ))}
+                </select>
+                <select
                     value={searchCondition}
                     onChange={(e) => setSearchCondition(e.target.value)}
-                />
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
+                >
+                    <option value="">All Conditions</option>
+                    {Object.entries(CONDITION_MAP).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                    ))}
+                </select>
                 <Button onClick={fetchCompartments}>Refresh</Button>
             </div>
+
 
             <TableWrapper>
                 <Table>
@@ -169,11 +202,16 @@ const AdminCompartments: React.FC = () => {
                     {pagedData.map(c => (
                         <TableRow key={c.id}>
                             <Td>{c.id}</Td>
-                            <Td>{c.status}</Td>
-                            <Td>{c.condition}</Td>
-                            <Td>{c.size}</Td>
-                            <Td>{c.temperature}</Td>
+                            <Td>{STATUS_MAP[c.status] || c.status}</Td>
+                            <Td>{CONDITION_MAP[c.condition] || c.condition}</Td>
+                            <Td>{SIZE_MAP[c.size] || c.size}</Td>
+                            <Td>{TEMPERATURE_MAP[c.temperature] || c.temperature}</Td>
                             <Td>{c.easyboxAddress}</Td>
+                            {/*<Td>{c.status}</Td>*/}
+                            {/*<Td>{c.condition}</Td>*/}
+                            {/*<Td>{c.size}</Td>*/}
+                            {/*<Td>{c.temperature}</Td>*/}
+                            {/*<Td>{c.easyboxAddress}</Td>*/}
                         </TableRow>
                     ))}
                     </tbody>
