@@ -123,19 +123,37 @@ const Customers: React.FC = () => {
         }
     }, [page ]);
 
+    // useEffect(() => {
+    //     let filtered = allCustomers;
+    //
+    //     if (searchName.trim()) {
+    //         filtered = filtered.filter(c => c.name.toLowerCase().includes(searchName.toLowerCase()));
+    //     }
+    //
+    //     if (searchPhone.trim()) {
+    //         filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
+    //     }
+    //
+    //     setCustomers(filtered);
+    //     setPage(0); // reset pagination
+    // }, [searchName, searchPhone, allCustomers]);
     useEffect(() => {
-        let filtered = allCustomers;
+        if (searchName.trim() === '' && searchPhone.trim() === '') {
+            setCustomers(allCustomers);
+        } else {
+            let filtered = allCustomers;
 
-        if (searchName.trim()) {
-            filtered = filtered.filter(c => c.name.toLowerCase().includes(searchName.toLowerCase()));
+            if (searchName.trim()) {
+                filtered = filtered.filter(c => c.name?.toLowerCase().includes(searchName.toLowerCase()));
+            }
+
+            if (searchPhone.trim()) {
+                filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
+            }
+
+            setCustomers(filtered);
+            setPage(0);
         }
-
-        if (searchPhone.trim()) {
-            filtered = filtered.filter(c => c.phoneNumber.includes(searchPhone));
-        }
-
-        setCustomers(filtered);
-        setPage(0); // reset pagination
     }, [searchName, searchPhone, allCustomers]);
 
 
