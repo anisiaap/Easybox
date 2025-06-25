@@ -115,7 +115,9 @@ const Customers: React.FC = () => {
                 api.get(`/admin/users?${params}`),
                 api.get(`/admin/users/count?${params}`),
             ]);
-            setCustomers(usersRes.data);
+            console.log('Users response:', usersRes.data);
+            console.log('Count response:', countRes.data);
+           
             setAllCustomers(usersRes.data);
             setTotalUsers(countRes.data);
         } catch (error: any) {
