@@ -118,9 +118,11 @@ const Customers: React.FC = () => {
             console.log('Users response:', usersRes.data);
             console.log('Count response:', countRes.data);
 
-            setAllCustomers(usersRes.data);
-            setCustomers(usersRes.data);
-            setTotalUsers(countRes.data);
+            const filtered = usersRes.data.filter((c: Customer) => c.name !== null);
+
+            setAllCustomers(filtered);
+            setCustomers(filtered);
+            setTotalUsers(filtered.length);
         } catch (error: any) {
             toast.error(error?.response?.data || 'Failed to fetch customers');
         }
