@@ -63,7 +63,12 @@ public class ReservationCleanupService {
                                 r.getReservationStart().plusHours(3).isBefore(now)) {
                             System.out.println("Expiring reservation " + r.getId());
                             r.setStatus("expired");
-                            return Mono.just(r);
+                            return compartmentRepository.findById(r.getCompartmentId())
+                                    .flatMap(compartment -> {
+                                        compartment.setStatus("free");
+                                        return compartmentRepository.save(compartment);
+                                    })
+                                    .thenReturn(r);
                         }
 
                         if ("confirmed".equalsIgnoreCase(r.getStatus()) &&

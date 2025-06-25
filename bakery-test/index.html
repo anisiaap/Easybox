@@ -173,7 +173,7 @@
   //set min delivery date on select in form
   window.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('deliveryDate');
-
+    const hourSelect = document.getElementById('deliveryHour');
     const now = new Date();
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -185,6 +185,29 @@
       dateInput.min = todayStr;
       dateInput.value = todayStr;
     }
+
+    function updateHourOptions() {
+      const selectedDate = dateInput.value;
+      const isToday = selectedDate === todayStr;
+      const currentHour = now.getHours();
+
+      for (let option of hourSelect.options) {
+        const hour = parseInt(option.value);
+        option.disabled = isToday && hour <= currentHour;
+      }
+
+      if (isToday && parseInt(hourSelect.value) <= currentHour) {
+        for (let option of hourSelect.options) {
+          if (!option.disabled) {
+            hourSelect.value = option.value;
+            break;
+          }
+        }
+      }
+    }
+
+    updateHourOptions();
+    dateInput.addEventListener('change', updateHourOptions);
   });
 
 
@@ -200,7 +223,7 @@
   window.addEventListener("message", (event) => {
     if (event.data?.type === "easybox-reserved") {
       pendingReservation = event.data.data;
-      window.chosenEasybox = pendingReservation; // still keep this if needed
+      window.chosenEasybox = pendingReservation;
       console.log("Received reservation:", pendingReservation);
 
       document.getElementById('easybox-frame').style.display = 'none';
@@ -219,11 +242,11 @@
       if (this.value === 'easybox') {
         openPopup();
       } else if (this.value === 'standard') {
-        // ✨ Hide the iframe
+        // Hide the iframe
         frame.style.display = 'none';
         pendingReservation = null;
 
-        // ✨ Set delivery location from form address
+        //  Set delivery location from form address
         const clientAddress = document.getElementById('orderAddress').value;
         deliveryLocationDiv.innerText = `Delivery address: ${clientAddress}`;
       }
@@ -261,20 +284,17 @@
 
 
   async function saveOrderToBakeryBackend(reservationId) {
-    // Simulate API call to your own bakery server
+
     console.log("Mock saving order with reservationId:", reservationId);
-    return true; // or false if you want to simulate failure
+    return true;
   }
 
   window.addEventListener('message', function handleConfirmation(event) {
     if (event.data?.type === 'easybox-reservation-confirmed') {
       console.log("Reservation confirmed by widget");
 
-      // Optional: remove listener to prevent duplicate handling
       window.removeEventListener('message', handleConfirmation);
       alert("Order placed . Easybox will now be confirmed!");
-      // Now it is safe to reload or redirect
-      // window.location.href = "index.html";  // Or any final confirmation page
       window.location.reload();
     }
   });
@@ -288,20 +308,15 @@
         return;
       }
 
-      /* 1) send the regular order to YOUR bakery backend only */
       const orderOk = await saveOrderToBakeryBackend(pendingReservation.id);
       if (!orderOk) { alert("order failed"); return; }
 
-      /* 2) notify the widget to promote the hold */
       const frame = document.getElementById("easybox-frame").contentWindow;
       frame.postMessage({ type: "bakery-order-confirmed", reservationId: pendingReservation.id }, "*");
 
 
-      // document.getElementById('popup-overlay').style.display = 'none';
-      // window.location.reload();
 
     } else {
-      /* standard delivery branch */
     }
   }
 
