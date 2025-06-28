@@ -32,13 +32,7 @@ Deployed at: https://widget.easybox-food.xyz
 
 ### Mobile Application
 
-Built with Expo Router v2 (React Native), the mobile app supports three roles: Client, Bakery, and Maintenance. Each user accesses a role-specific interface. The app is currently run locally using Expo:
-
-```
-
-npx expo run
-
-```
+Built with Expo Router v2 (React Native), the mobile app supports three roles: Client, Bakery, and Maintenance. Each user accesses a role-specific interface.
 
 ### Raspberry Pi Device Application
 
