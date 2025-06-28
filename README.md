@@ -84,7 +84,7 @@ npm run build
 
 ```
 
-cd mobile
+cd easybox-app
 npx expo install
 npx expo run
 
@@ -120,7 +120,7 @@ Example content for required JSON configuration files:
 }
 ````
 
-### `pin-mapping.json`
+### `gpio-config.json`
 
 ```json
 {
@@ -180,7 +180,7 @@ The widget communicates the reservation status to the backend and generates a QR
 - Spring Boot app on Raspberry Pi.
 - Registers via REST + fallback HS256 JWT, then connects over **MQTT with per-device JWT**.
 - Subscribes to commands (`open-locker`, `confirm-placement`) via **HiveMQ Cloud Broker**.
-- Handles QR scanning → verification → lock opening → user confirmation → state update.
+- Handles QR scanning -> verification → lock opening → user confirmation → state update.
 - Loads compartment config from local JSON.
 
 ---
@@ -203,7 +203,7 @@ The widget communicates the reservation status to the backend and generates a QR
 - **Devices**: HS256 JWTs, signed with per-device secret.
 - **Transport**: All traffic encrypted via TLS (HTTPS, MQTT over TLS).
 - **JWT Verification**:
-  - Web/Mobile clients → Backend: RS256.
+  - Web/Mobile clients -> Backend: RS256.
   - Devices → Backend (MQTT): HS256.
 
 ---
