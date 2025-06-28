@@ -4,11 +4,9 @@
 
 Easybox is a cloud-hosted, secure, and scalable smart locker system designed for bakery order deliveries. It enables clients to reserve temperature-compatible compartments in advance, bakeries to manage deliveries, and administrators to supervise the system from a centralized dashboard.
 
-This project was developed as part of a Bachelor's thesis and is hosted publicly at:
+This project was developed as part of a Bachelor's thesis and can be found at:
 
 Repository: https://github.com/anisiaap/Easybox
-
-Compiled binaries are excluded from the repository.
 
 ---
 
@@ -136,31 +134,6 @@ Example content for required JSON configuration files:
 
 ---
 
-## Device Application Properties
-
-Example `application.properties` content:
-
-```
-server.port=8081
-server.address=0.0.0.0
-spring.lifecycle.timeout-per-shutdown-phase=30s
-
-central.backend.url=https://api.easybox-food.xyz/api/
-device.address=Strada Alion, nr. 1, Drobeta Turnu Severin
-
-mqtt.broker-url=ssl://7f5c04cad0974691b00ef4fb124be7a1.s1.eu.hivemq.cloud:8883
-mqtt.username=deviceUser
-mqtt.password=deviceUser1
-mqtt.client-id=easybox-190
-mqtt.topic-prefix=easybox
-device.id=easybox-190
-
-jwt.device-secret=keykeykeykeykeykeykeykeykeykeykeykeykey
-spring.main.headless=false
-```
-
----
-
 ## Bakery Site Integration (Widget)
 
 A widget can be embedded in any HTML-based bakery checkout page. A working example is provided in the `bakery-test` folder.
@@ -174,40 +147,6 @@ To use the widget:
 5. Confirm the reservation by pressing "Place Order".
 
 The widget communicates the reservation status to the backend and generates a QR code accessible via the client account.
-
----
-
-## Application Flow Summary
-
-1. The bakery registers and receives a token.
-2. The token is injected into the widget for identity verification.
-3. A client places an order using the bakery site.
-4. The widget makes a reservation and receives a QR code.
-5. The client uses the QR to access the locker on the Raspberry Pi device.
-6. The compartment opens, and the status is updated after confirmation.
-7. The admin can monitor and manage all activity from the dashboard.
-
----
-
-## Admin Login Credentials
-
-To access the admin dashboard:
-
-* Username: `admin`
-* Password: `Admin123`
-
----
-
-## What It Does
-
-- Allows customers to pick up bakery orders from smart lockers ("Easyboxes") at precise times.
-- Supports secure, temperature-verified reservation of locker compartments.
-- Ensures hygiene with automatic flagging and cleaning workflows.
-- Enables bakeries to confirm orders, place deliveries, and report locker issues.
-- Provides a responsive admin dashboard for overseeing devices, orders, and issues.
-- Uses QR codes for pickup, with real-time backend-device communication via MQTT.
-
----
 
 ## System Architecture
 
@@ -269,39 +208,6 @@ To access the admin dashboard:
 
 ---
 
-## Reservation Lifecycle
-
-1. **Widget** sends availability request (address, time, temp, size).
-2. **Backend** checks geolocation, Easybox availability, compatibility.
-3. **Soft Lock**: Pending reservation is created after user selection.
-4. **Hard Confirmation**: Order confirmed, QR generated.
-5. **Device** receives and validates QR scan.
-6. **Compartment opened**, user confirms placement or pickup.
-7. **Reservation/Compartment status updated** accordingly.
-
----
-
-## Compartment States
-
-- `FREE` → `BUSY` (after order placed)
-- `BUSY` → `FREE` (after pickup)
-- `EXPIRED` → `DIRTY`
-- Manual reports: `BROKEN` or `DIRTY`
-- Admin/Cleaner resolves and resets state
-
----
-
-## Deployment & Infrastructure
-
-- **Backend**: Spring Boot + WebFlux, Dockerized, hosted on **Render**
-- **Frontend** (Dashboard & Widget): React apps deployed on **Netlify**
-- **Mobile App**: React Native + Expo, dynamic OTA bundles
-- **Devices**: Spring Boot apps on **Raspberry Pi**, connected to **HiveMQ Cloud**
-- **Database**: PostgreSQL on Render
-- **MQTT Broker**: HiveMQ Cloud (AWS)
-
----
-
 ## Key Screens and Diagrams
 
 - Architecture Diagram
@@ -337,4 +243,3 @@ To access the admin dashboard:
 
 This system was developed as part of a thesis project to modernize and digitize food delivery for local bakeries using cloud infrastructure, IoT devices, and secure mobile/web interfaces.
 
-For more information or collaboration, contact the project author.
