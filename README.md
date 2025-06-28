@@ -50,6 +50,12 @@ A Spring Boot application that runs on Raspberry Pi. It communicates with the ba
 
 To build and run each component locally:
 
+### Clone Git Repo
+
+```
+git clone https://github.com/anisiaap/Easybox.git
+```
+
 ### Backend
 
 ```
